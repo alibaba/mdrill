@@ -11,6 +11,8 @@
 <li><a href="https://github.com/alibaba/mdrill/wiki/info" target="_blank">mdrill介绍</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/improve.docx?raw=true" target="_blank">技术原理，我们一年走过的路</a></li>
+
 </ul>
 
 <h1>mdrill Core contributors</h1>
