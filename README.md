@@ -4,3 +4,11 @@
 
 <h1> 发行日志</h1>
  2013.7.24 version 0.18-beta<br>
+
+<h1>资源列表</h1>
+<ul>
+<li><a href="https://github.com/alibaba/mdrill/wiki/info" target="_blank">mdrill介绍</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
+
+</ul>
