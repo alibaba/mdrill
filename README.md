@@ -10,5 +10,13 @@
 <li><a href="https://github.com/alibaba/mdrill/wiki/info" target="_blank">mdrill介绍</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
+</ul>
 
+<h1>mdrill Core contributors</h1>
+<ul>
+<li>子落、含光、士远、木晗、逸客、张壮、凌凝</li>
+</ul>
+<h1>jstorm Core contributors</h1>
+<ul>
+<li>纪君祥、丙吉、陈均</li>
 </ul>
