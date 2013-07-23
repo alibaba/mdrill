@@ -1,0 +1,202 @@
+package org.apache.lucene.util;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.ref.WeakReference;
+import java.util.LinkedList;
+
+import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl; // deprecated
+
+/**
+ * Base class for Attributes that can be added to a 
+ * {@link org.apache.lucene.util.AttributeSource}.
+ * <p>
+ * Attributes are used to add data in a dynamic, yet type-safe way to a source
+ * of usually streamed objects, e. g. a {@link org.apache.lucene.analysis.TokenStream}.
+ */
+public abstract class AttributeImpl implements Cloneable, Serializable, Attribute {  
+  /**
+   * Clears the values in this AttributeImpl and resets it to its 
+   * default value. If this implementation implements more than one Attribute interface
+   * it clears all.
+   */
+  public abstract void clear();
+  
+  /**
+   * Returns a string representation of the object. In general, the {@code toString} method
+   * returns a string that &quot;textually represents&quot; this object.
+   *
+   * <p><b>WARNING:</b> For backwards compatibility this method is implemented as
+   * {@code return reflectAsString(false)}. In Lucene 4.0 this default implementation
+   * will be removed. The reason for this is the problem of
+   * {@link CharTermAttributeImpl#toString} that must return a string representation
+   * of the term's char sequence.
+   *
+   * <p>It is recommeneded to use {@link #reflectAsString} or {@link #reflectWith}
+   * to get a well-defined output of AttributeImpl's internals.
+   */
+  // TODO: @deprecated remove this method in 4.0
+  @Override
+  public String toString() {
+    return reflectAsString(false);
+  }
+  
+  /**
+   * This method returns the current attribute values as a string in the following format
+   * by calling the {@link #reflectWith(AttributeReflector)} method:
+   * 
+   * <ul>
+   * <li><em>iff {@code prependAttClass=true}:</em> {@code "AttributeClass#key=value,AttributeClass#key=value"}
+   * <li><em>iff {@code prependAttClass=false}:</em> {@code "key=value,key=value"}
+   * </ul>
+   *
+   * @see #reflectWith(AttributeReflector)
+   * @see #toString()
+   */
+  public final String reflectAsString(final boolean prependAttClass) {
+    final StringBuilder buffer = new StringBuilder();
+    reflectWith(new AttributeReflector() {
+      public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+        if (buffer.length() > 0) {
+          buffer.append(',');
+        }
+        if (prependAttClass) {
+          buffer.append(attClass.getName()).append('#');
+        }
+        buffer.append(key).append('=').append((value == null) ? "null" : value);
+      }
+    });
+    return buffer.toString();
+  }
+  
+  /**
+   * @deprecated this will be removed in Lucene 4.0
+   */
+  @Deprecated
+  private static final VirtualMethod<AttributeImpl> toStringMethod =
+    new VirtualMethod<AttributeImpl>(AttributeImpl.class, "toString");
+    
+  /**
+   * When {@code true} (default), if a subclass overrides {@link #toString()},
+   * its output is parsed by {@link #reflectWith} and used for attribute reflection.
+   * This is added to enable attribute implementations from Lucene 2.9 or 3.0 to
+   * work correctly with reflection.
+   * @deprecated this will be removed in Lucene 4.0.
+   */
+  @Deprecated
+  protected boolean enableBackwards = true;
+
+  /**
+   * @deprecated this will be removed in Lucene 4.0
+   */
+  @Deprecated
+  private boolean assertExternalClass(Class<? extends AttributeImpl> clazz) {
+    final String name = clazz.getName();
+    return (!name.startsWith("org.apache.lucene.") && !name.startsWith("org.apache.solr."))
+      || name.equals("org.apache.lucene.util.TestAttributeSource$TestAttributeImpl");
+  }
+
+  /**
+   * This method is for introspection of attributes, it should simply
+   * add the key/values this attribute holds to the given {@link AttributeReflector}.
+   *
+   * <p>The default implementation calls {@link AttributeReflector#reflect} for all
+   * non-static fields from the implementing class, using the field name as key
+   * and the field value as value. The Attribute class is also determined by reflection.
+   * Please note that the default implementation can only handle single-Attribute
+   * implementations.
+   *
+   * <p>Custom implementations look like this (e.g. for a combined attribute implementation):
+   * <pre>
+   *   public void reflectWith(AttributeReflector reflector) {
+   *     reflector.reflect(CharTermAttribute.class, "term", term());
+   *     reflector.reflect(PositionIncrementAttribute.class, "positionIncrement", getPositionIncrement());
+   *   }
+   * </pre>
+   *
+   * <p>If you implement this method, make sure that for each invocation, the same set of {@link Attribute}
+   * interfaces and keys are passed to {@link AttributeReflector#reflect} in the same order, but possibly
+   * different values. So don't automatically exclude e.g. {@code null} properties!
+   *
+   * @see #reflectAsString(boolean)
+   */
+  public void reflectWith(AttributeReflector reflector) {
+    final Class<? extends AttributeImpl> clazz = this.getClass();
+    final LinkedList<WeakReference<Class<? extends Attribute>>> interfaces = AttributeSource.getAttributeInterfaces(clazz);
+    if (interfaces.size() != 1) {
+      throw new UnsupportedOperationException(clazz.getName() +
+        " implements more than one Attribute interface, the default reflectWith() implementation cannot handle this.");
+    }
+    final Class<? extends Attribute> interf = interfaces.getFirst().get();
+
+    // TODO: @deprecated sophisticated(TM) backwards
+    if (enableBackwards && toStringMethod.isOverriddenAsOf(clazz)) {
+      assert assertExternalClass(clazz) : "no Lucene/Solr classes should fallback to toString() parsing";
+      // this class overrides toString and for backwards compatibility we try to parse the string returned by this method:
+      for (String part : toString().split(",")) {
+        final int pos = part.indexOf('=');
+        if (pos < 0) {
+          throw new UnsupportedOperationException("The backwards compatibility layer to support reflectWith() " +
+            "on old AtributeImpls expects the toString() implementation to return a correct format as specified for method reflectAsString(false)");
+        }
+        reflector.reflect(interf, part.substring(0, pos).trim(), part.substring(pos + 1));
+      }
+      return;
+    }
+    // end sophisticated(TM) backwards
+
+    final Field[] fields = clazz.getDeclaredFields();
+    try {
+      for (int i = 0; i < fields.length; i++) {
+        final Field f = fields[i];
+        if (Modifier.isStatic(f.getModifiers())) continue;
+        f.setAccessible(true);
+        reflector.reflect(interf, f.getName(), f.get(this));
+      }
+    } catch (IllegalAccessException e) {
+      // this should never happen, because we're just accessing fields
+      // from 'this'
+      throw new RuntimeException(e);
+    }
+  }
+  
+  /**
+   * Copies the values from this Attribute into the passed-in
+   * target attribute. The target implementation must support all the
+   * Attributes this implementation supports.
+   */
+  public abstract void copyTo(AttributeImpl target);
+    
+  /**
+   * Shallow clone. Subclasses must override this if they 
+   * need to clone any members deeply,
+   */
+  @Override
+  public Object clone() {
+    Object clone = null;
+    try {
+      clone = super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);  // shouldn't happen
+    }
+    return clone;
+  }
+}

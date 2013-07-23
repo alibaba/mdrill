@@ -1,0 +1,69 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+    <artifactId>adhoc-all</artifactId>
+    <groupId>com.alimama.dw</groupId>
+    <version>0.18-beta</version>
+    <relativePath>..</relativePath>
+  </parent>
+    <artifactId>adhoc-solr</artifactId>
+  
+  <properties>
+     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding> 
+</properties>
+<build>
+<plugins>
+<plugin>
+<groupId>org.apache.maven.plugins</groupId>
+<artifactId>maven-compiler-plugin</artifactId>
+<version>2.3.2</version>
+<configuration>
+<encoding>utf-8</encoding>
+<source>1.6</source>
+<target>1.6</target>
+</configuration>
+</plugin>
+
+<!--plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+	
+							<outputDirectory>target/classes/lib</outputDirectory>
+							<includeScope>runtime</includeScope>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<excludeTransitive>false</excludeTransitive>
+							<overWriteIfNewer>true</overWriteIfNewer>
+							<excludes>
+								<exclude>*.properties</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin-->
+</plugins>
+</build>
+
+	<dependencies>
+	<dependency>
+			<groupId>com.alimama.dw</groupId>
+			<artifactId>adhoc-wrapper</artifactId>
+			<version>0.18-beta</version>
+		</dependency>
+		<dependency>
+			<groupId>com.alimama.dw</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>0.18-beta</version>
+		</dependency>
+		
+		
+	</dependencies>
+</project>
