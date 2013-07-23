@@ -1,10 +1,10 @@
 <h1>ÏîÄ¿¼ò½é</h1>
-mdrillÊÇ°¢ÀïÂèÂè-adhoc-º£Á¿Êý¾Ý¶àÎ¬×ÔÖú¼´Ï¯²éÑ¯Æ½Ì¨ÏÂµÄÒ»¸ö×ÓÏîÄ¿¡£<br>
-Ö¼ÔÚ°ïÖúÓÃ»§ÔÚ¼¸Ãëµ½¼¸Ê®ÃëµÄÊ±¼äÄÚ£¬·ÖÎö°ÙÒÚ¼¶±ðµÄÈÎÒâÎ¬¶È×éºÏµÄÊý¾Ý¡£<br>
-mdrillÊÇÒ»¸ö·Ö²¼Ê½µÄÔÚÏß·ÖÎö²éÑ¯ÏµÍ³£¬»ùÓÚhadoop,lucene,solr,jstormµÈ¿ªÔ´ÏµÍ³×÷ÎªÊµÏÖ£¬»ùÓÚSQLµÄ²éÑ¯Óï·¨¡£ mdrillÊÇÒ»¸öÄÜ¹»¶Ô´óÁ¿Êý¾Ý½øÐÐ·Ö²¼Ê½´¦ÀíµÄÈí¼þ¿ò¼Ü¡£mdrillÊÇ¿ìËÙµÄ¸ßÐÔÄÜµÄ£¬ËûµÄµ×²ãÒòÊ¹ÓÃÁËË÷Òý¡¢ÁÐÊ½´æ´¢¡¢ÒÔ¼°ÄÚ´æcacheµÈ¼¼Êõ£¬Ê¹µÃÊý¾ÝÉ¨ÃèµÄËÙ¶È´óÎªÔö¼Ó¡£mdrillÊÇ·Ö²¼Ê½µÄ£¬ËüÒÔ²¢ÐÐµÄ·½Ê½¹¤×÷£¬Í¨¹ý²¢ÐÐ´¦Àí¼Ó¿ì´¦ÀíËÙ¶È¡£<br>
-ÔÚadhocÏîÄ¿ÖÐ£¬mdrillÊ¹ÓÃÁË10Ì¨»úÆ÷£¬´æ´¢ÁË400ÒÚµÄÊý¾Ý£¬Ã¿´ÎÉ¨Ãè30ÒÚµÄÐÐÊý£¬ÏìÓ¦Ê±¼äÔÚ20Ãë~120Ãë×óÓÒ(È¡¾ö²»Í¬µÄ²éÑ¯Ìõ¼þ)¡£<br>
+1.mdrillÊÇ°¢ÀïÂèÂè-adhoc-º£Á¿Êý¾Ý¶àÎ¬×ÔÖú¼´Ï¯²éÑ¯Æ½Ì¨ÏÂµÄÒ»¸ö×ÓÏîÄ¿¡£<br>
+2.mdrillÖ¼ÔÚ°ïÖúÓÃ»§ÔÚ¼¸Ãëµ½¼¸Ê®ÃëµÄÊ±¼äÄÚ£¬·ÖÎö°ÙÒÚ¼¶±ðµÄÈÎÒâÎ¬¶È×éºÏµÄÊý¾Ý¡£<br>
+3.mdrillÊÇÒ»¸ö·Ö²¼Ê½µÄÔÚÏß·ÖÎö²éÑ¯ÏµÍ³£¬»ùÓÚhadoop,lucene,solr,jstormµÈ¿ªÔ´ÏµÍ³×÷ÎªÊµÏÖ£¬»ùÓÚSQLµÄ²éÑ¯Óï·¨¡£ mdrillÊÇÒ»¸öÄÜ¹»¶Ô´óÁ¿Êý¾Ý½øÐÐ·Ö²¼Ê½´¦ÀíµÄÈí¼þ¿ò¼Ü¡£mdrillÊÇ¿ìËÙµÄ¸ßÐÔÄÜµÄ£¬ËûµÄµ×²ãÒòÊ¹ÓÃÁËË÷Òý¡¢ÁÐÊ½´æ´¢¡¢ÒÔ¼°ÄÚ´æcacheµÈ¼¼Êõ£¬Ê¹µÃÊý¾ÝÉ¨ÃèµÄËÙ¶È´óÎªÔö¼Ó¡£mdrillÊÇ·Ö²¼Ê½µÄ£¬ËüÒÔ²¢ÐÐµÄ·½Ê½¹¤×÷£¬Í¨¹ý²¢ÐÐ´¦Àí¼Ó¿ì´¦ÀíËÙ¶È¡£<br>
+4.mdrillÔÚadhocÏîÄ¿ÖÐ£¬mdrillÊ¹ÓÃÁË10Ì¨»úÆ÷£¬´æ´¢ÁË400ÒÚµÄÊý¾Ý£¬Ã¿´ÎÉ¨Ãè30ÒÚµÄÐÐÊý£¬ÏìÓ¦Ê±¼äÔÚ20Ãë~120Ãë×óÓÒ(È¡¾ö²»Í¬µÄ²éÑ¯Ìõ¼þ)¡£<br>
 <h1> ·¢ÐÐÈÕÖ¾</h1>
- 2013.7.24 version 0.18-beta<br>
+ 2013.7.24 version 0.18-beta  <a href="https://github.com/alibaba/mdrill/blob/master/release/0.18-beta/alimama-adhoc.tar.gz?raw=true" target="_blank">ÏÂÔØ</a> <a href="https://github.com/alibaba/mdrill/blob/master/release/0.18-beta/alimama-adhoc-core.zip?raw=true" target="_blank">Ô´ÂëÏÂÔØ</a> <br>
 
 <h1>×ÊÔ´ÁÐ±í</h1>
 <ul>
@@ -19,5 +19,9 @@ mdrillÊÇÒ»¸ö·Ö²¼Ê½µÄÔÚÏß·ÖÎö²éÑ¯ÏµÍ³£¬»ùÓÚhadoop,lucene,solr,jstormµÈ¿ªÔ´ÏµÍ³×÷Î
 </ul>
 <h1>jstorm Core contributors</h1>
 <ul>
-<li>¼Í¾ýÏé¡¢±û¼ª¡¢³Â¾ù</li>
+<li>¼Í¾ýÏé¡¢×ÓÂä¡¢±û¼ª¡¢³Â¾ù</li>
 </ul>
+
+
+<h1>ÆäËû</h1>
+mdrill¼¼Êõ½»Á÷Èº:171465049<br>
