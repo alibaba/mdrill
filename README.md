@@ -17,11 +17,14 @@
 
 <h1>mdrill Core contributors</h1>
 <ul>
-<li>子落、含光、士远、木晗、逸客、张壮、凌凝</li>
+<li><a href="https://github.com/muyannian">母延年(子落)</a>、<a href="http://user.qzone.qq.com/2253209">秦剑(含光)</a>、<a href="https://github.com/bwzheng2010">郑博文(士远)</a>、木晗、逸客、张壮、凌凝</li>
 </ul>
 <h1>jstorm Core contributors</h1>
 <ul>
-<li>纪君祥、子落、丙吉、陈均</li>
+<li><a href="https://github.com/longdafeng">封仲淹(纪君祥)</a>、<a href="https://github.com/tumen">李鑫(丙吉)</a>、<a href="https://github.com/muyannian">母延年(子落)</a>、<a href="https://github.com/zhouxinxust">周鑫(陈均)</a></li>
+
+
+
 </ul>
 
 
