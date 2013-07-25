@@ -19,7 +19,7 @@
 <%
 		String tablename = request.getParameter("tablename");
 		
-		HashMap<String, String> fieldColumntypeMap=HigoService.readFieldsFromSchemaXml(tablename);
+		HashMap<String, String> fieldColumntypeMap=MdrillService.readFieldsFromSchemaXml(tablename);
 		for(java.util.Map.Entry<String, String> e:fieldColumntypeMap.entrySet())
 			{
 				%><tr><td><%=e.getKey()%></td><td><%=e.getValue()%></td></tr><%
