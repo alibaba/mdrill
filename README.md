@@ -11,7 +11,7 @@
 <li><a href="https://github.com/alibaba/mdrill/wiki/info" target="_blank">mdrill介绍</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/improve.docx?raw=true" target="_blank">技术原理，我们一年走过的路</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/improve.docx?raw=true" target="_blank">adhoc项目我们一年走过的路</a></li>
 <li><a href="https://github.com/muyannian/higo/blob/master/doc/doc.rar?raw=true" target="_blank">文档逐步整理中，想深入了解请看先前的旧文档</a></li>
 
 </ul>
