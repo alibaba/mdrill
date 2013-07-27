@@ -16,7 +16,7 @@
 <li><a href="https://github.com/muyannian/higo" target="_blank">mdrill之前的旧文档以及开发日志入口</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/improve.docx?raw=true" target="_blank">adhoc项目我们一年走过的路</a></li>
 
-
+<li><a hfef="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">LICENSE</a></li>
 </ul>
 
 <h1>mdrill Core contributors</h1>
