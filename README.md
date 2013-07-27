@@ -21,7 +21,7 @@
 
 <h1>mdrill Core contributors</h1>
 <ul>
-<li><a href="https://github.com/muyannian">母延年(子落)</a>、<a href="http://user.qzone.qq.com/2253209">秦剑(含光)</a>、<a href="https://github.com/bwzheng2010">郑博文(士远)</a>、木晗、逸客、张壮、凌凝</li>
+<li><a href="https://github.com/muyannian">母延年(子落)</a>、<a href="http://user.qzone.qq.com/2253209">秦剑(含光)</a>、<a href="https://github.com/bwzheng2010">郑博文(士远)</a>、陈鹏(伯时)、木晗、逸客、张壮、凌凝</li>
 </ul>
 <h1>jstorm Core contributors</h1>
 <ul>
