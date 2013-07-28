@@ -33,4 +33,7 @@
 
 
 <h1>其他</h1>
-mdrill技术交流群:171465049<br>
+<ul>
+<li><a href="https://github.com/alibaba/mdrill/wiki/faq" target="_blank">FAQ</a></li>
+<li>mdrill技术交流群:171465049</li>
+</ul>
