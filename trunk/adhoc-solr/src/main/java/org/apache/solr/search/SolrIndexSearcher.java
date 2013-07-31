@@ -89,8 +89,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   
   @Override
   public void close() throws IOException {
+	 this.SolrCoreClearCache();
     if (closeReader) reader.decRef();
-    this.SolrCoreClearCache();
     numCloses.incrementAndGet();
   }
 

@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.request.compare.UniqTypeNum;
 import org.apache.solr.request.join.HigoJoinUtils;
 
 import backtype.storm.utils.Utils;
@@ -131,7 +130,7 @@ public class WebServiceParams {
 			JSONObject obj=jsonStr.getJSONObject(i);
 			HigoJoinParams p=new HigoJoinParams();
 			p.tablename=obj.getString("tablename");
-			p.hdfsPath=obj.getString("path");
+			p.hdfsPath=obj.getString("path")+"/part-00000";
 			p.fq=WebServiceParams.fqList(obj.getString("fq"), shard,null);
 			p.fl=obj.getString("fl").split(",");
 			p.leftkey=obj.getString("leftkey");
@@ -142,6 +141,9 @@ public class WebServiceParams {
 		}
 		return rtn;
 	}
+	
+	
+	//格式兼容
 	public static String query(String queryStr) throws JSONException {
 		if (queryStr == null || queryStr.trim().equals("")) {
 			queryStr = "[]";
@@ -159,8 +161,28 @@ public class WebServiceParams {
 			}
 			queryStr = arr.toString();
 		}
+		
+		JSONArray jsonStr=new JSONArray(queryStr.trim());
+		JSONArray rtn=new JSONArray();
 
-		return queryStr.trim();
+		for(int i=0;i<jsonStr.length();i++)
+		{
+			JSONObject obj=jsonStr.getJSONObject(i);
+			if(obj.has("key"))
+			{
+				JSONObject objnew=new JSONObject();
+				JSONObject objself=new JSONObject();
+				objself.put("operate", obj.get("operate"));
+				objself.put("value", obj.get("value"));
+				objnew.put(obj.getString("key"), objself);
+				rtn.put(objnew);
+			}else{
+				rtn.put(obj);
+			}
+		}
+    	
+    	return rtn.toString();
+
 	}
 	
 	public static class SortParam{
@@ -606,12 +628,19 @@ public class WebServiceParams {
 	}
 	
 	
-	private static String parseFqOperateHive(int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap)
+	private static String parseFqOperateHive(String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,String tblname)
 	{
+		
+		
 		String ft="string";
 		if(filetypeMap!=null&&filetypeMap.containsKey(key))
 		{
 			ft=filetypeMap.get(key);
+		}
+		
+		if(tblname!=null&&colMap!=null)
+		{
+			key=tblname+"."+colMap.get(key);
 		}
 		
 		boolean isdate=false;
@@ -627,7 +656,6 @@ public class WebServiceParams {
 			isNumber=true;
 		}
 		if (key.equals("thedate")) {
-			String part = "dt";
 			String add = "";
 			if (isPartionByPt) {
 				part = "pt";
@@ -875,10 +903,10 @@ public class WebServiceParams {
 	}
 	
 	
-	public static ArrayList<String> fqListHive(String queryStr,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap) throws JSONException
+	public static ArrayList<String> fqListHive(String part,String queryStr,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,String tblname) throws JSONException
 	{
 		ArrayList<String> fqList = new ArrayList<String>();
-		if(queryStr.equals("*:*")){
+		if(queryStr==null||queryStr.isEmpty()||queryStr.equals("*:*")){
 			return fqList;
 		}
 		
@@ -893,7 +921,7 @@ public class WebServiceParams {
 				{
 					filterType=obj.getString("filter");
 				}
-				ArrayList<String> sublist=fqListHive(obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap);
+				ArrayList<String> sublist=fqListHive(part,obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap,colMap,tblname);
 				if(sublist.size()==1)
 				{
 					fqList.add(sublist.get(0));
@@ -941,7 +969,7 @@ public class WebServiceParams {
         				valueList = valueList.replaceAll("\'", "\\\'");
         			}
         			
-        			String fq=parseFqOperateHive(operate, key, valueList,shard,isPartionByPt,filetypeMap);
+        			String fq=parseFqOperateHive(part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,tblname);
         			if(fq!=null)
         			{
         				fqList.add(fq);

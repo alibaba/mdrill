@@ -20,5 +20,5 @@
 	String order = request.getParameter("order");
 	String leftjoin = request.getParameter("leftjoin");
 	
-	String resultstr=MdrillService.result(projectName, callback, startStr, rowsStr, queryStr, dist, fl, groupby, sort, order,leftjoin);
-%><%=resultstr%>
+	MdrillService.result(projectName, callback, startStr, rowsStr, queryStr, dist, fl, groupby, sort, order,leftjoin,out);
+%>

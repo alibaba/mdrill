@@ -170,7 +170,7 @@ public class MdrillMain {
 		if (args.length > 6) {
 			split = args[6];
 		}
-		String submatch = "*0*";
+		String submatch = "*";
 		if (args.length > 7) {
 			submatch = args[7];
 		}

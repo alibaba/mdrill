@@ -941,7 +941,11 @@ public final class SolrCore implements SolrInfoMBean {
 			RefCounted<SolrIndexSearcher> refCount;
 			while ((refCount = clearlist.poll()) != null) {
 				if (refCount.getRefcount() <= 0||nowtime-refCount.reftime>maxwaittime) {
+					try{
 					refCount.get().close();
+					}catch(Throwable e){
+						
+					}
 				} else {
 					refull.add(refCount);
 					log.info("ref clearpartion "+refCount.toDebugMsg());

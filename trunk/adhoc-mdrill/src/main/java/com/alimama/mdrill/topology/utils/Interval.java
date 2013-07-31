@@ -5,7 +5,7 @@ public class Interval {
 	    public synchronized boolean heartBeatInterval()
 	    {
 			long nowtime = System.currentTimeMillis();
-			if (nowtime - hbInterval < 1000l * 60) {
+			if (nowtime - hbInterval < 1000l * 360) {
 			    return false;
 			}
 			hbInterval=nowtime;

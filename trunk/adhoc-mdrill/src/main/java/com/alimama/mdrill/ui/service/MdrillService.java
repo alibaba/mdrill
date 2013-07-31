@@ -3,10 +3,14 @@ package com.alimama.mdrill.ui.service;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.servlet.jsp.JspWriter;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -52,22 +56,78 @@ public class MdrillService {
 				.append(order).append(",").append(leftjoin).append(",");
 		return debugBuffer.toString();
 	}
+	
+	public static class HeartBeat implements Runnable
+	{
+		public Object lock=new Object();
+		JspWriter out;
+		public HeartBeat(JspWriter out) {
+			super();
+			this.out = out;
+		}
+		AtomicBoolean isstop=new AtomicBoolean(false);
+		
+
+		public void setIsstop(boolean isstop) {
+				this.thrStop.set(isstop);
+		}
+		
+		AtomicBoolean thrStop=new AtomicBoolean(false);
+
+		public boolean isstop()
+		{
+			return thrStop.get();
+		}
+		
+
+		@Override
+		public void run() {
+			
+			while(true)
+			{
+					if(this.thrStop.get())
+					{
+						thrStop.set(true);
+						return ;
+					}
+					
+				try {
+					synchronized (this.lock) {
+						if(this.out!=null)
+						{
+							this.out.write(" ");
+							this.out.flush();
+						}
+					}
+				} catch (Throwable e) {
+				}
+				
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+				}
+			}
+			
+		}
+		
+	}
 
 
 
 	public static String result(String projectName, String callback,
 			String startStr, String rowsStr, String queryStr, String dist,
-			String fl, String groupby, String sort, String order,String leftjoin)
+			String fl, String groupby, String sort, String order,String leftjoin,JspWriter out)
 			throws Exception {
 		long t1=System.currentTimeMillis();
 		String logParams = logRequest(projectName, callback, startStr, rowsStr,
 				queryStr, dist, fl, groupby, sort, order,leftjoin);
 		LOG.info("higorequest:" + logParams);
 		TablePartion part = GetPartions.partion(projectName);
-
+		HeartBeat hb=new HeartBeat(out);
+		new Thread(hb).start();
 		try {
 			queryStr = WebServiceParams.query(queryStr);
-			queryStr = WebServiceParams.queryadHoc(queryStr,part.parttype);// adhocʱ������
+			queryStr = WebServiceParams.queryadHoc(queryStr,part.parttype);
 			
 			String logParams2 = logRequest(projectName, callback, startStr, rowsStr,
 					queryStr, dist, fl, groupby, sort, order,leftjoin);
@@ -105,9 +165,26 @@ public class MdrillService {
 					distStatFieldMap,joins);
 			long t2=System.currentTimeMillis();
 			LOG.info("timetaken:"+(t2-t1)+",logParams2:"+logParams2);
-			return rtn;
+			 hb.setIsstop(true);
+			    while(!hb.isstop())
+			    {
+			    	try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+					}
+			    }
+			    
+			    synchronized (hb.lock) {
+			    	if(out!=null)
+			    	{
+			    		out.write(rtn);
+			    	}
+				}
+			    
+			    return rtn;
 
 		} catch (RuntimeException e) {
+			
 			SolrInfoList infolist=GetShards.getSolrInfoList(part.name);
 	    	infolist.run();
 			long t2=System.currentTimeMillis();
@@ -122,6 +199,9 @@ public class MdrillService {
 			LOG.error(logParams, e);
 			throw e;
 		}
+		finally{
+			 hb.setIsstop(true);
+		}
 
 	}
 	
@@ -130,7 +210,7 @@ public class MdrillService {
 			String field, String startStr, String rowsStr, String queryStr)
 			throws Exception {
 		return result(projectName, callback, "0", "1000", queryStr, "", null,
-				field, null, null,null);
+				field, null, null,null,null);
 	}
 
 	private static Configuration getConf(Map stormconf) {
@@ -352,8 +432,8 @@ public class MdrillService {
 			return (double) s.hashCode();
 		}
 	}
-	public static String notice(String projectName, String callback,
-			String groupby) throws JSONException {
+	public static String notice(String projectName, String callback,String startStr,String rowsStr) throws JSONException {
+	
 		try {
 		    HashMap<String,Long> dayAmt = new HashMap<String, Long>();
 			SolrInfoList infolist=GetShards.getSolrInfoList(projectName);
@@ -409,6 +489,28 @@ public class MdrillService {
 					minValue = value;
 				}
 			}
+
+
+			JSONArray jsonArray=new JSONArray();
+
+			int total=0;
+			if(fcsize>0)
+			{
+				int start = WebServiceParams.parseStart(startStr);
+				int rows = WebServiceParams.parseRows(rowsStr);
+				SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
+				Date d1=fmt.parse(String.valueOf(maxValue));
+				Date d2=fmt.parse(String.valueOf(minValue));
+				
+				total = ((int) (d1.getTime() / 1000) - (int) (d2.getTime() / 1000)) / 3600 / 24+1;  
+				
+				for(int i=start;i<(start+rows)&&i<total;i++)
+				{
+					jsonArray.put(fmt.format(new Date(d2.getTime()+i*1000l*3600*24)));
+				}
+			}
+		
+			
 			JSONObject jsonObj = new JSONObject();
 			JSONObject jo = new JSONObject();
 			jo.put("min", minValue);
@@ -416,13 +518,36 @@ public class MdrillService {
 			jsonObj.put("data", jo);
 			jsonObj.put("code", "1");
 			jsonObj.put("message", "success");
-			jsonObj.put("total", fcsize);
+			jsonObj.put("fcsize", fcsize);
+			jsonObj.put("total", total);
+			jsonObj.put("list", jsonArray);
 			return callback + "(" + jsonObj.toString() + ")";
 		} catch (Exception e) {
 			throw new JSONException(e);
 		}
 
 	}
+	
+	
+	public static final int daysBetween(Date early, Date late) {
+	    
+        java.util.Calendar calst = java.util.Calendar.getInstance();  
+        java.util.Calendar caled = java.util.Calendar.getInstance();  
+        calst.setTime(early);  
+         caled.setTime(late);  
+         //设置时间为0时  
+         calst.set(java.util.Calendar.HOUR_OF_DAY, 0);  
+         calst.set(java.util.Calendar.MINUTE, 0);  
+         calst.set(java.util.Calendar.SECOND, 0);  
+         caled.set(java.util.Calendar.HOUR_OF_DAY, 0);  
+         caled.set(java.util.Calendar.MINUTE, 0);  
+         caled.set(java.util.Calendar.SECOND, 0);  
+        //得到两个日期相差的天数  
+         int days = ((int) (caled.getTime().getTime() / 1000) - (int) (calst  
+                .getTime().getTime() / 1000)) / 3600 / 24;  
+        
+        return days;  
+   }
 
 
 }

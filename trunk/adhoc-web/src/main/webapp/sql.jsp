@@ -40,9 +40,9 @@
 	String resultstr="";
 	if(strsql!=null&&strsql!=null)
 	{
-		resultstr=Sql.execute(strsql,connstr);
+		Sql.execute(strsql,connstr,out);
 		}
-%><%=resultstr%>
+%>
 </form>
 </body>
 </html>

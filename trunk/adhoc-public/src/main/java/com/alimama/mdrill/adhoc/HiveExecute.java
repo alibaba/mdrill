@@ -72,7 +72,7 @@ public class HiveExecute implements Runnable {
     public void init()
     {
     	String addjar="add jar "+findContainingJar(this.getClass())+";";
-    	String addudf="create temporary function inhdfs_udf as 'com.alipay.offline.InHdfs_udf'; create temporary function transhigo_udf as 'com.alipay.offline.TransHigo_udf'; ;";
+    	String addudf="create temporary function inhdfs_udf as 'com.alimama.mdrill.adhoc.InHdfs_udf'; create temporary function transhigo_udf as 'com.alimama.mdrill.adhoc.TransHigo_udf'; ;";
 
     	String executeHql = addjar+addudf+hql;
 		String[] execmd = { hiveBin, "-e", executeHql };

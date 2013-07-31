@@ -38,7 +38,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, LongWritable
     public void setup(Context context) throws IOException, InterruptedException {
 		super.setup(context);
 		String fieldStrs = context.getConfiguration().get("higo.index.fields");
-		split=context.getConfiguration().get("higo.column.split",split);
+		split=MakeIndex.parseSplit(context.getConfiguration().get("higo.column.split",split));
 		String custfields=context.getConfiguration().get("higo.column.custfields","");
 		usedthedate=context.getConfiguration().getBoolean("higo.column.userthedate", usedthedate);
 		this.thedate=null;

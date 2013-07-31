@@ -1,5 +1,6 @@
 package com.alimama.mdrill.ui;
 import org.mortbay.jetty.Server;  
+import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.webapp.WebAppContext;
 public class MdrillUi { 
@@ -23,6 +24,7 @@ public class MdrillUi {
 		org.mortbay.thread.concurrent.ThreadPool threads = new org.mortbay.thread.concurrent.ThreadPool();
 		threads.setCorePoolSize(512);
 		threads.setMaximumPoolSize(512);
+		
 		SelectChannelConnector conn = new SelectChannelConnector();
 		conn.setPort(port);
 		conn.setLowResourcesConnections(10240);

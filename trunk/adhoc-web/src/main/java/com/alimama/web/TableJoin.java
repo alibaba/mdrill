@@ -658,6 +658,7 @@ public class TableJoin {
 		HashMap<String,String> rtn=new HashMap<String,String>();
 		rtn.put("_exehql", sql);
 
+		boolean issetup=false;
 		while (res.next()) {
 			rtn.put("tableShowName", res.getString("tableShowName"));
 			rtn.put("txtStorePath", res.getString("txtStorePath"));
@@ -665,11 +666,16 @@ public class TableJoin {
 			rtn.put("splitString", res.getString("splitString"));
 			rtn.put("colsName", res.getString("colsName"));
 			rtn.put("status", res.getString("status"));
-			
+			rtn.put("splitString", res.getString("splitString"));
+			issetup=true;
 		    }
 		m_fpsql.close();
 		
 	
+		if(!issetup)
+		{
+			return null;
+		}
 		return rtn;
 	}
 	
@@ -723,7 +729,7 @@ public class TableJoin {
 			}
 			m_fps.setString(index++, colsName.toString());
 			m_fps.setString(index++, colsType.toString());
-			m_fps.setString(index++, splitString);
+			m_fps.setString(index++, MakeIndex.parseSplit(splitString));
 			m_fps.setString(index++, store+"/txt");
 			m_fps.setString(index++, store+"/index");
 			m_fps.setString(index++, "init");
@@ -765,4 +771,6 @@ public class TableJoin {
 		return jsonObj.toString();
 
 	}
+	
+	
 }

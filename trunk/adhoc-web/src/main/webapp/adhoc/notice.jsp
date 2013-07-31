@@ -11,6 +11,8 @@
 <%
 	String projectName = request.getParameter("project");
 	String callback = request.getParameter("callback");
-	String groupby = request.getParameter("groupby");
-	String resultstr=MdrillService.notice(projectName, callback, groupby);
+	String startstr = request.getParameter("start");
+		String rowsstr = request.getParameter("rows");
+
+	String resultstr=MdrillService.notice(projectName,callback, startstr, rowsstr);
 %><%=resultstr%>

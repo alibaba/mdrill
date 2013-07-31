@@ -55,7 +55,23 @@ public class MakeIndex {
 
 	}
 	
-	
+	public static String parseSplit(String str)
+	{
+		if(str.equals("\\001"))
+		{
+			return "\001";
+		}
+		if(str.equals("default"))
+		{
+			return "\001";
+		}
+		if(str.equals("tab"))
+		{
+			return "\t";
+		}
+		
+		return str;
+	}
 	
 	public static interface updateStatus{
 		public void update(int statge,Job job);
@@ -116,9 +132,14 @@ public class MakeIndex {
 
 		String fields = JobIndexPublic.readFieldsFromSchemaXml(solrHome+ "/solr/conf/schema.xml",fs,conf);
 		JobIndexPublic.setDistributecache(new Path(solrHome,"solr/conf"), fs,conf);
-		if(!split.isEmpty()&&!split.equals("default"))
+		if(!split.isEmpty()&&!split.equals("default")&&!split.equals("\001"))
 		{
 			conf.set("higo.column.split", split);
+		}
+		
+		if(split.equals("\t"))
+		{
+			conf.set("higo.column.split", "tab");
 		}
 		conf.set("higo.column.custfields", custFields);
 		conf.set("higo.input.base", inputBase);

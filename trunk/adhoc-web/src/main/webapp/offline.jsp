@@ -10,18 +10,21 @@
 	response.setHeader("Access-Control-Allow-Origin","http://localhost,http://adhoc.etao.com:9999");
 	String projectName = request.getParameter("project");
 	String callback = request.getParameter("callback");
-	String startStr = request.getParameter("start");
-	String rowsStr = request.getParameter("rows");
-	String queryStr = request.getParameter("q");
-	String dist = request.getParameter("dist");
+	String queryStr = request.getParameter("q");	
 	String fl = request.getParameter("fl");
 	String groupby = request.getParameter("groupby");
-	String sort = request.getParameter("sort");
-	String order = request.getParameter("order");
 	String mailto= request.getParameter("mailto");
 	String username= request.getParameter("username");
 	String jobname= request.getParameter("jobname");
 	String jobparam= request.getParameter("jobparam");
+	
+	
+	String leftjoin= request.getParameter("leftjoin");
+	String fq2= request.getParameter("fq2");
+	String limit2= request.getParameter("limit2");
+	String orderby2= request.getParameter("orderby2");
+	String desc2= request.getParameter("desc2");
+	
 
-	String resultstr=AdhocOfflineService.offline(projectName, callback, startStr, rowsStr, queryStr, dist, fl, groupby, sort, order,mailto,username,jobname,jobparam);
+	String resultstr=AdhocOfflineService.offline(projectName, callback, queryStr, fl, groupby,mailto,username,jobname,jobparam,leftjoin,fq2,limit2,orderby2,desc2);
 %><%=resultstr%>

@@ -4,7 +4,7 @@
 <%@ page import="java.util.*" %>
 <%@ page import="java.util.regex.*" %>
 <%@ page import="java.text.*" %>
-<%@ page import="com.alimama.web.*" %>
+<%@ page import="com.alimama.mdrill.ui.service.*" %>
 <html>
 <head>
     <title>tablelist</title>

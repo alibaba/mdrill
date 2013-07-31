@@ -213,6 +213,11 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		{
 			return false;
 		}
+		
+		if(this.isMergeServer)
+		{
+			return false;
+		}
 		boolean ischange = false;
 		HashMap<String, Vertify> hdfsVertify = IndexUtils.readVertifyList(fs,hdfsIndexpath);// partions
 		HashMap<String, Vertify> localVertify = IndexUtils.readVertifyList(lfs,	localIndexPath);// ./data
@@ -319,7 +324,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		Long timespan = 1000l * 60 * 30;
 		ShardsState stat = statcollect.getStat();
 		if (stat.equals(ShardsState.SERVICE)) {
-			timespan = 1000l * 60 * 15;
+			timespan = 1000l * 60 * 20;
 		}
 //		LOG.info("higolog isTimeout:" + this.tablename + ",timespan:"
 //				+ timespan);

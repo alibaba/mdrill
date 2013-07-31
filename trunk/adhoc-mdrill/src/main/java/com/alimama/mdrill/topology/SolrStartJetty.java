@@ -219,7 +219,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
         
     public Boolean isTimeout()
     {
-		return isInit.get()&&statcollect.isTimeout(1000l*60*15);
+		return isInit.get()&&statcollect.isTimeout(1000l*60*20);
     }
     
     private Interval hbInterval=new Interval();;
