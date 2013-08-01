@@ -3,14 +3,17 @@ package org.apache.solr.request.join;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.util.cache.Cache;
-import org.apache.lucene.util.cache.SimpleLRUCache;
+import org.apache.solr.request.uninverted.GrobalCache;
 import org.apache.solr.request.uninverted.NumberedTermEnum;
 import org.apache.solr.request.uninverted.TermIndex;
+import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeCache;
+import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeKey;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
@@ -19,9 +22,8 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import com.alimama.mdrill.buffer.LuceneUtils;
-import com.alimama.mdrill.utils.UniqConfig;
 
-public class HigoJoin {
+public class HigoJoin implements GrobalCache.ILruMemSizeCache{
 	private static Logger LOG = Logger.getLogger(HigoJoin.class);
 	private SolrIndexSearcher readerleft;
 	private SolrIndexSearcher readerright;
@@ -39,7 +41,7 @@ public class HigoJoin {
 	 public static HigoJoin getJoin(SolrIndexSearcher readerleft,
 				SolrIndexSearcher readerright, String fieldLeft, String fieldRigth) throws IOException {
 		
-			Cache<String,HigoJoin> cache = HigoJoin.fieldValueCache;
+			Cache<ILruMemSizeKey,ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
 			StringBuffer key=new StringBuffer();
 			key.append(readerleft.getPartionKey());
 			key.append("@");
@@ -53,20 +55,55 @@ public class HigoJoin {
 			key.append("@");
 			key.append(LuceneUtils.crcKey(readerright.getReader()));
 			String cachekey=key.toString();
-			HigoJoin uif = cache.get(cachekey);
+			HigoJoin uif = (HigoJoin) cache.get(cachekey);
 			if (uif == null) {
 				synchronized (cache) {
-					uif =  cache.get(cachekey);
+					uif =  (HigoJoin) cache.get(cachekey);
 					if (uif == null) {
 						uif = new HigoJoin(readerleft, readerright,fieldLeft,fieldRigth);
-						cache.put(cachekey, uif);
+						cache.put(new GrobalCache.StringKey(cachekey), uif);
 					}
 				}
 			}
 			return uif;
 		}
+	 
+	 private static int INT_SIZE=Integer.SIZE/8;
+	 long memsize=-1;
+	 @Override
+		public synchronized long memSize() {
+			if(memsize>=0)
+			{
+				return memsize;
+			}
+			
+			memsize=0;
+			for(Entry<Integer, ArrayList<JoinPair>> e:join.entrySet())
+			{
+				memsize+=INT_SIZE;
+				for(JoinPair p:e.getValue())
+				{
+					memsize+=p.memsize();
+
+				}
+			}
+			
+			for(Entry<JoinTermNum, ArrayList<Integer>> e:joinRevert.entrySet())
+			{
+				memsize+=e.getKey().memsize();
+				memsize+=e.getValue().size()*INT_SIZE;
+				
+			}
+			memsize+=(join.size()+joinRevert.size())*INT_SIZE;
+			
+			return memsize;
+		}
+
+		@Override
+		public void LRUclean() {
+			
+		}
 	  
-	 private static Cache<String,HigoJoin> fieldValueCache=Cache.synchronizedCache(new SimpleLRUCache<String, HigoJoin>(UniqConfig.getJoinSize()));
 
 	 //right,left
 	private HashMap<Integer,ArrayList<JoinPair>> join=new HashMap<Integer,ArrayList<JoinPair>>();
@@ -208,6 +245,12 @@ public class HigoJoin {
 
 	private static class JoinPair{
 		Integer termNum;
+		ArrayList<Integer> left=new ArrayList<Integer>();
+
+		public long memsize()
+		{
+			return (left.size()+1)*INT_SIZE;
+		}
 		@Override
 		public int hashCode() {
 			final int prime = 31;
@@ -238,7 +281,6 @@ public class HigoJoin {
 				return false;
 			return true;
 		}
-		ArrayList<Integer> left=new ArrayList<Integer>();
 	}
 	
 	private static class JoinTermNum{
@@ -248,6 +290,13 @@ public class HigoJoin {
 			this.termNum = termNum;
 		}
 		Integer leftId;
+		Integer termNum;
+
+		
+		public long memsize()
+		{
+			return INT_SIZE*2;
+		}
 		@Override
 		public int hashCode() {
 			final int prime = 31;
@@ -278,9 +327,10 @@ public class HigoJoin {
 				return false;
 			return true;
 		}
-		Integer termNum;
 		
 	}
+
+	
 
 	
 }

@@ -1,35 +1,33 @@
 package com.alimama.mdrill.buffer;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.util.cache.SimpleMapCache;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.request.uninverted.GrobalCache;
 
 
 public class BlockBufferMalloc {
-	public static class SimpleLRUCache extends SimpleMapCache<block, blockData> {
-		  private final static float LOADFACTOR = 0.75f;
-		  public SimpleLRUCache(final int cacheSize) {
-		    super(new LinkedHashMap<block, blockData>((int) Math.ceil(cacheSize / LOADFACTOR) + 1, LOADFACTOR, true) {
-		  	      @Override
-		  	      protected boolean removeEldestEntry(Map.Entry<block, blockData> eldest) {
-		  	    	  
-		  	        boolean isrtn= size() > cacheSize;
-		  	        if(isrtn)
-		  	        {
-		  	        	blockData freed=eldest.getValue();
-		  		    	BlockBufferMalloc.freeData( freed);
-		  	        }
-		  	        return isrtn;
-		  	      }
-		  	    });
-		  }
-
-		}
+//	public static class SimpleLRUCache extends SimpleMapCache<block, blockData> {
+//		  private final static float LOADFACTOR = 0.75f;
+//		  public SimpleLRUCache(final int cacheSize) {
+//		    super(new LinkedHashMap<block, blockData>((int) Math.ceil(cacheSize / LOADFACTOR) + 1, LOADFACTOR, true) {
+//		  	      @Override
+//		  	      protected boolean removeEldestEntry(Map.Entry<block, blockData> eldest) {
+//		  	    	  
+//		  	        boolean isrtn= size() > cacheSize;
+//		  	        if(isrtn)
+//		  	        {
+//		  	        	blockData freed=eldest.getValue();
+//		  		    	BlockBufferMalloc.freeData( freed);
+//		  	        }
+//		  	        return isrtn;
+//		  	      }
+//		  	    });
+//		  }
+//
+//		}
 	
 	public static LinkedBlockingQueue<blockData> free = new LinkedBlockingQueue<blockData>();
 	public static AtomicLong mallocTimes = new AtomicLong(0l);
@@ -59,7 +57,7 @@ public class BlockBufferMalloc {
 					}
 				}
 	}
-	public static class block{
+	public static class block implements GrobalCache.ILruMemSizeKey{
 		private String key;
 		private long index;
 		private long flushkey=0;
@@ -110,9 +108,17 @@ public class BlockBufferMalloc {
 	}
 	
 
-	public static class blockData{
+	public static class blockData implements GrobalCache.ILruMemSizeCache{
 		byte[] buff;
+		
 		int size;
+		
+		@Override
+		public String toString() {
+			return "blockData [buff=" + buff.length+ ", size="
+					+ size + ", allowFree=" + allowFree + ", lasttime="
+					+ lasttime + "]";
+		}
 
 		public void setSize(int size) {
 			this.size = size;
@@ -132,6 +138,21 @@ public class BlockBufferMalloc {
 
 		public void updateLasttime() {
 			this.lasttime = System.currentTimeMillis();
+		}
+
+		@Override
+		public long memSize() {
+			if(buff==null)
+			{
+				return Integer.SIZE/8;
+			}
+			return buff.length+Integer.SIZE/8;
+		}
+
+		@Override
+		public void LRUclean() {
+
+			BlockBufferMalloc.freeData( this); 
 		}
 		
 	}

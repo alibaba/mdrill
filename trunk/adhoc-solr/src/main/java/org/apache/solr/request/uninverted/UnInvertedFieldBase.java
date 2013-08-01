@@ -326,8 +326,14 @@ public class UnInvertedFieldBase {
 			}
 		}
 		
-		  public long memSize() {
-			    long sz = 8*8 + 32; // local fields
+		
+		long sz=-1;
+		  public synchronized long memSize() {
+			  if(sz>=0)
+			  {
+				  return sz;
+			  }
+			    sz = 8*8 + 32; // local fields
 			    if (index != null) sz += index.getMemSize() * 4;
 			    if (indexshort != null) sz += indexshort.getMemSize() * 2;
 			    if (indexbyte != null) sz += indexbyte.getMemSize() * 1;

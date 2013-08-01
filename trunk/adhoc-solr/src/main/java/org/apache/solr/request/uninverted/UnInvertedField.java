@@ -32,10 +32,11 @@ import org.apache.solr.handler.component.StatsValues;
 import org.apache.lucene.store.LinkFSDirectory;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.SimpleLRUCache;
-import org.apache.lucene.util.cache.SimpleMapCache;
 import org.apache.solr.request.BigReUsedBuffer;
 import org.apache.solr.request.BigReUsedBuffer.BlockArray;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils;
+import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeCache;
+import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeKey;
 import org.apache.solr.request.uninverted.UnInvertedFieldTermNumRead.*;
 import org.apache.solr.request.uninverted.UnInvertedFieldUtils.*;
 import org.slf4j.Logger;
@@ -46,13 +47,10 @@ import com.alimama.mdrill.buffer.LuceneUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
-import java.util.Map.Entry;
 import java.util.zip.CRC32;
 
-public class UnInvertedField extends UnInvertedFieldBase{
+public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.ILruMemSizeCache{
 	  public static Logger log = LoggerFactory.getLogger(UnInvertedField.class);
 
 	public static double MINVALUE_FILL=Math.min(Long.MIN_VALUE,Double.MIN_VALUE);
@@ -489,55 +487,14 @@ public class UnInvertedField extends UnInvertedFieldBase{
     
   }
   
-  private static long maxRamCachesize = UniqConfig.getFieldValueMemSize();
-
-  private static Cache<String,UnInvertedField> fieldValueCache=Cache.synchronizedCache((new SimpleMapCache<String, UnInvertedField>(new LinkedHashMap<String, UnInvertedField>(1000,0.75f,true) {
-		private static final long serialVersionUID = 1L;
-		private long totalUsedMemsize=0l;
-		public UnInvertedField put(String key, UnInvertedField value){
-			UnInvertedField old=this.remove(key);
-			if(old!=null)
-			{
-				this.totalUsedMemsize-=old.memSize();
-				if (old.refCnt.get() == 0) {
-					old.free();
-				}
-			}
-			
-			long newmemsize = value.memSize();
-
-			if ((newmemsize + this.totalUsedMemsize) >= maxRamCachesize) {
-				long removesize = 0l;
-				ArrayList<String> toremove = new ArrayList<String>();
-				for (Entry<String, UnInvertedField> e : this.entrySet()) {
-					removesize += e.getValue().memSize();
-					toremove.add(e.getKey());
-					if (removesize >= newmemsize) {
-						break;
-					}
-				}
-				this.totalUsedMemsize -= removesize;
-				
-				for (String rm : toremove) {
-					UnInvertedField urm = this.remove(rm);
-					if (urm!=null&&urm.refCnt.get() == 0) {
-						SolrCore.log.info("field value cache lru removed key "+rm);
-						urm.free();
-					}
-				}
-				
-				if(this.size()==0)
-				{
-					this.totalUsedMemsize=0l;
-				}
-			}
-				
-			SolrCore.log.info("####fieldvaluecache#### lru memsize="+(this.totalUsedMemsize/1024/1024)+"@"+(maxRamCachesize/1024/1024)+"mb,size="+this.size()+",add key "+key+"");
-			this.totalUsedMemsize+=newmemsize;
-			return super.put(key, value);
-		}
-	})));
   
+  
+  public void LRUclean()
+  {
+	  if (this.refCnt.get() == 0) {
+			this.free();
+		}
+  }
 
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
 	  return getUnInvertedField(field, searcher.getReader());
@@ -545,13 +502,13 @@ public class UnInvertedField extends UnInvertedFieldBase{
 
 	public static UnInvertedField getUnInvertedField(String field,
 			SolrIndexReader reader) throws IOException {
-		Cache<String, UnInvertedField> cache = UnInvertedField.fieldValueCache;
+		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
 		SolrIndexSearcher searcher = reader.getSearcher();
-		String key = searcher.getPartionKey() + "@@" + field + "@@"	+ LuceneUtils.crcKey(reader);
-		UnInvertedField uif = cache.get(key);
+		ILruMemSizeKey key = new GrobalCache.StringKey(searcher.getPartionKey() + "@@" + field + "@@"	+ LuceneUtils.crcKey(reader));
+		UnInvertedField uif = (UnInvertedField)cache.get(key);
 		if (uif == null) {
 			synchronized (cache) {
-				uif =  cache.get(key);
+				uif =  (UnInvertedField)cache.get(key);
 				if (uif == null) {
 					uif = new UnInvertedField(field, searcher,searcher.getReader());
 					cache.put(key, uif);

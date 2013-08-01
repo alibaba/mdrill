@@ -533,6 +533,12 @@ public class WebServiceParams {
 	
 	private static String parseFqOperate(int operate,String key,String value2,GetPartions.Shards shard,HashMap<String, String> fieldColumntypeMap)
 	{
+		if(key.equals("thedate"))
+		{
+			//--尼玛啊，又要兼容--
+			value2=value2.replaceAll("-", "");
+		}
+		
 		String ft="string";
 		if(fieldColumntypeMap!=null&&fieldColumntypeMap.containsKey(key))
 		{

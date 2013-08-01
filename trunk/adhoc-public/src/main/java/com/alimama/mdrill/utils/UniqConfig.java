@@ -8,19 +8,7 @@ public class UniqConfig {
 	{
 		return maxfieldvaluemem;
 	}
-	
-	static long memsize=(long) ((Math.max(myRun.maxMemory(), myRun.totalMemory()))*0.05);
-	public static long getBlockBufferMemsize()
-	{
-		return memsize;
-	}
-	
-	public static int getJoinSize()
-	{
-		return 10;
-	}
-	
-	
+		
 	public static int getMergerRequestThreads()
 	{
 		return 15;

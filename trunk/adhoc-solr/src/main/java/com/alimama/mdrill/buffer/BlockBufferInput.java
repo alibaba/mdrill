@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.cache.Cache;
+import org.apache.solr.request.uninverted.GrobalCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +32,8 @@ public class BlockBufferInput extends BufferedIndexInput {
 	public static Logger log = LoggerFactory.getLogger(BlockBufferInput.class);
 	public static int BLOCK_SIZE_OFFSET=16;//1024*64
 	public static int BLOCK_SIZE = 1<<BLOCK_SIZE_OFFSET;
-	private static int CACHE_SIZE=(int)(UniqConfig.getBlockBufferMemsize()/BLOCK_SIZE);
-	private static Cache<block, blockData> fieldValueCache = Cache.synchronizedCache(new BlockBufferMalloc.SimpleLRUCache(CACHE_SIZE));;
+//	private static int CACHE_SIZE=(int)(UniqConfig.getBlockBufferMemsize()/BLOCK_SIZE);
+//	private static Cache<block, blockData> fieldValueCache = Cache.synchronizedCache(new BlockBufferMalloc.SimpleLRUCache(CACHE_SIZE));;
 	private Descriptor descriptor;
 	private boolean isOpen;
 	private boolean isClone;
@@ -76,7 +77,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 		
 		if(blockdata==null){
 			block blk=new block(this.key, blockIndex);
-			blockdata=fieldValueCache.get(blk);
+			blockdata=(blockData) GrobalCache.fieldValueCache.get(blk);
 			if(blockdata==null)
 			{
 				long end=this.length();
@@ -91,7 +92,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 					this.descriptor.in.readBytes(blockdata.buff, 0, size);
 				}
 				blockdata.allowFree.incrementAndGet();
-				fieldValueCache.put(blk, blockdata);
+				GrobalCache.fieldValueCache.put(blk, blockdata);
 				createcount++;
 			}else{
 				blockdata.allowFree.incrementAndGet();
@@ -168,7 +169,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 		this.freeBlock();
 	    if (!isClone) {
 		if (isOpen) {
-			log.info("##buffer_close##"+"#lru:"+fieldValueCache.size()+"#"+CACHE_SIZE+"@free:"+BlockBufferMalloc.free.size()+"#malloc:"+BlockBufferMalloc.mallocTimes.get()+":"+BlockBufferMalloc.reusedTimes.get()+"@create:"+this.createcount);
+			log.info("##buffer_close##"+"@free:"+BlockBufferMalloc.free.size()+"#malloc:"+BlockBufferMalloc.mallocTimes.get()+":"+BlockBufferMalloc.reusedTimes.get()+"@create:"+this.createcount);
 		    descriptor.in.close();
 		    isOpen = false;
 		} else {

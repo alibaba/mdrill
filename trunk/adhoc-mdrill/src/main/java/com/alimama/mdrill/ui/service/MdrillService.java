@@ -515,12 +515,12 @@ public class MdrillService {
 			JSONObject jo = new JSONObject();
 			jo.put("min", minValue);
 			jo.put("max", maxValue);
+			jo.put("total", total);
+			jo.put("list", jsonArray);
 			jsonObj.put("data", jo);
 			jsonObj.put("code", "1");
 			jsonObj.put("message", "success");
 			jsonObj.put("fcsize", fcsize);
-			jsonObj.put("total", total);
-			jsonObj.put("list", jsonArray);
 			return callback + "(" + jsonObj.toString() + ")";
 		} catch (Exception e) {
 			throw new JSONException(e);
