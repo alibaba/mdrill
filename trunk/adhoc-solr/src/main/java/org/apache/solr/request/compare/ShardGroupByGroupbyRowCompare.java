@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Comparator;
 
 import org.apache.log4j.Logger;
-import org.apache.solr.request.join.HigoJoinInvert;
 import org.apache.solr.request.join.HigoJoinSort;
 
 import com.alimama.mdrill.distinct.DistinctCount;
@@ -20,7 +19,7 @@ public class ShardGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Ser
 	private Integer fl_num=0;
 	private compareInterface cmpobj=null;
 	
-	public ShardGroupByGroupbyRowCompare(String[] groupby,String[] crossFs, String[] distFS,HigoJoinSort[] joinSort,String fl,String type,boolean _isdesc) {
+	public ShardGroupByGroupbyRowCompare(String columntype,String[] groupby,String[] crossFs, String[] distFS,HigoJoinSort[] joinSort,String fl,String type,boolean _isdesc) {
 		this.isdesc=_isdesc;
 		this.typenum=UniqTypeNum.parseType(type,fl,groupby,joinSort) ;
 		this.cmpobj=new CompareIndex();
@@ -92,7 +91,12 @@ public class ShardGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Ser
 		if(this.typenum.typeEnum.equals(UniqTypeNum.SortTypeEnum.column))
 		{
 			this.fl_num=UniqTypeNum.foundIndex(groupby, fl);
-			this.cmpobj=new CompareColumn();
+			if(columntype.equals("string"))
+			{
+				this.cmpobj=new CompareColumn();
+			}else{
+				this.cmpobj=new CompareColumnNum();
+			}
 			return ;
 		}
 		
@@ -278,6 +282,25 @@ public class ShardGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Ser
 			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
 
 			int cmp= UniqTypeNum.compareDecode(values1[fl_num],values2[fl_num]);
+			if(cmp==0)
+			{
+				cmp=index.compare(o1, o2);
+			}
+			return cmp;
+		}
+	}
+	
+	
+	public class CompareColumnNum implements compareInterface
+	{
+		CompareIndex index=new CompareIndex();
+		@Override
+		public int compare(GroupbyRow o1, GroupbyRow o2) {
+			
+			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
+			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
+
+			int cmp= UniqTypeNum.compareDecodeNum(values1[fl_num],values2[fl_num]);
 			if(cmp==0)
 			{
 				cmp=index.compare(o1, o2);

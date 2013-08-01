@@ -12,7 +12,7 @@ public class HigoJoinSort {
 	public HigoJoinSort(String tableName,SolrQueryRequest req) {
 		this.tableName = tableName;
 		this.fields=req.getParams().getParams(HigoJoinUtils.getFields(this.tableName));
-		String sort=req.getParams().get(HigoJoinUtils.getsortField(this.tableName));
+		this.sort=req.getParams().get(HigoJoinUtils.getsortField(this.tableName));
 		this.index=UniqTypeNum.foundIndex(this.fields, sort, -1);
 	}
 	

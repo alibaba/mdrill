@@ -141,7 +141,7 @@ public class AdhocOfflineService {
 		
 		HashMap<String, String> filetypeMap = MdrillService.readFieldsFromSchemaXml(part.name);
 		ArrayList<String> fqList = WebServiceParams.fqListHive(hpart,queryStr, shard,
-				isPartionByPt, filetypeMap,null,null);
+				isPartionByPt, filetypeMap,null,null,null);
 		StringBuffer sqlWhere = new StringBuffer();
 		String join = " where ";
 		for (String fq : fqList) {
@@ -273,14 +273,14 @@ public class AdhocOfflineService {
 //		String fq2,int limit
 		
 		 ArrayList<String> fq2list=WebServiceParams.fqListHive(hpart,fq2, shard,
-					isPartionByPt, filetypeMap,colMap2,"fq2");
+					isPartionByPt, filetypeMap,colMap,colMap2,"fq2");
 		 if(fq2list.size()>0)
 		 {
 				StringBuffer buffer=new StringBuffer();
 				buffer.append("select * from ");
 				buffer.append("("+hql+") fq2");
 				String join2 = " where ";
-				for (String fq : fqList) {
+				for (String fq : fq2list) {
 					buffer.append(join2);
 					buffer.append(fq);
 					join2 = " and ";
@@ -290,7 +290,7 @@ public class AdhocOfflineService {
 		 
 		 if(orderby2!=null)
 		 {
-			 hql=hql+" order by "+colMap.get(orderby2)+" "+desc2;
+			 hql=hql+" order by fq2."+colMap2.get(orderby2)+" "+desc2;
 		 }
 		 
 		 if(limit >1000000)

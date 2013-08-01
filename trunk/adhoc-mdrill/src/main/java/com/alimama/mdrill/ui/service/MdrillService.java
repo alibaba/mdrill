@@ -136,7 +136,6 @@ public class MdrillService {
 			int start = WebServiceParams.parseStart(startStr);
 			int rows = WebServiceParams.parseRows(rowsStr);
 			
-			SortParam sortType = WebServiceParams.sort(sort, order);
 
 			ArrayList<String> groupbyFields = WebServiceParams.groupFields(groupby);
 			ArrayList<String> showFields = WebServiceParams.showFields(fl);
@@ -146,7 +145,8 @@ public class MdrillService {
 	
 			HashMap<String, String> fieldColumntypeMap = readFieldsFromSchemaXml(part.name);
 
-	 
+			SortParam sortType = WebServiceParams.sort(sort, order,fieldColumntypeMap);
+
 			String[] cores = GetShards.get(part.name, false, 10000);
 			String[] ms = GetShards.get(part.name, true, 10000);
 
@@ -308,7 +308,7 @@ public class MdrillService {
 			if (groupbyFields.size() > 0) {
 				int minstart = start;
 				int maxEend = rows;
-				if (sortType.isnum) {
+				if (sortType.isStatNum) {
 					minstart = start - 100;
 					if (minstart < 0) {
 						minstart = 0;
@@ -338,7 +338,7 @@ public class MdrillService {
 				}
 				
 				
-				if(jsonObj.getString("code").equals("1")&&sortType.isnum)
+				if(jsonObj.getString("code").equals("1")&&sortType.isStatNum)
 				{
 					JSONArray jsonArray=jsonObj.getJSONObject("data").getJSONArray("docs");
 					ArrayList<JSONObject> results=new ArrayList<JSONObject>();
@@ -353,7 +353,7 @@ public class MdrillService {
 						results.add(obj);
 					}
 					final boolean isdesc=sortType.order.toLowerCase().equals("true");
-					if(sortType.isnum&&iscontains&&jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10))
+					if(sortType.isStatNum&&iscontains&&jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10))
 					{
 						Collections.sort(results, new Comparator<JSONObject>() {
 							@Override

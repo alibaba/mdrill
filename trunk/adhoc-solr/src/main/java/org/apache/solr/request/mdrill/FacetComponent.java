@@ -214,7 +214,7 @@ public class  FacetComponent extends SearchComponent
       facet_fields.add(dff.getKey(), fieldCounts);
 
       int saverecords=dff.offset + dff.limit;
-      GroupbyItem[] counts = dff.getPairSorted(dff.joinSort,dff.facetFs,dff.crossFs,dff.distFS,dff.sort_fl, dff.sort_type, dff.isdesc,saverecords);
+      GroupbyItem[] counts = dff.getPairSorted(dff.sort_column_type,dff.joinSort,dff.facetFs,dff.crossFs,dff.distFS,dff.sort_fl, dff.sort_type, dff.isdesc,saverecords);
       if(dff.recordcount!=null)
       {
     	  GroupbyItem recordcount=dff.recordcount;
@@ -353,6 +353,8 @@ public class  FacetComponent extends SearchComponent
 		public String[] crossFs ;
 		public String[] distFS ;
 		public boolean isdetail;
+		
+		public String sort_column_type;
 
 		public FieldFacet(ResponseBuilder rb, String facetStr) {
 			super(rb, FacetParams.FACET_FIELD, facetStr);
@@ -393,6 +395,7 @@ public class  FacetComponent extends SearchComponent
 			{
 				this.joinSort[i]=new HigoJoinSort(joinList[i],params);
 			}
+			this.sort_column_type=params.get("facet.cross.sort.cp");
 
 
 		}
@@ -447,10 +450,10 @@ public class  FacetComponent extends SearchComponent
       return t2-t1;
     }
 
-    public GroupbyItem[] getPairSortedDetail(String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
+    public GroupbyItem[] getPairSortedDetail(String sort_column_type,String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
     	long t1=System.currentTimeMillis();
     	int sz=countsDetail.size();
-        final MergerDetailSelectDetailRowCompare cmp=new MergerDetailSelectDetailRowCompare(isdesc);
+        final MergerDetailSelectDetailRowCompare cmp=new MergerDetailSelectDetailRowCompare(sort_column_type,isdesc);
     	 if(sz<=(saverecords*2))
          {
     		 SelectDetailRow[] arr = new SelectDetailRow[sz];
@@ -492,14 +495,14 @@ public class  FacetComponent extends SearchComponent
     }
     
     
-    public GroupbyItem[] getPairSortedGroup(HigoJoinSort[] joinSort,String[] facetFs,String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
+    public GroupbyItem[] getPairSortedGroup(String sort_column_type,HigoJoinSort[] joinSort,String[] facetFs,String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
     	
     	
     	long t1=System.currentTimeMillis();
         Collection<GroupbyRow> collections=counts.values();
 
     	int sz=counts.size();
-        final MergerGroupByGroupbyRowCompare cmp=new MergerGroupByGroupbyRowCompare(facetFs, crossFs, distFS, joinSort, fl, type, isdesc);
+        final MergerGroupByGroupbyRowCompare cmp=new MergerGroupByGroupbyRowCompare(sort_column_type,facetFs, crossFs, distFS, joinSort, fl, type, isdesc);
     	 if(sz<=(saverecords*2))
          {
     		 GroupbyRow[] arr = new GroupbyRow[sz];
@@ -541,12 +544,12 @@ public class  FacetComponent extends SearchComponent
     }
 
 
-    public GroupbyItem[] getPairSorted(HigoJoinSort[] joinSort,String[] facetFs,String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
+    public GroupbyItem[] getPairSorted(String sort_column_type,HigoJoinSort[] joinSort,String[] facetFs,String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
         if(this.isdetail)
     	{
-        	return getPairSortedDetail(crossFs, distFS, fl, type, isdesc, saverecords);
+        	return getPairSortedDetail(sort_column_type,crossFs, distFS, fl, type, isdesc, saverecords);
     	}else{
-    		return getPairSortedGroup(joinSort,facetFs,crossFs, distFS, fl, type, isdesc, saverecords);
+    		return getPairSortedGroup(sort_column_type,joinSort,facetFs,crossFs, distFS, fl, type, isdesc, saverecords);
     	}
         
         

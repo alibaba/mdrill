@@ -20,6 +20,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -43,6 +44,8 @@ import com.alimama.mdrill.utils.IndexUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
 public class WebServiceParams {
+	private static Logger LOG = Logger.getLogger(WebServiceParams.class);
+
 	public static int parseStart(String startStr)
 	{
 		int start=0;
@@ -186,20 +189,22 @@ public class WebServiceParams {
 	}
 	
 	public static class SortParam{
-		public SortParam(String realSort, String realSortPt, String order,String sortRow,boolean isnum) {
+		public SortParam(String realSort, String realSortPt, String order,String sortRow,boolean isnum,String cmptype) {
 			super();
 			this.sortField = realSort;
 			this.sortType = realSortPt;
 			this.order = order;
 			this.sortRow=sortRow;
-			this.isnum=isnum;
+			this.isStatNum=isnum;
+			this.cmptype=cmptype;
 		}
+		public String cmptype="string";
 		public String sortField = null;
 		public String sortType = null;
 		public String order=null;
 		
 		public String sortRow=null;
-		public boolean isnum=true;
+		public boolean isStatNum=true;
 	}
 	
 	public static String sortHive(String sort,String order)
@@ -246,46 +251,59 @@ public class WebServiceParams {
 		return "";
 	}
 	
-	public static SortParam sort(String sort,String order)
+	public static SortParam sort(String sort,String order,HashMap<String, String> fieldColumntypeMap)
 	{
 		String sortField = null;
 		String sortType = null;
-		boolean isnum=false;
+		String cmptype="string";
+		boolean isStat=false;
 		if(sort!=null && !sort.equals("")){
 			if(sort.startsWith("count(")){
 				sortField = sort.substring(6,sort.length()-1);
 				sortType = "count";
-				isnum=true;
+				cmptype="tdouble";
+				isStat=true;
 			}else if(sort.startsWith("sum(")){
 				sortField = sort.substring(4,sort.length()-1);
 				sortType = "sum";
-				isnum=true;
+				cmptype="tdouble";
+				isStat=true;
 			}else if(sort.startsWith("index(")){
 				sortField = sort.substring(6,sort.length()-1);
 				sortType = "index";
-				isnum=false;
+				cmptype="tdouble";
+				isStat=false;
 			}
 			else if(sort.startsWith("average(")){
 				sortField = sort.substring(8,sort.length()-1);
 				sortType = "avg";
-				isnum=true;
+				cmptype="tdouble";
+				isStat=true;
 			}
 			else if(sort.startsWith("max(")){
 				sortField = sort.substring(4,sort.length()-1);
 				sortType = "max";
-				isnum=true;
+				cmptype="tdouble";
+				isStat=true;
 			}else if(sort.startsWith("min(")){
 				sortField = sort.substring(4,sort.length()-1);
 				sortType = "min";
-				isnum=true;
+				cmptype="tdouble";
+				isStat=true;
 			}else if(sort.startsWith("dist(")){
 				sortField = sort.substring(5,sort.length()-1);
 				sortType = "dist";
-				isnum=true;
+				cmptype="tdouble";
+				isStat=true;
 			}else{
 			    sortField=sort;
 			    sortType="column";
-			    isnum=false;
+			    cmptype="string";
+			    if(fieldColumntypeMap.containsKey(sortField))
+			    {
+			    	cmptype=fieldColumntypeMap.get(sortField);
+			    }
+			    isStat=false;
 			}
 		}
 		
@@ -304,10 +322,10 @@ public class WebServiceParams {
 		}
 		if(sortField==null)
 		{
-			return new SortParam(null, sortType, order,sort,false);
+			return new SortParam(null, sortType, order,sort,false,cmptype);
 
 		}
-		return new SortParam(sortField.equals("*")?"higoempty_count_l":sortField, sortType, order,sort,isnum);
+		return new SortParam(sortField.equals("*")?"higoempty_count_l":sortField, sortType, order,sort,isStat,cmptype);
 	}
 	
 	
@@ -628,7 +646,7 @@ public class WebServiceParams {
 	}
 	
 	
-	private static String parseFqOperateHive(String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,String tblname)
+	private static String parseFqOperateHive(String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
 	{
 		
 		
@@ -638,10 +656,16 @@ public class WebServiceParams {
 			ft=filetypeMap.get(key);
 		}
 		
-		if(tblname!=null&&colMap!=null)
+		
+		if(tblname!=null&&colMap2!=null&&colMap2.containsKey(key))
+		{
+			key=tblname+"."+colMap2.get(key);
+		}else if(tblname!=null&&colMap!=null&&colMap.containsKey(key))
 		{
 			key=tblname+"."+colMap.get(key);
 		}
+		
+		
 		
 		boolean isdate=false;
 		if(ft.equals("tdate")||ft.equals("date"))
@@ -903,7 +927,7 @@ public class WebServiceParams {
 	}
 	
 	
-	public static ArrayList<String> fqListHive(String part,String queryStr,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,String tblname) throws JSONException
+	public static ArrayList<String> fqListHive(String part,String queryStr,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname) throws JSONException
 	{
 		ArrayList<String> fqList = new ArrayList<String>();
 		if(queryStr==null||queryStr.isEmpty()||queryStr.equals("*:*")){
@@ -921,7 +945,7 @@ public class WebServiceParams {
 				{
 					filterType=obj.getString("filter");
 				}
-				ArrayList<String> sublist=fqListHive(part,obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap,colMap,tblname);
+				ArrayList<String> sublist=fqListHive(part,obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap,colMap,colMap2,tblname);
 				if(sublist.size()==1)
 				{
 					fqList.add(sublist.get(0));
@@ -969,7 +993,7 @@ public class WebServiceParams {
         				valueList = valueList.replaceAll("\'", "\\\'");
         			}
         			
-        			String fq=parseFqOperateHive(part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,tblname);
+        			String fq=parseFqOperateHive(part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,colMap2,tblname);
         			if(fq!=null)
         			{
         				fqList.add(fq);
@@ -1358,11 +1382,14 @@ public class WebServiceParams {
 			query.setParam("facet.cross.sort.desc", sortType.order);
 			query.setParam("facet.cross.sort.fl", sortType.sortField);
 			query.setParam("facet.cross.sort.tp", sortType.sortType);
+			query.setParam("facet.cross.sort.cp", sortType.cmptype);
 		}else
 		{
 			query.setParam("facet.cross.sort.desc", "true");
 			query.setParam("facet.cross.sort.fl", "higoempty_count_l");
 			query.setParam("facet.cross.sort.tp", "index");
+			query.setParam("facet.cross.sort.cp", "tdouble");
+
 		}
 	}
 	
@@ -1412,10 +1439,14 @@ public class WebServiceParams {
 		if(sortType.sortField!=null && !sortType.sortField.equals("")){
 			query.setParam("facet.cross.sort.desc", sortType.order);
 			query.setParam("facet.cross.sort.fl", sortType.sortField);
+			query.setParam("facet.cross.sort.cp", sortType.cmptype);
+
 //			query.setParam("facet.cross.sort.tp", sortType.);
 		}else{
 			query.setParam("facet.cross.sort.desc", "true");
 			query.setParam("facet.cross.sort.fl", "higoempty_count_l");
+			query.setParam("facet.cross.sort.cp", "tdouble");
+
 //			query.setParam("facet.cross.sort.tp", "index");
 		}
 	}

@@ -44,6 +44,7 @@ public class MdrillRequest {
 //			}
 		} else {
 			HttpClient httpclient = new DefaultHttpClient();
+			httpclient.getParams().setParameter(HttpMethodParams.SO_TIMEOUT, 60000*30);
 			 httpclient.getParams().setParameter(HttpMethodParams.HTTP_CONTENT_CHARSET, "UTF8");
 			HttpPost httppost = new HttpPost("http://" + this.strurl
 					+ "/higo/result.jsp");

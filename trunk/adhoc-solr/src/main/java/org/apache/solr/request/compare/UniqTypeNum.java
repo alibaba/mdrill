@@ -2,6 +2,8 @@ package org.apache.solr.request.compare;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 import org.apache.solr.request.join.HigoJoinSort;
@@ -98,6 +100,10 @@ public class UniqTypeNum {
 	
 	public static Integer foundIndex(String[] list,String fl,int def)
 	{
+		if(fl==null)
+		{
+			return def;
+		}
 		if(list!=null)
 		{
 			for(int i=0;i<list.length;i++)
@@ -154,12 +160,32 @@ public class UniqTypeNum {
 	 public static int compare(String value1, String value2) {
 		 return value2.compareTo(value1);
 	 }
+	 
+	 public static int compareStrNum(String value1, String value2) {
+		 return compare(Double.parseDouble(filterUnNumber(value1)), Double.parseDouble(filterUnNumber(value2)));
+	 }
+	    public static String filterUnNumber(String str) {
+	        String regEx = "[^0-9]";
+	        Pattern p = Pattern.compile(regEx);
+	        Matcher m = p.matcher(str);
+	        String rtn= m.replaceAll("").trim();
+	        if(rtn.isEmpty())
+	        {
+	        	return "0";
+	        }
+	        return rtn;
+
+	    }
 public static void main(String[] args) {
 
 }
 	
 	 public static int compareDecode(String value1, String value2) {
 			return compare(EncodeUtils.decode(value1),EncodeUtils.decode(value2));
+	    }
+	 
+	 public static int compareDecodeNum(String value1, String value2) {
+			return compareStrNum(EncodeUtils.decode(value1),EncodeUtils.decode(value2));
 	    }
 	
 	public static int compareDecode(String[] a, String[] a2) {

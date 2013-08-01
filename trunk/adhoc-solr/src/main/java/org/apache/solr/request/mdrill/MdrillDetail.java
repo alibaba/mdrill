@@ -48,6 +48,7 @@ public class MdrillDetail {
 	private String[] joinList ;
 	private SolrQueryRequest req;
 	boolean isdesc;
+	private String sort_column_type;
 	public MdrillDetail(SolrIndexSearcher _searcher,SolrParams _params,SolrQueryRequest req)
 	{
 		this.req=req;
@@ -73,10 +74,10 @@ public class MdrillDetail {
 			this.sort_fl="higoempty_sort_s";
 			this.isNeedSort=false;
 		}
-		
+		this.sort_column_type=params.get("facet.cross.sort.cp");
 		this.isdesc=params.getBool(FacetParams.FACET_CROSS_SORT_ISDESC, true);
 		this.cmpTermNum=new ShardDetailSelectDetailRowCompare(isdesc);
-		this.cmpresult=new ShardDetailSelectDetailRowStringCompare(isdesc);
+		this.cmpresult=new ShardDetailSelectDetailRowStringCompare(this.sort_column_type,isdesc);
 		this.recordCount = new RecordCountDetail();
 		this.recordCount.setFinalResult(false);
 	}
@@ -294,7 +295,7 @@ public class MdrillDetail {
 						tmpb.groupbuff.append(EncodeUtils.encode(inv.getTermNumValue(group.list[i], i)));
 						if(this.SelectDetailSort!=null&&(offset+i)==this.SelectDetailSort.offset)
 						{
-							tmpb.sortString=inv.getTermNumValue(group.list[i], i);
+							tmpb.sortString=inv.getTermNumValue(group.list[this.SelectDetailSort.offset], i);
 						}
 					}
 					tmp.add(tmpb);

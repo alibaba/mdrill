@@ -59,6 +59,7 @@ public class MdrillGroupBy {
 	
 	private String sort_fl;
 	private String sort_type;
+	private String sort_column_type;
 	private boolean isdesc;
 	private ShardGroupByTermNumCompare cmpTermNum;
 	private ShardGroupByGroupbyRowCompare cmpString;
@@ -84,6 +85,7 @@ public class MdrillGroupBy {
 		this.crossFs = params.getParams(FacetParams.FACET_CROSS_FL);
 		this.distFS=params.getParams(FacetParams.FACET_CROSSDIST_FL);
 		this.joinList=params.getParams(HigoJoinUtils.getTables());
+		this.sort_column_type=params.get("facet.cross.sort.cp");
 		if(this.joinList==null)
 		{
 			this.joinList= new String[0];
@@ -228,7 +230,7 @@ public class MdrillGroupBy {
 			this.joinInvert[i].open(this.req);
 			baseDocs=this.joinInvert[i].filterRight(baseDocs);
 		}
-		this.cmpString=new ShardGroupByGroupbyRowCompare(fields, crossFs, distFS, this.joinSort, this.sort_fl, this.sort_type, this.isdesc);
+		this.cmpString=new ShardGroupByGroupbyRowCompare(this.sort_column_type,fields, crossFs, distFS, this.joinSort, this.sort_fl, this.sort_type, this.isdesc);
 		this.cmpTermNum=new ShardGroupByTermNumCompare(fields, crossFs, distFS, this.joinSort, this.sort_fl, this.sort_type, this.isdesc);
 
 		int groupbySize=ufs.length;

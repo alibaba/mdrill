@@ -51,7 +51,7 @@ public class AdhocWebServiceParams {
 				p.txtPath=map.get("txtStorePath");
 			}
 			p.hdfsPath=obj.getString("path")+"/part-00000";
-			p.fq=WebServiceParams.fqListHive("dt",obj.getString("fq"), shard,false,null,null,null);
+			p.fq=WebServiceParams.fqListHive("dt",obj.getString("fq"), shard,false,null,null,null,null);
 			p.fl=obj.getString("fl").split(",");
 			p.leftkey=obj.getString("leftkey");
 			p.rightkey=obj.getString("rightkey");
