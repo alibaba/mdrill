@@ -151,7 +151,7 @@ public class GetPartions {
     				Long max=Long.MIN_VALUE;
         		    for(String day:val)
         		    {
-        		    	Date d=fmt.parse(day);
+        		    	Date d=fmt.parse(day.replaceAll("-", ""));
         		    	Long time=d.getTime();
         		    	max=Math.max(max, time);
         		    	min=Math.min(min, time);
@@ -170,7 +170,7 @@ public class GetPartions {
     			{
         		    for(String day:val)
         		    {
-        		    	Date d=fmt.parse(day);
+        		    	Date d=fmt.parse(day.replaceAll("-", ""));
         		    	Long time=d.getTime()+(operate==3?0:1);
         		    	small=small>0?Math.min(small, time):time;
         		    }
@@ -180,7 +180,7 @@ public class GetPartions {
     			{
         		    for(String day:val)
         		    {
-        		    	Date d=fmt.parse(day);
+        		    	Date d=fmt.parse(day.replaceAll("-", ""));
         		    	Long time=d.getTime()-(operate==4?0:1);
         		    	bigger=bigger>0?Math.max(bigger, time):time;
         		    }

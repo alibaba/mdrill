@@ -50,7 +50,7 @@ public class SqlParser {
 //		p.parse("select count(pv) as pv,sum(pv) as sumpv from test where  _higopartions_ = '20130101,20120303' and price gt 20 and buycnt lt 30 ");
 //		System.out.println(p.toString());
 //		
-//		p.parse("select count(pv) as pv,sum(pv) as sumpv from test where  thedate >=20130101 and thedate <=20120303 and userid not    in (abc,dec,a,e,f) ");
+		p.parse("select count(pv) as pv,sum(pv) as sumpv from test where  thedate >=20130101 and thedate <=20120303 and userid not    in (abc,dec,a,e,f,'13','45') ");
 //		System.out.println(p.toString());
 //		
 //		p.parse("select myn,abc,count(pv) as pv,sum(pv) as sumpv from test where  _higopartions_ = '20130101,20120303' group by myn,abc");
@@ -65,7 +65,7 @@ public class SqlParser {
 //		p.parse("select myn,abc,count(pv) as pv,sum(pv) as sumpv from test where  _higopartions_ = '20130101,20120303' group by myn,abc order by sum(pv) limit 5,60");
 //		System.out.println(p.toString());
 //		
-		p.parse("select thedate,category_level1_name,user_id,count(*) from rpt_hitfake_auctionall_d where thedate >'20130625' and  thedate <'20130705' and (thedate ='20130704' or thedate ='20130705' or thedate<='20130702')   and ((custid='1104981405' and user_id='136018175') or user_id='932280506' or user_id like '%9999%') and category_level1_name='3C数码配件' group by thedate,user_id,category_level1_name limit 0,100");
+//		p.parse("select thedate,category_level1_name,user_id,count(*) from rpt_hitfake_auctionall_d where thedate >'20130625' and  thedate <'20130705' and (thedate ='20130704' or thedate ='20130705' or thedate<='20130702')   and ((custid='1104981405' and user_id='136018175') or user_id='932280506' or user_id like '%9999%') and category_level1_name='3C数码配件' group by thedate,user_id,category_level1_name limit 0,100");
 		//select thedate,category_level1_name,count(*),count(suit_sum) as cnt,sum(suit_sum) as sam from rpt_hitfake_auctionall_d where thedate >'20130625' and  thedate <'20130705' and (thedate ='20130704' or thedate ='20130705' or thedate<='20130702')   and ((custid='1104981405' and user_id='136018175') or user_id='932280506' or user_id like '%9999%')  and category_level1_name like '%电%' group by thedate,category_level1_name order by sam desc limit 0,100
 		System.out.println(p.toString());
 		
@@ -268,7 +268,7 @@ public class SqlParser {
 		JSONArray rtn=new JSONArray();
 		for(String s:list)
 		{
-			rtn.put(s);
+			rtn.put(s.trim().replaceAll("^'", "").replaceAll("'$", ""));
 		}
 		return rtn;
 	}
