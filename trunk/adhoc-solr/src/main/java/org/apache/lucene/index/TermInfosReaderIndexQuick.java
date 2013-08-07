@@ -95,7 +95,7 @@ class TermInfosReaderIndexQuick implements TermInfoReaderIndexInterface{
 	  IndexInput tii= (IndexInput)this.tiiInput.clone();
 	  IndexInput qtii=(IndexInput)this.quickTii.clone();
     int lo = 0;
-    int hi = termInfoArr.length;
+    int hi = termInfoArr.length-1;
     while (hi >= lo) {
       int mid = (lo + hi) >>> 1;
       int delta = compareTo(term, termBytesRef, mid,tii, qtii,new BytesRef());
@@ -125,7 +125,13 @@ class TermInfosReaderIndexQuick implements TermInfoReaderIndexInterface{
 		 TiiInfo ti=this.getTiiInfo(termIndex, tiiInput, quickTii);
     return term.compareTo(ti.tm);
   }
-
+//  output.writeInt(ti.docFreq);                       // write doc freq
+//  output.writeLong(ti.freqPointer); // write pointers
+//  output.writeLong(ti.proxPointer);
+//  output.writeInt(ti.skipOffset);
+//  output.writeLong(other.output.getFilePointer());
+//  output.writeLong(this.outputQuickTii.getFilePointer());
+//  this.writeTermTii(fieldNumber, termBytes, termBytesLength);
   private TiiInfo getTiiInfo(int termIndex,   IndexInput tiiInput, IndexInput quickTii) throws IOException {
 	  TiiInfo ti=null;
 	  synchronized (this.termInfoArr) {
