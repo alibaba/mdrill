@@ -65,6 +65,9 @@ public final class IndexFileNames {
 
   /** Extension of terms index file */
   public static final String TERMS_INDEX_EXTENSION_SIZE = "yntii";
+  
+  public static final String TERMS_INDEX_EXTENSION_QUICK = "quicktii";
+
 
   /** Extension of stored fields index file */
   public static final String FIELDS_INDEX_EXTENSION = "fdx";
@@ -122,6 +125,7 @@ public final class IndexFileNames {
     FIELDS_INDEX_EXTENSION,
     FIELDS_EXTENSION,
     TERMS_INDEX_EXTENSION,
+    TERMS_INDEX_EXTENSION_QUICK,
     TERMS_INDEX_EXTENSION_SIZE,
     TERMS_EXTENSION,
     TERMS_EXTENSION_SIZE,
@@ -144,6 +148,7 @@ public final class IndexFileNames {
     FIELDS_INDEX_EXTENSION,
     FIELDS_EXTENSION,
     TERMS_INDEX_EXTENSION,
+    TERMS_INDEX_EXTENSION_QUICK,
     TERMS_INDEX_EXTENSION_SIZE,
     TERMS_EXTENSION,
     TERMS_EXTENSION_SIZE,
@@ -170,6 +175,7 @@ public final class IndexFileNames {
     TERMS_EXTENSION,
     TERMS_EXTENSION_SIZE,
     TERMS_INDEX_EXTENSION,
+    TERMS_INDEX_EXTENSION_QUICK,
     TERMS_INDEX_EXTENSION_SIZE,
     NORMS_EXTENSION
   };
@@ -182,6 +188,7 @@ public final class IndexFileNames {
     FIELDS_INDEX_EXTENSION,
     FIELDS_EXTENSION,
     TERMS_INDEX_EXTENSION,
+    TERMS_INDEX_EXTENSION_QUICK,
     TERMS_INDEX_EXTENSION_SIZE,
     TERMS_EXTENSION,
     TERMS_EXTENSION_SIZE

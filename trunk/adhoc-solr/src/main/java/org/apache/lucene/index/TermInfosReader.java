@@ -43,7 +43,7 @@ final class TermInfosReader implements Closeable {
   private final SegmentTermEnum origEnum;
   private final long size;
 
-  private final TermInfosReaderIndex index;
+  private final TermInfoReaderIndexInterface index;
   private final int indexLength;
   
   private final int totalIndexInterval;
@@ -92,7 +92,10 @@ final class TermInfosReader implements Closeable {
   private static final class ThreadResources {
     SegmentTermEnum termEnum;
   }
-  
+  IndexInput tisInput=null;
+  IndexInput tiiInput=null;
+  IndexInput tiiInputquick=null;
+  boolean isQuickMode=false;
   TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize, int indexDivisor)
        throws CorruptIndexException, IOException {
     boolean success = false;
@@ -118,23 +121,28 @@ final class TermInfosReader implements Closeable {
       
       String filename=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION);
       final String indexFileName = IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_INDEX_EXTENSION);
-      
+      final String indexFileNamequick = IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_INDEX_EXTENSION_QUICK);
 
-      IndexInput input=null;
-      IndexInput tisinput=null;
+     
       if(directory instanceof FSDirectory)
       {
     	  FSDirectory dddir=(FSDirectory)directory;
     	  String absPath=dddir.getDirectory().getAbsolutePath();
-    	  input=new BlockBufferInput(directory.openInput(filename,readBufferSize),absPath+"@"+filename);
-    	  tisinput=directory.openInput(indexFileName, readBufferSize); 
+    	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),absPath+"@"+filename);
+    	  tiiInput=directory.openInput(indexFileName, readBufferSize); 
     }else{
-    	  input=directory.openInput(filename,readBufferSize);
-          tisinput=directory.openInput(indexFileName, readBufferSize); 
+    	  tisInput=directory.openInput(filename,readBufferSize);
+          tiiInput=directory.openInput(indexFileName, readBufferSize); 
+      }
+      
+      if(directory.fileExists(indexFileNamequick))
+      {
+    	  tiiInputquick=directory.openInput(indexFileNamequick, readBufferSize); 
+    	  this.isQuickMode=true;
       }
 
       
-      origEnum = new SegmentTermEnum(input, fieldInfos, false,tisfilesize);
+      origEnum = new SegmentTermEnum(tisInput, fieldInfos, false,tisfilesize);
       size = origEnum.size;
 
 
@@ -150,13 +158,21 @@ final class TermInfosReader implements Closeable {
           }
         // Load terms index
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
-        final SegmentTermEnum indexEnum = new SegmentTermEnum(tisinput, fieldInfos, true,tiifilesize);
+         SegmentTermEnum indexEnum=null ;
         try {
-            
-          index = new TermInfosReaderIndex(indexEnum, indexDivisor, dir.fileLength(indexFileName), totalIndexInterval);
+        	if(this.isQuickMode)
+        	{
+	            index = new TermInfosReaderIndexQuick(tiiInput,tiiInputquick,fieldInfos,tiifilesize, indexDivisor, dir.fileLength(indexFileName), totalIndexInterval);
+        	}else{
+	            indexEnum = new SegmentTermEnum(tiiInput, fieldInfos, true,tiifilesize);
+	            index = new TermInfosReaderIndex(indexEnum, indexDivisor, dir.fileLength(indexFileName), totalIndexInterval);
+        	}
           indexLength = index.length();
         } finally {
-          indexEnum.close();
+        	if(indexEnum!=null)
+        	{
+                indexEnum.close();
+        	}
         }
       } else {
         // Do not load terms index:
@@ -186,8 +202,21 @@ final class TermInfosReader implements Closeable {
   }
 
   public final void close() throws IOException {
+	  if(this.isQuickMode)
+	  {
+		  if (tiiInput != null)
+		    {
+			  tiiInput.close();
+		    }
+		  if (tiiInputquick != null)
+		    {
+			  tiiInputquick.close();
+		    }
+	  }
     if (origEnum != null)
+    {
       origEnum.close();
+    }
     threadResources.close();
   }
 

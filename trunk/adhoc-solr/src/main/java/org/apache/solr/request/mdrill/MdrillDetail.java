@@ -25,7 +25,6 @@ import org.apache.solr.request.join.HigoJoinSort;
 import org.apache.solr.request.join.HigoJoinUtils;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.*;
 import org.apache.solr.request.uninverted.UnInvertedField;
-import org.apache.solr.request.uninverted.UnInvertedFieldUtils;
 
 import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
@@ -76,8 +75,7 @@ public class MdrillDetail {
 		}
 		this.sort_column_type=params.get("facet.cross.sort.cp");
 		this.isdesc=params.getBool(FacetParams.FACET_CROSS_SORT_ISDESC, true);
-		this.cmpTermNum=new ShardDetailSelectDetailRowCompare(isdesc);
-		this.cmpresult=new ShardDetailSelectDetailRowStringCompare(this.sort_column_type,isdesc);
+		
 		this.recordCount = new RecordCountDetail();
 		this.recordCount.setFinalResult(false);
 	}
@@ -110,28 +108,34 @@ public class MdrillDetail {
 	}
 	
 	private HigoJoinInvert[] joinInvert={};
-	private HigoJoinSort[] joinSort={};
 	private UniqTypeNum.SelectDetailSort SelectDetailSort=null;
 
+	
+	
 	public PriorityQueue<SelectDetailRow> execute(PriorityQueue<SelectDetailRow> res,String[] fields,DocSet baseDocs) throws IOException, ParseException
 	{
 		UnvertFields ufs=new UnvertFields(fields, searcher);
 		UnvertFields sortufs=new UnvertFields(new String[]{this.sort_fl}, searcher);
 		
 		this.joinInvert=new HigoJoinInvert[this.joinList.length];
-		this.joinSort=new HigoJoinSort[this.joinList.length];
+		HigoJoinSort[] joinSort=new HigoJoinSort[this.joinList.length];
 
 		for(int i=0;i<this.joinList.length;i++)
 		{
-			this.joinSort[i]=new HigoJoinSort(this.joinList[i], this.req);
+			joinSort[i]=new HigoJoinSort(this.joinList[i], this.req);
 			this.joinInvert[i]=new HigoJoinInvert(this.joinList[i], this.searcher);
 			this.joinInvert[i].open(this.req);
-			baseDocs=this.joinInvert[i].filterRight(baseDocs);
+			baseDocs=this.joinInvert[i].filterByRight(baseDocs);
 		}
 		this.SelectDetailSort=UniqTypeNum.parseSelectDetailType(fields, joinSort);
+		this.cmpTermNum=new ShardDetailSelectDetailRowCompare(isdesc);
 		if(this.SelectDetailSort!=null)
 		{
 			this.isNeedSort=true;
+			this.cmpresult=new ShardDetailSelectDetailRowStringCompare("string",isdesc);
+
+		}else{
+			this.cmpresult=new ShardDetailSelectDetailRowStringCompare(this.sort_column_type,isdesc);
 		}
 		
 		
@@ -140,7 +144,7 @@ public class MdrillDetail {
 		{
 			groupbySize+=inv.fieldCount();
 		}
-		
+		this.nonJoins=this.joinInvert.length<=0;
 		
 		PriorityQueue<SelectDetailRow> rtn=this.topRows(sortufs,ufs,res, fields, baseDocs);
 		
@@ -156,7 +160,26 @@ public class MdrillDetail {
 	}
 	
 	
-	private TermNumToString[] prefetchValues(UnvertFields ufs, PriorityQueue<SelectDetailRow> res,UnvertFields sortufs,boolean isNumberVal) throws IOException
+	boolean nonJoins=true;
+	private boolean joincontains(int doc) throws IOException
+	{
+		if(nonJoins)
+		{
+			return true;
+		}
+		
+		for(HigoJoinInvert inv:this.joinInvert)
+		{
+			if(!inv.contains(doc))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	
+	private TermNumToString[] prefetchValues(UnvertFields ufs, PriorityQueue<SelectDetailRow> res,UnvertFields sortufs) throws IOException
 	{
 		TermNumToString[] tm=new TermNumToString[ufs.length+1];
 		for(int i=0;i<ufs.length;i++)
@@ -165,7 +188,7 @@ public class MdrillDetail {
 		 }
 		tm[ufs.length]=new TermNumToString(sortufs,0);
 
-		boolean usedsort=!isNumberVal&&this.SelectDetailSort==null;
+		boolean usedsort=isNeedSort&&this.SelectDetailSort==null;
 
 
 		
@@ -195,10 +218,13 @@ public class MdrillDetail {
 				GroupList base=GroupList.INSTANCE(groupListCache, fc);
 				base.reset();
 				GroupList[] groups=inv.fieldNum(doc, base);
+				if(groups!=null)
+				{
 				for (GroupList group : groups) {
 					for (int i = 0; i < fc; i++) {
 						inv.addTermNum(group.list[i], i);
 					}
+				}
 				}
 				
 				for (GroupList group : groups) {
@@ -224,13 +250,13 @@ public class MdrillDetail {
 		 return tm;
 	}
 
-	public PriorityQueue<SelectDetailRow> transGroupValue(UnvertFields ufs, PriorityQueue<SelectDetailRow> res,UnvertFields sortufs,boolean isNumberVal)
+	public PriorityQueue<SelectDetailRow> transGroupValue(UnvertFields ufs, PriorityQueue<SelectDetailRow> res,UnvertFields sortufs)
 			throws ParseException, IOException {
-		TermNumToString[] tm=this.prefetchValues(ufs, res, sortufs, isNumberVal);
+		TermNumToString[] tm=this.prefetchValues(ufs, res, sortufs);
 		
 		PriorityQueue<SelectDetailRow> topItems = new PriorityQueue<SelectDetailRow>(this.limit_offset, Collections.reverseOrder(this.cmpresult));
 
-		boolean usedsort=!isNumberVal&&this.SelectDetailSort==null;
+		boolean usedsort=isNeedSort&&this.SelectDetailSort==null;
 
 		for (SelectDetailRow row : res) {
 			int doc = row.docid;
@@ -295,7 +321,7 @@ public class MdrillDetail {
 						tmpb.groupbuff.append(EncodeUtils.encode(inv.getTermNumValue(group.list[i], i)));
 						if(this.SelectDetailSort!=null&&(offset+i)==this.SelectDetailSort.offset)
 						{
-							tmpb.sortString=inv.getTermNumValue(group.list[this.SelectDetailSort.offset], i);
+							tmpb.sortString=inv.getTermNumValue(group.list[this.SelectDetailSort.selfOffset], i);
 						}
 					}
 					tmp.add(tmpb);
@@ -321,55 +347,65 @@ public class MdrillDetail {
 	public PriorityQueue<SelectDetailRow> topRows(UnvertFields sortufs,UnvertFields ufs,PriorityQueue<SelectDetailRow> res,String[] fields,DocSet baseDocs) throws IOException, ParseException
 	{
 		DocIterator iter = baseDocs.iterator();
-		this.recordCount.inc(baseDocs.size());
 		int doc=-1;
-		boolean isNumberVal=false;
 		if(this.SelectDetailSort!=null)
 		{
-			double cmpValue=0;
+			int cmpValue=0;
 			HigoJoinInvert inv=this.joinInvert[this.SelectDetailSort.sortIndex];
 			while (iter.hasNext()) {
 				doc = iter.nextDoc();
+				if(!this.joincontains(doc))
+				{
+					continue;
+				}
 				cmpValue=inv.fieldNumTop(doc, this.SelectDetailSort.selfOffset,this.isdesc);
 				SelectDetailRow row = SelectDetailRow.INSTANCE(doc,cmpValue);
 				MdrillPorcessUtils.put2QueueDetail(row, res, this.limit_offset, this.cmpTermNum);
+				this.recordCount.inc(1);
 			}
 		}else if(this.isNeedSort&&sortufs.listIndex.length>0)
 		{
-			double cmpValue=0;
+			int cmpValue=0;
 			UnvertFile uf=sortufs.cols[0];
 
 			UnInvertedField cif=uf.uif;
-			boolean isnum=cif.dataType.equals(UnInvertedFieldUtils.Datatype.d_double)||cif.dataType.equals(UnInvertedFieldUtils.Datatype.d_long);
-			isNumberVal=!cif.isMultiValued&&isnum;
-			if(isNumberVal)//sort by num
-			{
 				while (iter.hasNext()) {
 					doc = iter.nextDoc();
-					cmpValue  = cif.quickToDouble(doc,uf.filetype, uf.ti);
-					SelectDetailRow row = SelectDetailRow.INSTANCE(doc, cmpValue);
-					MdrillPorcessUtils.put2QueueDetail(row, res, this.limit_offset, this.cmpTermNum);
-				}
-			}else{
-				while (iter.hasNext()) {
-					doc = iter.nextDoc();
+					if(!this.joincontains(doc))
+					{
+						continue;
+					}
 					cmpValue =cif.termNum(doc);
 					SelectDetailRow row = SelectDetailRow.INSTANCE(doc,cmpValue);
 					MdrillPorcessUtils.put2QueueDetail(row, res, this.limit_offset, this.cmpTermNum);
+					this.recordCount.inc(1);
 				}
-			}
+//			}
 		}else{
 			while (iter.hasNext()) {
 				doc = iter.nextDoc();
+				if(!this.joincontains(doc))
+				{
+					continue;
+				}
 				SelectDetailRow row = SelectDetailRow.INSTANCE(doc,doc);
 				MdrillPorcessUtils.put2QueueDetail(row, res, this.limit_offset, this.cmpTermNum);
+				this.recordCount.inc(1);
 				if(res.size()>=this.limit_offset)
 				{
 					break;
 				}
 			}
+			while (iter.hasNext()) {
+				doc = iter.nextDoc();
+				if(!this.joincontains(doc))
+				{
+					continue;
+				}
+				this.recordCount.inc(1);
+			}
 		}
 		
-		return this.transGroupValue(ufs, res,sortufs,isNumberVal);
+		return this.transGroupValue(ufs, res,sortufs);
 	}
 }

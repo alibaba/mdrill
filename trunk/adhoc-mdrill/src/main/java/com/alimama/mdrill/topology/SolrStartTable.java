@@ -7,6 +7,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,7 +50,42 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	private OutputCollector collector;
 	private SolrStartJetty solrservice;
 	private boolean isMergeServer = false;
+	public ExecutorService EXECUTE = new ThreadPoolExecutor(1, 1,
+            3600*6, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>());
 
+	 public static class rsyncExecute implements Runnable{
+	    	private SolrStartTable obj;
+			private boolean issync=false;
+			private AtomicBoolean isfinish=new AtomicBoolean(false);
+			private boolean result=false;
+	    	public rsyncExecute(SolrStartTable obj, boolean issync) {
+				super();
+				this.obj = obj;
+				this.issync = issync;
+			}
+
+
+			
+
+			@Override
+			public void run() {
+				this.result=this.obj.sync(this.issync);
+				isfinish.set(true);
+			}
+			
+			public boolean isfinish()
+			{
+				return this.isfinish.get();
+			}
+			
+			public boolean result()
+			{
+				return this.result;
+			}
+	    	
+	    }
+	
 	private boolean isRealTime=false;
 	private AtomicInteger copy2indexFailTimes=new AtomicInteger(0);
 
@@ -254,7 +294,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	
 	
 
-	private boolean sync( boolean isforce) {
+	private synchronized boolean sync( boolean isforce) {
 		this.partstat.resetDayPartion(this.part.parttype);
 		try {
 			this.resetFileSystem();
@@ -265,7 +305,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			boolean ischangeIndex = this.syncIndex();
 			boolean ischange = ischangeIndex || ischangeSolr;
 			return ischange;
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			LOG.error(StormUtils.stringify_error(e));
 			return false;
 		}
@@ -280,10 +320,18 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		new Thread(this).start();
 	}
 	
+	
+
 	public void run() {
 		synchronized (this.getThrLockObj()) {
 			try {
-				this.sync(true);
+				rsyncExecute exe=new rsyncExecute(this,true);
+    	    	EXECUTE.submit(exe);
+    	    	while(!exe.isfinish()&&!statcollect.isTimeout(1200l*1000))
+    	    	{
+    	    		Thread.sleep(1000l);
+    	    	}
+				
 				this.startService();
     			isInit.set(true);
 				LOG.info("higolog table end:" + this.tablename);
@@ -326,13 +374,10 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		if (stat.equals(ShardsState.SERVICE)) {
 			timespan = 1000l * 60 * 20;
 		}
-//		LOG.info("higolog isTimeout:" + this.tablename + ",timespan:"
-//				+ timespan);
 		return isInit.get()&&statcollect.isTimeout(timespan);
 	}
 
 	private Interval hbInterval=new Interval();;
-
 
 	 private boolean checkInitFinish() throws Exception
     {
@@ -350,7 +395,6 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
     }
 
 	public void heartbeat() throws Exception {
-//		LOG.info("higolog heartbeat called:" + this.tablename);
 		errorCollect.checkException();
 		if (!hbInterval.heartBeatInterval()) {
 			return;
@@ -378,7 +422,15 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	}
 
 	private void heartbeatExecute() throws Exception {
-		boolean needRestart = this.sync(false);
+		
+		rsyncExecute exe=new rsyncExecute(this,false);
+    	EXECUTE.submit(exe);
+    	while(!exe.isfinish()&&!statcollect.isTimeout(900l*1000))
+    	{
+    		Thread.sleep(1000l);
+    	}
+		
+		boolean needRestart = exe.isfinish()?exe.result():false;
 		if (!needRestart) {
 			this.checkSolr();
 			if (!statcollect.getStat().equals(ShardsState.SERVICE)) {
@@ -386,7 +438,13 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			}
 		} else {
 			this.stopService();
-			this.sync(false);
+
+			exe=new rsyncExecute(this,false);
+	    	EXECUTE.submit(exe);
+	    	while(!statcollect.isTimeout(900l*1000))
+	    	{
+	    		Thread.sleep(1000l);
+	    	}
 			this.startService();
 		}
 	}

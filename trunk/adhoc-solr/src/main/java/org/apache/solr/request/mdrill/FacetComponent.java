@@ -39,6 +39,9 @@ import org.apache.solr.request.compare.GroupbyRow;
 import org.apache.solr.request.compare.MergerDetailSelectDetailRowCompare;
 import org.apache.solr.request.compare.MergerGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.SelectDetailRow;
+import org.apache.solr.request.compare.ShardDetailSelectDetailRowCompare;
+import org.apache.solr.request.compare.ShardDetailSelectDetailRowStringCompare;
+import org.apache.solr.request.compare.UniqTypeNum;
 import org.apache.solr.request.join.HigoJoinSort;
 import org.apache.solr.request.join.HigoJoinUtils;
 import org.apache.solr.search.QueryParsing;
@@ -395,7 +398,14 @@ public class  FacetComponent extends SearchComponent
 			{
 				this.joinSort[i]=new HigoJoinSort(joinList[i],params);
 			}
-			this.sort_column_type=params.get("facet.cross.sort.cp");
+			
+			if(UniqTypeNum.parseSelectDetailType(this.facetFs, joinSort)!=null)
+			{
+				this.sort_column_type="string";
+
+			}else{
+				this.sort_column_type=params.get("facet.cross.sort.cp");
+			}
 
 
 		}

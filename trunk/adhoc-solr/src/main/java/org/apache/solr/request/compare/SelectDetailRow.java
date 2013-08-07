@@ -23,7 +23,7 @@ public class SelectDetailRow implements Comparable<SelectDetailRow>, GroupbyItem
 	
 	public int docid=0;//forCompare
 	private String key;//col1@col2@col3
-	public double value;//compare field value
+	public int value;//compare field value
 	public String colVal=null;//compare field value
 	private boolean isFinalResult=false;
 	
@@ -44,7 +44,7 @@ public class SelectDetailRow implements Comparable<SelectDetailRow>, GroupbyItem
 	public SelectDetailRow(String key,NamedList nst)
 	{
 		this.key=key;
-		this.value=(Double) nst.get("count");
+		this.value=(Integer) nst.get("count");
 		this.docid= (Integer) nst.get("docid");
 		this.colVal=(String) nst.get("sortStr");
 		
@@ -89,7 +89,7 @@ public class SelectDetailRow implements Comparable<SelectDetailRow>, GroupbyItem
 		return key;
 	}
 	
-	public double getCompareValue()
+	public int getCompareValue()
 	{
 		return this.value;
 	}
@@ -105,7 +105,7 @@ public class SelectDetailRow implements Comparable<SelectDetailRow>, GroupbyItem
 	
 	private static LinkedBlockingQueue<SelectDetailRow> instanceCache=new LinkedBlockingQueue<SelectDetailRow>();
 
-	public static SelectDetailRow INSTANCE(int docid, double value)
+	public static SelectDetailRow INSTANCE(int docid, int value)
 	{
 		SelectDetailRow rtn=instanceCache.poll();
 		if(rtn==null)

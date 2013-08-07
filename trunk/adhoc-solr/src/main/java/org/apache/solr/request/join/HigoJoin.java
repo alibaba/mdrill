@@ -2,310 +2,152 @@ package org.apache.solr.request.join;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Arrays;
+import java.util.HashSet;
 
-import org.apache.log4j.Logger;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.solr.request.uninverted.GrobalCache;
-import org.apache.solr.request.uninverted.NumberedTermEnum;
-import org.apache.solr.request.uninverted.TermIndex;
 import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeCache;
 import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeKey;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.TrieField;
-import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import com.alimama.mdrill.buffer.LuceneUtils;
 
-public class HigoJoin implements GrobalCache.ILruMemSizeCache{
-	private static Logger LOG = Logger.getLogger(HigoJoin.class);
-	private SolrIndexSearcher readerleft;
-	private SolrIndexSearcher readerright;
-	private String fieldLeft;
-	private String fieldRigth;
-	public HigoJoin(SolrIndexSearcher readerleft,
-			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth) throws IOException {
-		this.readerleft = readerleft;
-		this.readerright = readerright;
-		this.fieldLeft = fieldLeft;
-		this.fieldRigth = fieldRigth;
-		this.makejoin();
-	}
-	
-	 public static HigoJoin getJoin(SolrIndexSearcher readerleft,
-				SolrIndexSearcher readerright, String fieldLeft, String fieldRigth) throws IOException {
-		
-			Cache<ILruMemSizeKey,ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
-			StringBuffer key=new StringBuffer();
-			key.append(readerleft.getPartionKey());
-			key.append("@");
-			key.append(fieldLeft);
-			key.append("@");
-			key.append(LuceneUtils.crcKey(readerleft.getReader()));
-			key.append("@");
-			key.append(readerright.getPartionKey());
-			key.append("@");
-			key.append(fieldRigth);
-			key.append("@");
-			key.append(LuceneUtils.crcKey(readerright.getReader()));
-			String cachekey=key.toString();
-			HigoJoin uif = (HigoJoin) cache.get(cachekey);
-			if (uif == null) {
-				synchronized (cache) {
-					uif =  (HigoJoin) cache.get(cachekey);
-					if (uif == null) {
-						uif = new HigoJoin(readerleft, readerright,fieldLeft,fieldRigth);
-						cache.put(new GrobalCache.StringKey(cachekey), uif);
-					}
-				}
-			}
-			return uif;
-		}
-	 
-	 private static int INT_SIZE=Integer.SIZE/8;
-	 long memsize=-1;
-	 @Override
-		public synchronized long memSize() {
-			if(memsize>=0)
-			{
-				return memsize;
-			}
-			
-			memsize=0;
-			for(Entry<Integer, ArrayList<JoinPair>> e:join.entrySet())
-			{
-				memsize+=INT_SIZE;
-				for(JoinPair p:e.getValue())
-				{
-					memsize+=p.memsize();
+public class HigoJoin  {
+	public static HigoJoinInterface getJoin(SolrIndexSearcher readerleft,
+			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth)
+			throws IOException {
 
+		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
+		StringBuffer key = new StringBuffer();
+		key.append(readerleft.getPartionKey());
+		key.append("@");
+		key.append(fieldLeft);
+		key.append("@");
+		key.append(LuceneUtils.crcKey(readerleft.getReader()));
+		key.append("@");
+		key.append(readerright.getPartionKey());
+		key.append("@");
+		key.append(fieldRigth);
+		key.append("@");
+		key.append(LuceneUtils.crcKey(readerright.getReader()));
+		String cachekey = key.toString();
+		GrobalCache.StringKey fvkey = new GrobalCache.StringKey(cachekey);
+		HigoJoinInterface uif = (HigoJoinInterface) cache.get(fvkey);
+		if (uif == null) {
+			synchronized (cache) {
+				uif = (HigoJoinInterface) cache.get(fvkey);
+				if (uif == null) {
+					
+					FieldType ftleft=readerleft.getSchema().getFieldType(fieldLeft);
+					FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
+					if(ftleft.isMultiValued()||ftright.isMultiValued())
+					{
+						uif = new HigoJoinMultyValues(readerleft, readerright,fieldLeft, fieldRigth);
+					}else{
+						uif = new HigoJoinSingleValues(readerleft, readerright,fieldLeft, fieldRigth);
+
+					}
+					cache.put(fvkey, uif);
 				}
 			}
-			
-			for(Entry<JoinTermNum, ArrayList<Integer>> e:joinRevert.entrySet())
-			{
-				memsize+=e.getKey().memsize();
-				memsize+=e.getValue().size()*INT_SIZE;
-				
+		}
+		return uif;
+	}
+
+	private static int INT_SIZE = Integer.SIZE / 8;
+
+	public static class IntArr {
+		public int[] list = new int[0];
+
+		public static IntArr parse(ArrayList<Integer> d) {
+			IntArr rtn = new IntArr();
+			rtn.list = new int[d.size()];
+			int index = 0;
+			for (Integer v : d) {
+				rtn.list[index] = v;
+				index++;
 			}
-			memsize+=(join.size()+joinRevert.size())*INT_SIZE;
-			
+			return rtn;
+		}
+		
+		public static IntArr parse(HashSet<Integer> d) {
+			IntArr rtn = new IntArr();
+			rtn.list = new int[d.size()];
+			int index = 0;
+			for (Integer v : d) {
+				rtn.list[index] = v;
+				index++;
+			}
+			return rtn;
+		}
+
+		public long memsize() {
+			return 8 + 8 + list.length * INT_SIZE;
+		}
+	}
+
+	public static class JoinPariArr {
+		public JoinPair[] list = new JoinPair[0];
+
+		public long memsize() {
+			long memsize = 8 + 8;
+			for (JoinPair p : this.list) {
+				memsize += p.memsize();
+			}
 			return memsize;
 		}
 
+		public static JoinPariArr parse(ArrayList<JoinPair> d) {
+			JoinPariArr rtn = new JoinPariArr();
+			rtn.list = new JoinPair[d.size()];
+			int index = 0;
+			for (JoinPair v : d) {
+				rtn.list[index] = v;
+				index++;
+			}
+			return rtn;
+		}
+	}
+	
+	
+
+	static class JoinPair {
+		int termNum;
+		int[] left;
+
+		public long memsize() {
+			return (left.length + 2) * INT_SIZE + 16;
+		}
+
 		@Override
-		public void LRUclean() {
-			
+		public String toString() {
+			return "JoinPair [termNum=" + termNum + ", left="
+					+ Arrays.toString(left) + "]";
 		}
-	  
 
-	 //right,left
-	private HashMap<Integer,ArrayList<JoinPair>> join=new HashMap<Integer,ArrayList<JoinPair>>();
-	//left,right
-	private HashMap<JoinTermNum,ArrayList<Integer>> joinRevert=new HashMap<JoinTermNum,ArrayList<Integer>>();
-	
-	public DocSet filterRight(DocSet leftDocs,DocSet rightDocs)
-	{
-		BitDocSet docset=new BitDocSet();
-		DocIterator iter = rightDocs.iterator();
-		while (iter.hasNext()) {
-			int doc = iter.nextDoc();
-			ArrayList<JoinPair> list=join.get(doc);
-			if(list==null)
-			{
-				continue;
-			}
-			for(JoinPair jp:list)
-			{
-				for (int i:jp.left) {
-					docset.add(i);
-				}
-			}
-		}
-		
-		return leftDocs.intersection(docset);
-	}
-	
-	public ArrayList<Integer> getRight(int leftDocid,int termNum)
-	{
-		return joinRevert.get(new JoinTermNum(leftDocid, termNum));
 	}
 
-	
-	private void makejoin() throws IOException
-	{
-		
-		FieldType ftleft=readerleft.getSchema().getFieldType(fieldLeft);
-		
-		String prefixLeft=TrieField.getMainValuePrefix(ftleft);
-		TermIndex tiLeft = new TermIndex(fieldLeft, prefixLeft);
-		NumberedTermEnum teLeft = tiLeft.getEnumerator(readerleft.getReader());
-		
-		FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
-		String prefixRight=TrieField.getMainValuePrefix(ftright);
-		TermIndex tiRight = new TermIndex(fieldRigth, prefixRight);
-		
-		NumberedTermEnum teRight = tiRight.getEnumerator(readerright.getReader());
-		
-		int[] docs = new int[1000];
-		int[] freqs = new int[1000];
-		
-		
-		int debugline=0;
-		
-		for (;;) {
-			Term tleft= teLeft.term();
-			Term tRight=teRight.term();
-			
-			
-			if (tleft == null||tRight==null) {
-				LOG.info("###termbreak###"+String.valueOf(tleft)+">>>>"+String.valueOf(tRight)+","+fieldLeft+","+fieldRigth);
-
-				break;
-			}
-			
-			String tvleft=ftleft.indexedToReadable(tleft.text());
-			String tvRight=ftright.indexedToReadable(tRight.text());
-
-
-			if(tvleft.equals(tvRight))
-			{
-				if(debugline++<10)
-				{
-					LOG.info("###termok###"+String.valueOf(tvleft)+">>>>"+String.valueOf(tvRight)+","+fieldLeft+","+fieldRigth);
-
-				}
-
-				JoinPair jp=new JoinPair();
-				jp.termNum = teLeft.getTermNumber();
-
-				TermDocs tdleft = teLeft.getTermDocs();
-				tdleft.seek(teLeft);
-				for (;;) {
-					int n = tdleft.read(docs, freqs);
-					if (n <= 0) {
-						break;
-					}
-					for (int i = 0; i < n; i++) {
-						jp.left.add(docs[i]);
-					}
-				}
-				
-				
-				ArrayList<Integer> RightList=new ArrayList<Integer>();
-				TermDocs tdRight = teRight.getTermDocs();
-				tdRight.seek(teRight);
-				for (;;) {
-					int n = tdRight.read(docs, freqs);
-					if (n <= 0) {
-						break;
-					}
-					for (int i = 0; i < n; i++) {
-						int docid=docs[i];
-						RightList.add(docid);
-						ArrayList<JoinPair> list=join.get(docid);
-						if(list==null)
-						{
-							list=new ArrayList<HigoJoin.JoinPair>();
-							join.put(docid, list);
-						}
-						list.add(jp);
-					}
-				}
-				
-				for(Integer leftid:jp.left)
-				{
-					JoinTermNum tm=new JoinTermNum(leftid, jp.termNum);
-					joinRevert.put(tm, RightList);
-				}
-				
-				teLeft.next();
-				teRight.next();
-			}else if(tvleft.compareTo(tvRight)>0)
-			{
-				teRight.next();
-			}else{
-				teLeft.next();
-			}
-		}
-		
-		teLeft.close();
-		teRight.close();
-		
-		LOG.info("###join###"+join.size()+","+joinRevert.size());
-	}
-	
-	
-
-	private static class JoinPair{
-		Integer termNum;
-		ArrayList<Integer> left=new ArrayList<Integer>();
-
-		public long memsize()
-		{
-			return (left.size()+1)*INT_SIZE;
-		}
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((left == null) ? 0 : left.hashCode());
-			result = prime * result
-					+ ((termNum == null) ? 0 : termNum.hashCode());
-			return result;
-		}
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			JoinPair other = (JoinPair) obj;
-			if (left == null) {
-				if (other.left != null)
-					return false;
-			} else if (!left.equals(other.left))
-				return false;
-			if (termNum == null) {
-				if (other.termNum != null)
-					return false;
-			} else if (!termNum.equals(other.termNum))
-				return false;
-			return true;
-		}
-	}
-	
-	private static class JoinTermNum{
+	static class JoinTermNum {
 		public JoinTermNum(Integer docId, Integer termNum) {
 			super();
 			this.leftId = docId;
 			this.termNum = termNum;
 		}
-		Integer leftId;
-		Integer termNum;
 
-		
-		public long memsize()
-		{
-			return INT_SIZE*2;
-		}
+		int leftId = -1;
+		int termNum = -1;
+
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((leftId == null) ? 0 : leftId.hashCode());
-			result = prime * result
-					+ ((termNum == null) ? 0 : termNum.hashCode());
+			result = prime * result + leftId;
+			result = prime * result + termNum;
 			return result;
 		}
+
 		@Override
 		public boolean equals(Object obj) {
 			if (this == obj)
@@ -315,22 +157,19 @@ public class HigoJoin implements GrobalCache.ILruMemSizeCache{
 			if (getClass() != obj.getClass())
 				return false;
 			JoinTermNum other = (JoinTermNum) obj;
-			if (leftId == null) {
-				if (other.leftId != null)
-					return false;
-			} else if (!leftId.equals(other.leftId))
+			if (leftId != other.leftId)
 				return false;
-			if (termNum == null) {
-				if (other.termNum != null)
-					return false;
-			} else if (!termNum.equals(other.termNum))
+			if (termNum != other.termNum)
 				return false;
 			return true;
 		}
-		
+
+		public long memsize() {
+			return 8 + INT_SIZE * 2;
+		}
+
 	}
-
+	
 	
 
-	
 }

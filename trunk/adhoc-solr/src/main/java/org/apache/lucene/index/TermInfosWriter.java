@@ -27,13 +27,16 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.ArrayUtil;
 
 final class TermInfosWriter implements Closeable {
-  public static final int FORMAT = -3;
-  public static final int FORMAT_VERSION_UTF8_LENGTH_IN_BYTES = -4;
-  public static final int FORMAT_CURRENT = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
+
+	public static final int QUICK_TII = -1210;
+	public static final int FORMAT = -3;
+	public static final int FORMAT_VERSION_UTF8_LENGTH_IN_BYTES = -4;
+	public static final int FORMAT_CURRENT = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
 
   private FieldInfos fieldInfos;
   private IndexOutput output;
   private IndexOutput outputSize;
+  private IndexOutput outputQuickTii;
   private TermInfo lastTi = new TermInfo();
   private long size;
 
@@ -43,7 +46,6 @@ final class TermInfosWriter implements Closeable {
   
   int maxSkipLevels = 10;
 
-  private long lastIndexPointer;
   private boolean isIndex;
   private byte[] lastTermBytes = new byte[10];
   private int lastTermBytesLength = 0;
@@ -63,7 +65,7 @@ final class TermInfosWriter implements Closeable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(output,outputSize, other);
+        IOUtils.closeWhileHandlingException(output,outputSize, other,outputQuickTii);
       }
     }
   }
@@ -79,11 +81,12 @@ final class TermInfosWriter implements Closeable {
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));
+    outputQuickTii=isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_INDEX_EXTENSION_QUICK):null;
     outputSize = directory.createOutput(segment + (isIndex ? "."+IndexFileNames.TERMS_INDEX_EXTENSION_SIZE : "."+IndexFileNames.TERMS_EXTENSION_SIZE));
     boolean success = false;
     try {
       output.writeInt(FORMAT_CURRENT);              // write format
-      output.writeLong(-1);                          // leave space for size
+      output.writeLong(QUICK_TII);                          // leave space for size
       output.writeInt(indexInterval);               // write indexInterval
       output.writeInt(skipInterval);                // write skipInterval
       output.writeInt(maxSkipLevels);               // write maxSkipLevels
@@ -152,6 +155,8 @@ final class TermInfosWriter implements Closeable {
     TermInfo pointers must be positive and greater than all previous.*/
   void add(int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti)
     throws IOException {
+	  
+	  
 
     assert compareToLastTerm(fieldNumber, termBytes, termBytesLength) < 0 ||
       (isIndex && termBytesLength == 0 && lastTermBytesLength == 0) :
@@ -162,11 +167,17 @@ final class TermInfosWriter implements Closeable {
     assert ti.freqPointer >= lastTi.freqPointer: "freqPointer out of order (" + ti.freqPointer + " < " + lastTi.freqPointer + ")";
     assert ti.proxPointer >= lastTi.proxPointer: "proxPointer out of order (" + ti.proxPointer + " < " + lastTi.proxPointer + ")";
 
-    if (!isIndex && size % indexInterval == 0)
+    if(this.isIndex)
+	  {
+		  this.addtii(fieldNumber, termBytes, termBytesLength, ti);
+		  return ;
+	  }
+    if ( size % indexInterval == 0)
+    {
       other.add(lastFieldNumber, lastTermBytes, lastTermBytesLength, lastTi);                      // add an index term
+    }
 
     writeTerm(fieldNumber, termBytes, termBytesLength);                        // write term
-
     output.writeVInt(ti.docFreq);                       // write doc freq
     output.writeVLong(ti.freqPointer - lastTi.freqPointer); // write pointers
     output.writeVLong(ti.proxPointer - lastTi.proxPointer);
@@ -175,15 +186,26 @@ final class TermInfosWriter implements Closeable {
       output.writeVInt(ti.skipOffset);
     }
 
-    if (isIndex) {
-      output.writeVLong(other.output.getFilePointer() - lastIndexPointer);
-      lastIndexPointer = other.output.getFilePointer(); // write pointer
-    }
 
     lastFieldNumber = fieldNumber;
     lastTi.set(ti);
     size++;
   }
+  
+
+  
+  void addtii(int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti)
+  throws IOException {
+	  
+  output.writeInt(ti.docFreq);                       // write doc freq
+  output.writeLong(ti.freqPointer); // write pointers
+  output.writeLong(ti.proxPointer);
+  output.writeInt(ti.skipOffset);
+  output.writeLong(other.output.getFilePointer());
+  output.writeLong(this.outputQuickTii.getFilePointer());
+  this.writeTermTii(fieldNumber, termBytes, termBytesLength);
+  size++;
+}
 
   private void writeTerm(int fieldNumber, byte[] termBytes, int termBytesLength)
        throws IOException {
@@ -209,6 +231,15 @@ final class TermInfosWriter implements Closeable {
     System.arraycopy(termBytes, start, lastTermBytes, start, length);
     lastTermBytesLength = termBytesLength;
   }
+  
+
+  
+	private void writeTermTii(int fieldNumber, byte[] termBytes,
+			int termBytesLength) throws IOException {
+		this.outputQuickTii.writeVInt(termBytesLength); // write delta bytes
+		this.outputQuickTii.writeBytes(termBytes, 0, termBytesLength); // write delta bytes
+		this.outputQuickTii.writeVInt(fieldNumber); // write field num
+	}
 
   /** Called to complete TermInfos creation. */
   public void close() throws IOException {

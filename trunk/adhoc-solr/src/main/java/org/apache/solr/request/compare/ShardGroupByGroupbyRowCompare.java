@@ -93,8 +93,10 @@ public class ShardGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Ser
 			this.fl_num=UniqTypeNum.foundIndex(groupby, fl);
 			if(columntype.equals("string"))
 			{
+				LOG.info("##cmp string##");
 				this.cmpobj=new CompareColumn();
 			}else{
+				LOG.info("##cmp num##");
 				this.cmpobj=new CompareColumnNum();
 			}
 			return ;

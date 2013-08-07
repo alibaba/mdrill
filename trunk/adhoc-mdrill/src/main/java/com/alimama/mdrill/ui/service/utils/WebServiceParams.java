@@ -307,19 +307,19 @@ public class WebServiceParams {
 			}
 		}
 		
-		if(sort!=null && !sort.equals("")){
-			if(order==null || order.equals("")){
+
+		if(order==null || order.equals("")){
+			order = "true";
+		}else{
+			if(order.equals("desc")){
 				order = "true";
+			}else if(order.equals("asc")){
+				order = "false";
 			}else{
-				if(order.equals("desc")){
-					order = "true";
-				}else if(order.equals("asc")){
-					order = "false";
-				}else{
-					order = "true";
-				}
+				order = "true";
 			}
 		}
+	
 		if(sortField==null)
 		{
 			return new SortParam(null, sortType, order,sort,false,cmptype);
@@ -855,6 +855,7 @@ public class WebServiceParams {
 	
 	public static ArrayList<String> fqList(String queryStr,GetPartions.Shards shard,HashMap<String, String> fieldColumntypeMap) throws JSONException
 	{
+		queryStr=query(queryStr);
 		ArrayList<String> fqList = new ArrayList<String>();
 		JSONArray jsonStr=new JSONArray(queryStr.trim());
 		for(int j=0;j<jsonStr.length();j++)
@@ -1391,10 +1392,10 @@ public class WebServiceParams {
 			query.setParam("facet.cross.sort.cp", sortType.cmptype);
 		}else
 		{
-			query.setParam("facet.cross.sort.desc", "true");
-			query.setParam("facet.cross.sort.fl", "higoempty_count_l");
+			query.setParam("facet.cross.sort.desc", sortType.order);
+			query.setParam("facet.cross.sort.fl", "higoempty_sort_s");
 			query.setParam("facet.cross.sort.tp", "index");
-			query.setParam("facet.cross.sort.cp", "tdouble");
+			query.setParam("facet.cross.sort.cp", "string");
 
 		}
 	}
@@ -1449,8 +1450,8 @@ public class WebServiceParams {
 
 //			query.setParam("facet.cross.sort.tp", sortType.);
 		}else{
-			query.setParam("facet.cross.sort.desc", "true");
-			query.setParam("facet.cross.sort.fl", "higoempty_count_l");
+			query.setParam("facet.cross.sort.desc", sortType.order);
+			query.setParam("facet.cross.sort.fl", "higoempty_count_s");
 			query.setParam("facet.cross.sort.cp", "tdouble");
 
 //			query.setParam("facet.cross.sort.tp", "index");

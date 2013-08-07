@@ -60,8 +60,9 @@ public class GrobalCache {
 				this.str = str;
 			}
 		}
-
-	  public static Cache<ILruMemSizeKey,ILruMemSizeCache> fieldValueCache=Cache.synchronizedCache((new SimpleMapCache<ILruMemSizeKey, ILruMemSizeCache>(new LinkedHashMap<ILruMemSizeKey, ILruMemSizeCache>(1000,0.75f,true) {
+		
+		
+		private Cache<ILruMemSizeKey,ILruMemSizeCache> fieldValueCache_instance=Cache.synchronizedCache((new SimpleMapCache<ILruMemSizeKey, ILruMemSizeCache>(new LinkedHashMap<ILruMemSizeKey, ILruMemSizeCache>(1000,0.75f,true) {
 			private static final long serialVersionUID = 1L;
 			private long totalUsedMemsize=0l;
 			public ILruMemSizeCache put(ILruMemSizeKey key, ILruMemSizeCache value){
@@ -111,4 +112,6 @@ public class GrobalCache {
 				return super.put(key, value);
 			}
 		})));
+
+	  public static Cache<ILruMemSizeKey,ILruMemSizeCache> fieldValueCache=(new GrobalCache()).fieldValueCache_instance;
 }

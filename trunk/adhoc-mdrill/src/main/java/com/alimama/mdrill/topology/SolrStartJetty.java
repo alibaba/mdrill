@@ -3,6 +3,11 @@ package com.alimama.mdrill.topology;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
@@ -42,6 +47,9 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     private OutputCollector collector;
     private boolean isMergeServer=false;
 	private AtomicBoolean neetRestart=new AtomicBoolean(false);
+	public ExecutorService EXECUTE = new ThreadPoolExecutor(1, 1,
+            60*20, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>());
 
     private boolean isRealTime=false;
 
@@ -133,7 +141,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     	}
     }
     
-	private boolean sync(boolean isforce) throws IOException {
+	private synchronized boolean sync(boolean isforce)  {
 		try {
 			this.validate();
 			boolean needRestart = false;
@@ -156,7 +164,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 				}
 			}
 			return needRestart;
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			LOG.error(StormUtils.stringify_error(e));
 			return false;
 		}
@@ -171,11 +179,48 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     }
     
     
+    public static class rsyncExecute implements Runnable{
+    	private SolrStartJetty obj;
+		private boolean issync=false;
+		private AtomicBoolean isfinish=new AtomicBoolean(false);
+		private boolean result=false;
+    	public rsyncExecute(SolrStartJetty obj, boolean issync) {
+			super();
+			this.obj = obj;
+			this.issync = issync;
+		}
+
+
+		
+
+		@Override
+		public void run() {
+			this.result=this.obj.sync(this.issync);
+			isfinish.set(true);
+		}
+		
+		public boolean isfinish()
+		{
+			return this.isfinish.get();
+		}
+		
+		public boolean result()
+		{
+			return this.result;
+		}
+    	
+    }
+    
     AtomicBoolean isInit=new AtomicBoolean(false);
     public void run() {
     	synchronized (this.getThrLockObj()) {
     	    try {
-    			this.sync(true);
+    	    	rsyncExecute exe=new rsyncExecute(this,true);
+    	    	EXECUTE.submit(exe);
+    	    	while(!exe.isfinish()&&!statcollect.isTimeout(600l*1000))
+    	    	{
+    	    		Thread.sleep(1000l);
+    	    	}
     			this.startJetty();
     			isInit.set(true);
     			LOG.info("higolog table end:" + this.tablename);
@@ -253,11 +298,6 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		    return ;
 		}
 		
-//		if(!MemInfo.hasMem())
-//		{
-//		    throw new Exception("no enough mem:"+MemInfo.getInfo(1024));
-//		}
-		
 		synchronized (this.getThrLockObj()) {
 		    LOG.info("higolog heartbeat:" + this.tablename);
 		    try {
@@ -280,7 +320,12 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		}else{
 		    neetRestart.set(false);
 		    this.stopJetty();
-		    this.sync(false);
+		    rsyncExecute exe=new rsyncExecute(this,false);
+	    	EXECUTE.submit(exe);
+	    	while(!exe.isfinish()&&!statcollect.isTimeout(600l*1000))
+	    	{
+	    		Thread.sleep(1000l);
+	    	}
 		    this.startJetty();
 		}
 		this.statcollect.setLastTime(System.currentTimeMillis());

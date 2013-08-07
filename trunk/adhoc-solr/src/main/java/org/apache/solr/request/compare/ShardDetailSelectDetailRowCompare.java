@@ -3,8 +3,10 @@ package org.apache.solr.request.compare;
 import java.io.Serializable;
 import java.util.Comparator;
 
-public class ShardDetailSelectDetailRowCompare implements Comparator<SelectDetailRow>,Serializable{
+import org.apache.log4j.Logger;
 
+public class ShardDetailSelectDetailRowCompare implements Comparator<SelectDetailRow>,Serializable{
+	private static Logger LOG = Logger.getLogger(ShardDetailSelectDetailRowCompare.class);
 	private static final long serialVersionUID = 1L;
 	private boolean isdesc=true;
 	private compareInterface cmpobj=null;

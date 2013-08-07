@@ -29,6 +29,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
 import org.apache.solr.handler.component.StatsValues;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LinkFSDirectory;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.SimpleLRUCache;
@@ -46,7 +48,11 @@ import org.slf4j.LoggerFactory;
 import com.alimama.mdrill.buffer.LuceneUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 
 import java.util.zip.CRC32;
 
@@ -62,7 +68,40 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
 	
 	public UnInvertedField(String field, SolrIndexSearcher searcher,
 			IndexReader reader) throws IOException {
-		uninvert(field, searcher, reader);
+		Directory cacheDir=searcher.getFieldcacheDir() ;
+		File file = null;
+		FileLock flout = null;
+		RandomAccessFile out = null;
+		FileChannel fcout = null;
+		try{
+			if(cacheDir!=null&& cacheDir instanceof FSDirectory)
+			{
+				FSDirectory localdir=(FSDirectory)cacheDir;
+				file=new File(localdir.getDirectory(),"mdrill_uni_lock");
+				if (!file.exists()) {
+					file.createNewFile();
+				}
+				out = new RandomAccessFile(file, "rw");
+				fcout = out.getChannel();
+				flout = fcout.lock();
+			}
+			uninvert(field, searcher, reader);
+		
+		}finally{
+			try {
+				if (flout != null) {
+					flout.release();
+				}
+				if (fcout != null) {
+					fcout.close();
+				}
+				if (out != null) {
+					out.close();
+				}
+				out = null;
+			} catch (Exception e) {
+			}
+		}
 	}
 	
 	private void setSingleValue( NumberedTermEnum te,IndexReader reader,String key) throws IOException
@@ -319,6 +358,8 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
 	
 	private synchronized void uninvert(String field,
 			SolrIndexSearcher searcher, IndexReader reader) throws IOException {
+	
+		
 		SolrCore.log.info("####UnInverted#### begin");
 
 		this.field = field;

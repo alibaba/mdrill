@@ -20,6 +20,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.GroupList;
@@ -81,7 +82,7 @@ public class HigoJoinUtils {
 	{
 		String path=pathToLocal(req, tablename);
 		LOG.info("###joinpath###"+path);
-		return req.getCore().getSearcherByPath(String.valueOf(path), path, false, false, false);
+		return req.getCore().getSearcherByPath(SolrResourceLoader.getCacheFlushKey()+"@"+String.valueOf(path), path, false, false, false);
 	}
 	
 	

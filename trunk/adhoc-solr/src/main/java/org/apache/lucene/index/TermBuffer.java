@@ -85,6 +85,34 @@ final class TermBuffer implements Cloneable {
     }
     this.field = fieldInfos.fieldName(input.readVInt());
   }
+  
+  public final void readTiiQuick(IndexInput input, FieldInfos fieldInfos)
+  throws IOException {
+  this.term = null;                           // invalidate cache
+  int start = 0;
+  int length = input.readVInt();
+  int totalLength = start + length;
+  if (preUTF8Strings) {
+    text.setLength(totalLength);
+    input.readChars(text.result, start, length);
+  } else {
+
+    if (dirty) {
+      // Fully convert all bytes since bytes is dirty
+      UnicodeUtil.UTF16toUTF8(text.result, 0, text.length, bytes);
+      bytes.setLength(totalLength);
+      input.readBytes(bytes.result, start, length);
+      UnicodeUtil.UTF8toUTF16(bytes.result, 0, totalLength, text);
+      dirty = false;
+    } else {
+      // Incrementally convert only the UTF8 bytes that are new:
+      bytes.setLength(totalLength);
+      input.readBytes(bytes.result, start, length);
+      UnicodeUtil.UTF8toUTF16(bytes.result, start, length, text);
+    }
+  }
+  this.field = fieldInfos.fieldName(input.readVInt());
+}
 
   public final void set(Term term) {
     if (term == null) {

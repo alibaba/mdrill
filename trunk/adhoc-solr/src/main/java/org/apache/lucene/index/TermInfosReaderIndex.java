@@ -36,7 +36,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * set. The Terms and TermInfo are actually serialized and stored into a byte
  * array and pointers to the position of each are stored in a int array.
  */
-class TermInfosReaderIndex {
+class TermInfosReaderIndex implements TermInfoReaderIndexInterface{
 
   private static final int MAX_PAGE_BITS = 18; // 256 KB block
   private Term[] fields;
@@ -112,7 +112,7 @@ class TermInfosReaderIndex {
     return Math.max(Math.min(64 - BitUtil.nlz(estSize), MAX_PAGE_BITS), 4);
   }
 
-  void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
+  public void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
     PagedBytesDataInput input = (PagedBytesDataInput) dataInput.clone();
     
     input.setPosition(indexToDataOffset.get(indexOffset));
@@ -146,7 +146,7 @@ class TermInfosReaderIndex {
    *          the term to locate.
    * @throws IOException 
    */
-  int getIndexOffset(Term term, BytesRef termBytesRef) throws IOException {
+  public int getIndexOffset(Term term, BytesRef termBytesRef) throws IOException {
     int lo = 0;
     int hi = indexSize - 1;
     PagedBytesDataInput input = (PagedBytesDataInput) dataInput.clone();
@@ -187,7 +187,7 @@ class TermInfosReaderIndex {
    * 
    * @return int.
    */
-  int length() {
+  public int length() {
     return indexSize;
   }
 
@@ -202,7 +202,7 @@ class TermInfosReaderIndex {
    * @return int.
    * @throws IOException 
    */
-  int compareTo(Term term, BytesRef termBytesRef, int termIndex) throws IOException {
+  public int compareTo(Term term, BytesRef termBytesRef, int termIndex) throws IOException {
     return compareTo(term, termBytesRef, termIndex, (PagedBytesDataInput) dataInput.clone(), new BytesRef());
   }
 

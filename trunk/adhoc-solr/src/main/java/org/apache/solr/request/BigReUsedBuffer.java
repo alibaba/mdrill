@@ -20,12 +20,10 @@ public class BigReUsedBuffer<T> {
 			boolean allowadd=this.free.size() < 100;
 			for (BlockInterface<T> d:data.data) {
 				if (d != null) {
-					d.updateLasttime();
 					if(allowadd)
 					{
 						this.free.add( d);
 					}
-
 				}
 			}
 	}
@@ -161,14 +159,14 @@ public class BigReUsedBuffer<T> {
 		public void set(int i, Integer v) {
 			data[i]=v;
 		}
-		long lasttime=System.currentTimeMillis();
-		public long getLasttime() {
-			return lasttime;
-		}
-
-		public void updateLasttime() {
-			this.lasttime = System.currentTimeMillis();
-		}
+//		long lasttime=System.currentTimeMillis();
+//		public long getLasttime() {
+//			return lasttime;
+//		}
+//
+//		public void updateLasttime() {
+//			this.lasttime = System.currentTimeMillis();
+//		}
 	}
 	
 	public static class BlockShort implements BlockInterface<Short>
@@ -188,14 +186,14 @@ public class BigReUsedBuffer<T> {
 		public void set(int i, Short v) {
 			data[i]=v;
 		}
-		long lasttime=System.currentTimeMillis();
-		public long getLasttime() {
-			return lasttime;
-		}
-
-		public void updateLasttime() {
-			this.lasttime = System.currentTimeMillis();
-		}
+//		long lasttime=System.currentTimeMillis();
+//		public long getLasttime() {
+//			return lasttime;
+//		}
+//
+//		public void updateLasttime() {
+//			this.lasttime = System.currentTimeMillis();
+//		}
 	}
 	
 	public static class BlockLong implements BlockInterface<Long>
@@ -215,14 +213,14 @@ public class BigReUsedBuffer<T> {
 		public void set(int i, Long v) {
 			data[i]=v;
 		}
-		long lasttime=System.currentTimeMillis();
-		public long getLasttime() {
-			return lasttime;
-		}
-
-		public void updateLasttime() {
-			this.lasttime = System.currentTimeMillis();
-		}
+//		long lasttime=System.currentTimeMillis();
+//		public long getLasttime() {
+//			return lasttime;
+//		}
+//
+//		public void updateLasttime() {
+//			this.lasttime = System.currentTimeMillis();
+//		}
 	}
 	
 	
@@ -243,14 +241,14 @@ public class BigReUsedBuffer<T> {
 		public void set(int i, Double v) {
 			data[i]=v;
 		}
-		long lasttime=System.currentTimeMillis();
-		public long getLasttime() {
-			return lasttime;
-		}
-
-		public void updateLasttime() {
-			this.lasttime = System.currentTimeMillis();
-		}
+//		long lasttime=System.currentTimeMillis();
+//		public long getLasttime() {
+//			return lasttime;
+//		}
+//
+//		public void updateLasttime() {
+//			this.lasttime = System.currentTimeMillis();
+//		}
 	}
 	
 	public static class BlockByte implements BlockInterface<Byte>
@@ -270,19 +268,19 @@ public class BigReUsedBuffer<T> {
 		public void set(int i, Byte v) {
 			data[i]=v;
 		}
-		long lasttime=System.currentTimeMillis();
-		public long getLasttime() {
-			return lasttime;
-		}
-
-		public void updateLasttime() {
-			this.lasttime = System.currentTimeMillis();
-		}
+//		long lasttime=System.currentTimeMillis();
+//		public long getLasttime() {
+//			return lasttime;
+//		}
+//
+//		public void updateLasttime() {
+//			this.lasttime = System.currentTimeMillis();
+//		}
 	}
 	
 	public static interface BlockInterface<K>{
-		public void updateLasttime() ;
-		public long getLasttime();
+//		public void updateLasttime() ;
+//		public long getLasttime();
 		public  K get(int i);
 		public  void set(int i,K v);
 	}

@@ -3,12 +3,11 @@ package org.apache.solr.request.compare;
 import java.io.Serializable;
 import java.util.Comparator;
 
-import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare.CompareColumn;
-import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare.CompareColumnNum;
+import org.apache.log4j.Logger;
 
 
 public class ShardDetailSelectDetailRowStringCompare implements Comparator<SelectDetailRow>,Serializable{
-
+	private static Logger LOG = Logger.getLogger(ShardDetailSelectDetailRowStringCompare.class);
 	private static final long serialVersionUID = 1L;
 	private boolean isdesc=true;
 	private compareInterface cmpobj=null;
@@ -17,8 +16,10 @@ public class ShardDetailSelectDetailRowStringCompare implements Comparator<Selec
 		this.isdesc=_isdesc;
 		if(columntype.equals("string"))
 		{
+			LOG.info("##cmp string##");
 			this.cmpobj=new CompareColumn();
 		}else{
+			LOG.info("##cmp num##");
 			this.cmpobj=new CompareColumnNum();
 		}
 	}

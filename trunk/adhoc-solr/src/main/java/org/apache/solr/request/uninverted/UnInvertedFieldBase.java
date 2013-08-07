@@ -22,7 +22,7 @@ public class UnInvertedFieldBase {
 	public static BigReUsedBuffer<Byte> BYTE_BUFFER=new BigReUsedBuffer<Byte>();
 	public static BigReUsedBuffer<Long> LONG_BUFFER=new BigReUsedBuffer<Long>();
 	public static BigReUsedBuffer<Double> DOUBLE_BUFFER=new BigReUsedBuffer<Double>();
-	public static int CacheVersion=31;
+	public static int CacheVersion=34;
 	
 	public AtomicInteger refCnt=new AtomicInteger(0);
 	
@@ -327,24 +327,30 @@ public class UnInvertedFieldBase {
 		}
 		
 		
-		long sz=-1;
-		  public synchronized long memSize() {
-			  if(sz>=0)
-			  {
-				  return sz;
-			  }
-			    sz = 8*8 + 32; // local fields
-			    if (index != null) sz += index.getMemSize() * 4;
-			    if (indexshort != null) sz += indexshort.getMemSize() * 2;
-			    if (indexbyte != null) sz += indexbyte.getMemSize() * 1;
-			    if (termValueDouble != null) sz += termValueDouble.getMemSize() * 8;
-			    if (termValueLong != null) sz += termValueLong.getMemSize() * 8;
-			    if (tnums!=null) {
-			      for (byte[] arr : tnums)
-			        if (arr != null) sz += arr.length;
-			    }
-			    sz += ti.memSize();
-			    return sz;
-			  }
+	long sz = -1;
+
+	public synchronized long memSize() {
+		if (sz >= 0) {
+			return sz;
+		}
+		sz = 8 * 8 + 32; // local fields
+		if (index != null)
+			sz += index.getMemSize() * 4;
+		if (indexshort != null)
+			sz += indexshort.getMemSize() * 2;
+		if (indexbyte != null)
+			sz += indexbyte.getMemSize() * 1;
+		if (termValueDouble != null)
+			sz += termValueDouble.getMemSize() * 8;
+		if (termValueLong != null)
+			sz += termValueLong.getMemSize() * 8;
+		if (tnums != null) {
+			for (byte[] arr : tnums)
+				if (arr != null)
+					sz += arr.length;
+		}
+		sz += ti.memSize();
+		return sz;
+	}
 		  
 }

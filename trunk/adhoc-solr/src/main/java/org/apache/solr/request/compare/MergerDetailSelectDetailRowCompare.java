@@ -3,8 +3,8 @@ package org.apache.solr.request.compare;
 import java.io.Serializable;
 import java.util.Comparator;
 
-import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare.CompareColumn;
-import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare.CompareColumnNum;
+import org.apache.log4j.Logger;
+
 
 /**
  * 查询明细 在merger server 里面的排序
@@ -12,6 +12,7 @@ import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare.CompareColu
  *
  */
 public class MergerDetailSelectDetailRowCompare implements Comparator<SelectDetailRow>,Serializable{
+	private static Logger LOG = Logger.getLogger(MergerDetailSelectDetailRowCompare.class);
 
 	private static final long serialVersionUID = 1L;
 	private boolean isdesc=true;
@@ -21,8 +22,10 @@ public class MergerDetailSelectDetailRowCompare implements Comparator<SelectDeta
 		this.isdesc=_isdesc;
 		if(columntype.equals("string"))
 		{
+			LOG.info("##cmp string##");
 			this.cmpobj=new CompareColumn();
 		}else{
+			LOG.info("##cmp num##");
 			this.cmpobj=new CompareColumnNum();
 		}
 	}

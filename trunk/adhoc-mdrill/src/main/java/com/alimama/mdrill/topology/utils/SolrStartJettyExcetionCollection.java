@@ -4,7 +4,7 @@ import org.apache.solr.core.CoreContainer;
 
 public class SolrStartJettyExcetionCollection {
 	   private Boolean isException =false;
-	    private Exception lasterror=null;
+	    private Throwable lasterror=null;
 	    
 	    private Object errorLock=new Object();
 	    
@@ -15,7 +15,7 @@ public class SolrStartJettyExcetionCollection {
 		}
 	    }
 
-	    public void setException(Exception e) {
+	    public void setException(Throwable e) {
 		synchronized (this.getLockObj()) {
 		    this.isException = true;
 		    this.lasterror = e;

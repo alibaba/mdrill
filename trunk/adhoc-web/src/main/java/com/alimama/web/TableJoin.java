@@ -581,10 +581,12 @@ public class TableJoin {
 			jsonArray.put(item);
 			
 		    }
-		
-		jsonObj.put("list",jsonArray);
 		HashMap<String,String> cnt=getUserTablesCount(username, type);
-		jsonObj.put("total",cnt.get("cnt"));
+
+		JSONObject data = new JSONObject();
+		data.put("list",jsonArray);
+		data.put("total",cnt.get("cnt"));
+		jsonObj.put("data",data);
 		jsonObj.put("total_debug", new JSONObject(cnt));
 		m_fpsql.close();
 		

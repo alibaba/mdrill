@@ -228,7 +228,7 @@ public class MdrillGroupBy {
 			this.joinSort[i]=new HigoJoinSort(this.joinList[i], this.req);
 			this.joinInvert[i]=new HigoJoinInvert(this.joinList[i], this.searcher);
 			this.joinInvert[i].open(this.req);
-			baseDocs=this.joinInvert[i].filterRight(baseDocs);
+			baseDocs=this.joinInvert[i].filterByRight(baseDocs);
 		}
 		this.cmpString=new ShardGroupByGroupbyRowCompare(this.sort_column_type,fields, crossFs, distFS, this.joinSort, this.sort_fl, this.sort_type, this.isdesc);
 		this.cmpTermNum=new ShardGroupByTermNumCompare(fields, crossFs, distFS, this.joinSort, this.sort_fl, this.sort_type, this.isdesc);
