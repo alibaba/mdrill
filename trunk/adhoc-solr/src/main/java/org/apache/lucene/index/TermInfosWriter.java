@@ -36,7 +36,7 @@ final class TermInfosWriter implements Closeable {
   private FieldInfos fieldInfos;
   private IndexOutput output;
   private IndexOutput outputSize;
-  private IndexOutput outputQuickTii;
+  private IndexOutput outputQuickTii=null;
   private TermInfo lastTi = new TermInfo();
   private long size;
 
@@ -243,6 +243,10 @@ final class TermInfosWriter implements Closeable {
 
   /** Called to complete TermInfos creation. */
   public void close() throws IOException {
+	  if(outputQuickTii!=null)
+	  {
+		  outputQuickTii.close();
+	  }
     try {
     	outputSize.writeLong(size);
     } finally {
