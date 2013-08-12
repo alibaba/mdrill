@@ -104,7 +104,7 @@ public class ThedatePartions implements MdrillPartionsInterface{
 			return rtn.toArray(rtnarr);
 		}
 
-		Long step = 1000l * 3600 * 24;
+		Long step = 1000l * 3600 * 24*30;
 		Long max = 0l;
 		Long initDate = (new Date()).getTime();
 		max = initDate;
@@ -114,7 +114,7 @@ public class ThedatePartions implements MdrillPartionsInterface{
 	
 	public String SqlFilter(String queryStr) throws Exception
 	{
-		JSONArray rtn = new JSONArray(queryStr.trim());
+		JSONArray rtn = new JSONArray();
 		JSONArray jsonStr = new JSONArray(queryStr.trim());
 
 		for (int j = 0; j < jsonStr.length(); j++) {

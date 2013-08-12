@@ -129,7 +129,7 @@ public class MdrillService {
 		new Thread(hb).start();
 		try {
 			queryStr = WebServiceParams.query(queryStr);
-			queryStr = WebServiceParams.queryadHoc(queryStr,part.parttype);
+//			queryStr = WebServiceParams.queryadHoc(queryStr,part.parttype);
 			
 			String logParams2 = logRequest(projectName, callback, startStr, rowsStr,
 					queryStr, dist, fl, groupby, sort, order,leftjoin);
@@ -510,7 +510,7 @@ public class MdrillService {
 				
 				for(int i=start;i<(start+rows)&&i<total;i++)
 				{
-					jsonArray.put(fmt.format(new Date(d2.getTime()+i*1000l*3600*24)));
+					jsonArray.put(fmt.format(new Date(d1.getTime()-i*1000l*3600*24)));
 				}
 			}
 		

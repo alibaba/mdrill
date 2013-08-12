@@ -71,41 +71,6 @@ public class WebServiceParams {
 		return rows;
 	}
 	
-	public static String queryadHoc(String queryStr,String part) throws JSONException
-	{
-		if(part.equals("single"))
-		{
-			return queryStr;
-		}
-		JSONArray jsonStr=new JSONArray(queryStr.trim());
-		boolean hasthedate=false;
-		for(int i=0;i<jsonStr.length();i++)
-		{
-			JSONObject obj=jsonStr.getJSONObject(i);
-			if(obj.has("thedate"))
-			{
-				hasthedate=true;
-				break;
-			}
-		}
-    	if(!hasthedate)
-    	{
-        	JSONObject thedate=new JSONObject();
-    		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
-    	    JSONArray fromto=new JSONArray();
-    	    fromto.add(0, fmt.format(new Date(new Date().getTime()-1000l*3600*24*30)));
-    	    fromto.add(1, fmt.format(new Date()));
-    	    thedate.put("operate", 9);
-    	    thedate.put("value", fromto);
-    	    
-        	JSONObject dateput=new JSONObject();
-        	dateput.put("thedate", thedate);
-
-    	    jsonStr.put(dateput);
-    	    queryStr=jsonStr.toString();
-    	}
-    	return queryStr;
-	}
 
 	public static class HigoJoinParams{
 		public String tablename;
@@ -975,6 +940,8 @@ public static OperateType parseOperateType(int operate)
 		if(queryStr==null||queryStr.isEmpty()||queryStr.equals("*:*")){
 			return fqList;
 		}
+		
+		queryStr=WebServiceParams.query(queryStr);
 		
 		JSONArray jsonStr=new JSONArray(queryStr.trim());
 		for(int j=0;j<jsonStr.length();j++)

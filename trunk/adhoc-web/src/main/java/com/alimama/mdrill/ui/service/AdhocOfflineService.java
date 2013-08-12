@@ -67,6 +67,31 @@ public class AdhocOfflineService {
 		// "\t")+"\n");
 	
 	}
+	
+	public static String readHiveResultID(String uuid) throws SQLException,
+			IOException {
+		Map stormconf = Utils.readStormConfig();
+		String hdpConf = (String) stormconf.get("hadoop.conf.dir");
+		String connstr = (String) stormconf.get("higo.download.offline.conn");
+		String uname = (String) stormconf.get("higo.download.offline.username");
+		String passwd = (String) stormconf.get("higo.download.offline.passwd");
+		MySqlConn conn = new MySqlConn(connstr, uname, passwd);
+		Configuration conf = new Configuration();
+		HadoopBaseUtils.grabConfiguration(hdpConf, conf);
+		MysqlInfo info = new MysqlInfo(conn);
+		HashMap<String, String> result = info.get(uuid);
+		if (result != null && result.containsKey("jobname")
+				&& result.containsKey("cols")) {
+
+			String tablename = result.get("jobname");
+			return tablename.replaceAll(
+					"[\n|\\/|:|\t|\\.|\\\\|\\?|<|>|\\*|\\?|\\|\"]", "_")
+					+ "_adhoc.csv";
+
+		}
+		return "adhoc.csv";
+
+	}
 
 	public static void readHiveResult(String path,
 			OutputStreamWriter outStream, Configuration conf)

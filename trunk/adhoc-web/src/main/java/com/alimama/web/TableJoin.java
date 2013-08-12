@@ -128,6 +128,21 @@ public class TableJoin {
 }
 	
 	
+	public static String getDownloadId(String uuid)
+	throws SQLException, IOException, JSONException {
+		final HashMap<String,String> tableInfo=getTableInfo(uuid);
+		if(tableInfo==null||tableInfo.isEmpty())
+		{
+			return "adhoc.csv";
+		}
+		
+		String tablename=tableInfo.get("tableShowName");
+		
+		return tablename.replaceAll("[\n|\\/|:|\t|\\.|\\\\|\\?|<|>|\\*|\\?|\\|\"]", "_")+"_adhoc.csv";
+
+}
+	
+	
     private static final ExecutorService       EXECUTE  = ExecutorSerives.EXECUTE;
 
 	public static String addTxt(final String tableName,final String store,final String callback) throws JSONException, SQLException 
@@ -605,7 +620,7 @@ public class TableJoin {
 			boolean isallowEdit=!res.getString("status").equals("INDEXING")&&res.getString("source").equals("1");
 			item.put("allowCreate",String.valueOf(res.getString("source").equals("2")&&issuccess));//是否允许将离线下载转换为个人表
 			item.put("allowUpload",String.valueOf(isallowEdit));//上传
-			item.put("allowDownload",String.valueOf(!res.getString("status").equals("INDEXING")));//下载
+			item.put("allowDownload",String.valueOf(issuccess));//下载
 			item.put("allowJoin",String.valueOf(res.getString("source").equals("1")&&issuccess));//join
 			item.put("allowSend",String.valueOf(res.getString("source").equals("1")&&issuccess));//推送
 			jsonArray.put(item);

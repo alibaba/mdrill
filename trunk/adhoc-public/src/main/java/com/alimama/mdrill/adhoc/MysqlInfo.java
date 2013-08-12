@@ -32,6 +32,7 @@ public class MysqlInfo {
 		while (res.next()) {
 			rtn.put("cols", res.getString("cols"));
 			rtn.put("storedir", res.getString("storedir"));
+			rtn.put("jobname", res.getString("jobname"));
 		    }
 		m_fpsql.close();
 		

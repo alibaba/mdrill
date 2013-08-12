@@ -59,7 +59,7 @@ public class DirtoryPartions implements MdrillPartionsInterface{
 
 	@Override
 	public String SqlFilter(String queryStr) throws Exception {
-		JSONArray rtn = new JSONArray(queryStr.trim());
+		JSONArray rtn = new JSONArray();
 		JSONArray jsonStr = new JSONArray(queryStr.trim());
 
 		for (int j = 0; j < jsonStr.length(); j++) {
