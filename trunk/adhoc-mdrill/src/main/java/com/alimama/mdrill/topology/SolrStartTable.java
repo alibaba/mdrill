@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +26,10 @@ import backtype.storm.task.OutputCollector;
 
 import com.alimama.mdrill.partion.GetPartions;
 import com.alimama.mdrill.partion.GetPartions.TablePartion;
+import com.alimama.mdrill.partion.MdrillPartions;
+import com.alimama.mdrill.partion.MdrillPartionsInterface;
+import com.alimama.mdrill.partion.StatListenerInterface;
+import com.alimama.mdrill.partion.thedate.ThedateListener;
 import com.alimama.mdrill.topology.utils.Interval;
 import com.alimama.mdrill.topology.utils.SolrStartJettyExcetionCollection;
 import com.alimama.mdrill.utils.IndexUtils;
@@ -90,7 +93,8 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	private AtomicInteger copy2indexFailTimes=new AtomicInteger(0);
 
 	private TablePartion part;
-	private PartionStat partstat=new PartionStat();
+	private StatListenerInterface partstat;
+	private MdrillPartionsInterface mdrillpartion;
     public void setRealTime(boolean isRealTime) {
 		this.isRealTime = isRealTime;
 		LinkFSDirectory.setRealTime(isRealTime);
@@ -102,7 +106,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 
 	public SolrStartTable(OutputCollector collector, Configuration conf,
 			String solrhome, String diskList, int taskIndex, String tblName,
-			Integer taskid, SolrStartJetty solrservice) throws IOException {
+			Integer taskid, SolrStartJetty solrservice) throws Exception {
 		this.collector = collector;
 		this.conf = conf;
 		this.fs = FileSystem.get(this.conf);
@@ -112,6 +116,8 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		this.tablename = tblName;
 		
 		this.part=GetPartions.partion(this.tablename);
+		this.mdrillpartion=MdrillPartions.INSTANCE(this.part.parttype);
+		this.partstat=this.mdrillpartion.getStatObj();
 		this.taskid = taskid;
 		this.solrservice = solrservice;
 		this.diskDirList = diskList;
@@ -262,10 +268,11 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		HashMap<String, Vertify> hdfsVertify = IndexUtils.readVertifyList(fs,hdfsIndexpath);// partions
 		HashMap<String, Vertify> localVertify = IndexUtils.readVertifyList(lfs,	localIndexPath);// ./data
 
-		this.partstat.resetPartionStat();
+		this.partstat.syncClearPartions();
+
 		for (Entry<String, Vertify> e : hdfsVertify.entrySet()) {
 			String partion = e.getKey();
-			this.partstat.setPartionStat(partion);
+			this.partstat.addPartionStat(partion);
 
 			
 			Vertify hdfsValue = e.getValue();
@@ -275,6 +282,8 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 				SolrResourceLoader.SetCacheFlushKey(System.currentTimeMillis());
 			}
 		}
+		this.partstat.syncClearStat();
+
 		HashSet<String> skiplist=new HashSet<String>();
 		skiplist.add("default");
 		skiplist.add("");
@@ -295,7 +304,6 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	
 
 	private synchronized boolean sync( boolean isforce) {
-		this.partstat.resetDayPartion(this.part.parttype);
 		try {
 			this.resetFileSystem();
 			this.validate();
@@ -473,10 +481,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			Integer bindport = this.getBindPort();
 			Long hbtime = statcollect.getLastTime();
 			
-			HashMap<String, ShardCount> daystat=new HashMap<String, SolrInfo.ShardCount>();
-			daystat.putAll(this.partstat.getSmallestDaycount());//todo ȡtopN,���ڴ���������
-			daystat.putAll(this.partstat.getBiggestDaycount());
-			
+			HashMap<String, ShardCount> daystat=this.partstat.getExtaCount();
 			SolrInfo info = new SolrInfo(this.isRealTime,localSolrPath.toString(),
 					hdfsIndexpath.toString(), hdfsforder, bindport, 
 					statcollect.getStat(), this.partstat.getPartioncount(),daystat, statcollect.getSetupTime(),
@@ -504,7 +509,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		}
 
 		try {
-			this.partstat.setupRecordCount(this.solrservice,this.tablename,this.part);
+			this.partstat.fetchCount(this.solrservice,this.tablename,this.part);
 			statcollect.setLastTime(System.currentTimeMillis());
 			this.zkHeatbeat();
 		} catch (Exception e) {

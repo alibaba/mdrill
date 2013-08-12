@@ -29,8 +29,10 @@ import com.alimama.mdrill.json.JSONException;
 import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetPartions;
 import com.alimama.mdrill.partion.GetShards;
+import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.GetPartions.TablePartion;
 import com.alimama.mdrill.partion.GetShards.SolrInfoList;
+import com.alimama.mdrill.partion.MdrillPartionsInterface;
 import com.alimama.mdrill.ui.service.utils.WebServiceParams;
 import com.alimama.mdrill.ui.service.utils.WebServiceParams.HigoJoinParams;
 import com.alimama.mdrill.ui.service.utils.WebServiceParams.SortParam;
@@ -150,7 +152,9 @@ public class MdrillService {
 			String[] cores = GetShards.get(part.name, false, 10000);
 			String[] ms = GetShards.get(part.name, true, 10000);
 
-			String[] partionsAll = GetPartions.get(queryStr, part.parttype);
+			MdrillPartionsInterface drillpart=MdrillPartions.INSTANCE(part.parttype);
+			String[] partionsAll = drillpart.SqlPartions(queryStr);
+			queryStr=drillpart.SqlFilter(queryStr);
 
 			Arrays.sort(partionsAll);
 			LOG.info("partionsAll:" + Arrays.toString(partionsAll));

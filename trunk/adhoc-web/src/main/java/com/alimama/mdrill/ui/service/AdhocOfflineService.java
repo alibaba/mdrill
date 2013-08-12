@@ -32,6 +32,7 @@ import com.alimama.mdrill.partion.GetShards;
 import com.alimama.mdrill.partion.GetPartions.*;
 import com.alimama.mdrill.ui.service.AdhocWebServiceParams.HigoAdhocJoinParams;
 import com.alimama.mdrill.ui.service.MdrillService;
+import com.alimama.mdrill.ui.service.partions.AdhocHivePartions;
 import com.alimama.mdrill.ui.service.utils.WebServiceParams;
 import com.alimama.mdrill.utils.HadoopBaseUtils;
 
@@ -133,7 +134,7 @@ public class AdhocOfflineService {
 		TablePartion part = GetPartions.partion(projectName);
 		String[] cores = GetShards.get(part.name, false, 10000);
 		String[] ms = GetShards.get(part.name, true, 10000);
-		String[] partionsAll = GetPartions.get(queryStr, part.parttype);
+		String[] partionsAll = AdhocHivePartions.get(queryStr, part.parttype);
 		GetPartions.Shards shard = GetPartions.getshard(part, partionsAll,
 				cores, ms, 10000, 0);
 		

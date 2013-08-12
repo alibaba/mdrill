@@ -531,14 +531,49 @@ public class WebServiceParams {
 	}
 
 	
+	
+public static OperateType parseOperateType(int operate)
+ {
+		switch (operate) {
+			case 1: {
+				return OperateType.eq;
+			}
+			case 2: {
+				return OperateType.neq;
+			}
+			case 3: {
+				return OperateType.gt;
+			}
+			case 4: {
+				return OperateType.lg;
+			}
+			case 13: {
+				return OperateType.gteq;
+			}
+			case 14: {
+				return OperateType.lgeq;
+			}
+			case 5:
+			case 6:
+			case 7:
+			case 8: {
+				boolean isNotIn = (operate == 7 || operate == 8);
+				if (isNotIn) {
+					return OperateType.notin;
+				}
+				return OperateType.in;
+			}
+			case 9: {
+				return OperateType.range;
+			}
+			case 1000: {
+				return OperateType.other;
+			}
+		}
+		return OperateType.other;
+	}
 	private static String parseFqOperate(int operate,String key,String value2,GetPartions.Shards shard,HashMap<String, String> fieldColumntypeMap)
 	{
-		if(key.equals("thedate"))
-		{
-			//--尼玛啊，又要兼容--
-			value2=value2.replaceAll("-", "");
-		}
-		
 		String ft="string";
 		if(fieldColumntypeMap!=null&&fieldColumntypeMap.containsKey(key))
 		{

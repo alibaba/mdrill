@@ -18,7 +18,7 @@ public class SolrStart implements Runnable, StopCheck, SolrStartInterface {
 	public SolrStart(OutputCollector collector, Configuration conf,
 			String solrhomeBase, String[] tableNames, String diskList,
 			Integer portbase, int taskIndex, String topologyName,
-			Integer taskid, Integer partions) throws IOException {
+			Integer taskid, Integer partions) throws Exception {
 		jetty = new SolrStartJetty(collector, conf, solrhomeBase + "/"
 				+ tableNames[0], diskList, portbase, taskIndex, topologyName,
 				taskid, partions);

@@ -117,7 +117,7 @@ public class TableList {
 		    	if(info.daycount.size()>0)
 		    	{
 		    		buff.append("<tr>");
-			    	buff.append("<td>最近7天心跳：</td>");
+			    	buff.append("<td>额外监控：</td>");
 			    	buff.append("<td colspan=9>"+info.daycount.toString()+"</td>");
 			    	buff.append("</tr>");
 		    	}

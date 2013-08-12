@@ -509,12 +509,36 @@ public class TableJoin {
 				",'2' as stage" +
 				",percent as percent" +
 				",resultkb as resultkb" +
-				" from adhoc_joins where username='"+username.replaceAll("'", "")+"' and status<>'DEL'  ";
+				" from adhoc_joins where username='"+username.replaceAll("'", "")+"' and status<>'DEL'  and (copy_uuid is null or copy_uuid='') ";
 		
 		
 		StringBuffer bufferSql=new StringBuffer();
 		if(type==0)//个人中心列表
 		{
+			
+			String strsqlJoin2="select '3' as source " +
+			",tableShowName as tableShowName" +
+			",tableName as tableName" +
+			",colsShowName as colsShowName" +
+			",colsName as colsName" +
+			",colsType as colsType" +
+			",splitString as splitString" +
+			",txtStorePath as txtStorePath" +
+			",indexStorePath as indexStorePath" +
+			",'0' as extval" +
+			",'0' as isfinish" +
+			",status as status" +
+			",username as username" +
+			",createtime as createtime" +
+			",lastuptime as lastuptime" +
+			",joins as joins" +
+			",'2' as stage" +
+			",percent as percent" +
+			",resultkb as resultkb" +
+			" from adhoc_joins where username='"+username.replaceAll("'", "")+"' and status<>'DEL'  and (copy_uuid is not null and copy_uuid<>''  and status='INDEX' ) ";
+	
+	
+			
 			String strsqlDownload="select '2' as source " +
 			",jobname as tableShowName" +
 			",uuid as tableName" +
@@ -538,12 +562,13 @@ public class TableJoin {
 			bufferSql.append("select source,tableShowName,tableName,colsShowName" +
 					",colsName,colsType,splitString,txtStorePath,indexStorePath,extval,status,username," +
 					"createtime,lastuptime,joins,stage,percent,resultkb");
-			bufferSql.append(" from ("+strsqlJoin+" union "+strsqlDownload+") tmp order by tmp.createtime desc limit "+start+","+rows+" ");
+			bufferSql.append(" from ("+strsqlJoin+"  union "+strsqlDownload+" union "+strsqlJoin2+") tmp order by tmp.createtime desc limit "+start+","+rows+" ");
 		}
 		if(type==1)//for join
 		{
 			bufferSql.append(strsqlJoin+" and status='INDEX' order by createtime desc limit "+start+","+rows+" ");
 		}
+		
 		
 		
 		String sql=bufferSql.toString();
@@ -577,7 +602,12 @@ public class TableJoin {
 			item.put("resultkb", res.getString("resultkb"));
 			boolean issuccess=res.getString("status").equals("INDEX")&&res.getString("extval").equals("0");
 			item.put("proccess", parsePercent(res.getString("stage"),res.getString("percent"),issuccess));
-			item.put("isActive",String.valueOf(issuccess));
+			boolean isallowEdit=!res.getString("status").equals("INDEXING")&&res.getString("source").equals("1");
+			item.put("allowCreate",String.valueOf(res.getString("source").equals("2")&&issuccess));//是否允许将离线下载转换为个人表
+			item.put("allowUpload",String.valueOf(isallowEdit));//上传
+			item.put("allowDownload",String.valueOf(!res.getString("status").equals("INDEXING")));//下载
+			item.put("allowJoin",String.valueOf(res.getString("source").equals("1")&&issuccess));//join
+			item.put("allowSend",String.valueOf(res.getString("source").equals("1")&&issuccess));//推送
 			jsonArray.put(item);
 			
 		    }
@@ -610,20 +640,25 @@ public class TableJoin {
 		Statement stmt = conn.createStatement();
 		
 		String strsqlJoin="select count(*) as cnt" +
-				" from adhoc_joins where username='"+username.replaceAll("'", "")+"' and status<>'DEL' " ;
+				" from adhoc_joins where username='"+username.replaceAll("'", "")+"' and status<>'DEL' and (copy_uuid is null or copy_uuid='')  " ;
 		
 		StringBuffer bufferSql=new StringBuffer();
 		if(type==0)
 		{
+			String strsqlJoin2="select count(*) as cnt" +
+			" from adhoc_joins where username='"+username.replaceAll("'", "")+"' and status<>'DEL' and (copy_uuid is not null and copy_uuid<>'')  " ;
+			
 			String strsqlDownload="select count(*) as cnt" +
 			" from adhoc_download where username='"+username.replaceAll("'", "")+"' and status<>'DEL' ";
 	
 			bufferSql.append("select sum(cnt) as cnt");
-			bufferSql.append(" from ("+strsqlJoin+" union "+strsqlDownload+") tmp  limit 10 ");
+			bufferSql.append(" from ("+strsqlJoin+" union "+strsqlDownload+" union "+strsqlJoin2+") tmp  limit 10 ");
 		}if(type==1)//for join
 		{
 			bufferSql.append(strsqlJoin+" and status='INDEX' order by createtime desc limit 10 ");
 		}
+		
+		
 		
 		
 		String sql=bufferSql.toString();
@@ -644,18 +679,16 @@ public class TableJoin {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
 		String day = fmt.format(new Date());
 		Map stormconf = Utils.readStormConfig();
-		String hdpConf = (String) stormconf.get("hadoop.conf.dir");
 		String connstr = (String) stormconf.get("higo.download.offline.conn");
 		String uname = (String) stormconf.get("higo.download.offline.username");
 		String passwd = (String) stormconf.get("higo.download.offline.passwd");
-		String tmppath = (String) stormconf.get("higo.download.offline.store")
-				+ "/" + day + "/tmp_" + java.util.UUID.randomUUID().toString();
+
 		MySqlConn m_fpsql = new MySqlConn(connstr, uname, passwd);
 
 		Connection conn = m_fpsql.getConn();
 		Statement stmt = conn.createStatement();
 
-		String sql="select tableShowName,tableName,colsShowName,colsName,colsType,splitString,txtStorePath,indexStorePath,status,username,createtime,lastuptime,joins,percent from adhoc_joins where tableName='"+uuid.replaceAll("'", "")+"' limit 10";
+		String sql="select tableShowName,tableName,colsShowName,colsName,colsType,splitString,txtStorePath,indexStorePath,status,username,createtime,lastuptime,joins,percent,resultkb,download_uuid,copy_uuid from adhoc_joins where tableName='"+uuid.replaceAll("'", "")+"' limit 10";
 		ResultSet res = stmt.executeQuery(sql);
 		HashMap<String,String> rtn=new HashMap<String,String>();
 		rtn.put("_exehql", sql);
@@ -663,12 +696,23 @@ public class TableJoin {
 		boolean issetup=false;
 		while (res.next()) {
 			rtn.put("tableShowName", res.getString("tableShowName"));
+			rtn.put("tableName", res.getString("tableName"));
+			rtn.put("colsShowName", res.getString("colsShowName"));
+			rtn.put("colsName", res.getString("colsName"));
+			rtn.put("colsType", res.getString("colsType"));
+			rtn.put("splitString", res.getString("splitString"));
+
 			rtn.put("txtStorePath", res.getString("txtStorePath"));
 			rtn.put("indexStorePath", res.getString("indexStorePath"));
-			rtn.put("splitString", res.getString("splitString"));
-			rtn.put("colsName", res.getString("colsName"));
 			rtn.put("status", res.getString("status"));
-			rtn.put("splitString", res.getString("splitString"));
+			rtn.put("username", res.getString("username"));
+			rtn.put("createtime", res.getString("createtime"));
+			rtn.put("lastuptime", res.getString("lastuptime"));
+			rtn.put("joins", res.getString("joins"));
+			rtn.put("percent", res.getString("percent"));
+			rtn.put("resultkb", res.getString("resultkb"));
+			rtn.put("download_uuid", res.getString("download_uuid"));
+			rtn.put("copy_uuid", res.getString("copy_uuid"));
 			issetup=true;
 		    }
 		m_fpsql.close();
@@ -681,13 +725,134 @@ public class TableJoin {
 		return rtn;
 	}
 	
+
+//	CREATE TABLE `adhoc_joins` (
+//	  `id` bigint(20) NOT NULL auto_increment,
+//	  `tableShowName` char(240) NOT NULL,	
+//	  `tableName` char(240) NOT NULL,	
+//	  `colsShowName` text NOT NULL,	
+//	  `colsName` text NOT NULL,
+//	  `colsType` text NOT NULL,
+//	  `splitString` char(240) NOT NULL,
+//	  `txtStorePath` text  NOT NULL,
+//	  `indexStorePath` text  NOT NULL,
+//	  `status` char(240) NOT NULL,
+//	  `username` char(240) NOT NULL,
+//	  `createtime` datetime default '1983-11-07 12:12:12',
+//	  `lastuptime` datetime default '1983-11-07 12:12:12',
+//	   `joins` text NOT NULL,
+//	  `percent` text NOT NULL,
+//	`percent` text NOT NULL,
+//	 `resultkb` bigint(20) default '0',
+//	 `download_uuid` char(240) default '',
+//	 `copy_uuid` char(240) default '',
+//	  PRIMARY KEY  (`id`),
+//	  KEY `username` (`username`),
+//	 KEY `tableName` (`tableName`)
+//
+//	) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 
+
 	
 	
 	
+	public static String copyto(String uuid,String mailto,String callback) throws Exception
+	{
+		JSONObject jsonObj = new JSONObject();
+		final HashMap<String,String> tableInfo=getTableInfo(uuid);
+
+		if(tableInfo==null||tableInfo.isEmpty())
+		{
+			jsonObj.put("code", "0");
+			jsonObj.put("message",  "该表不存在");
+		}else
+		if(tableInfo.get("status").equals("INDEXING"))
+		{
+			jsonObj.put("code", "0");
+			jsonObj.put("message", "正在创建索引中请稍后");
+			return jsonObj.toString();
+		}else
+		{
+		JSONArray list = new JSONArray();
+
+		for(String username:mailto.split(";"))
+		{
+			JSONObject result=createByMap(tableInfo, uuid,username);
+			list.put(result);
+		}
+		jsonObj.put("code", "1");
+		jsonObj.put("data", list);
+	}
+		if (callback != null && callback.length() > 0) {
+			return callback + "(" + jsonObj.toString() + ")";
+		} else {
+			return jsonObj.toString();
+		}	}
+	
+	public static JSONObject createByMap(final HashMap<String,String> tableInfo,String copyuuid,String username) throws Exception
+	{
+		JSONObject jsonObj = new JSONObject();
+
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
+		String day = fmt.format(new Date());
+		Map stormconf = Utils.readStormConfig();
+		String hdpConf = (String) stormconf.get("hadoop.conf.dir");
+		String connstr = (String) stormconf.get("higo.download.offline.conn");
+		String uname = (String) stormconf.get("higo.download.offline.username");
+		String passwd = (String) stormconf.get("higo.download.offline.passwd");
+		String store = (String) stormconf.get("higo.download.offline.store")
+				+ "/" + day + "/" + java.util.UUID.randomUUID().toString();
+		MySqlConn m_fpsql = new MySqlConn(connstr, uname, passwd);
+		
+		String tableName=java.util.UUID.randomUUID().toString();
+		Connection conn = m_fpsql.getConn();
+//		tableShowName,tableName,colsShowName,colsName,colsType,splitString,txtStorePath,indexStorePath,status,username,createtime,lastuptime,joins,percent,resultkb,download_uuid,copy_uuid
+		String strSql = "insert into adhoc_joins " +
+				"(tableShowName,tableName,colsShowName,colsName,colsType,splitString,txtStorePath,indexStorePath,status,username,createtime,lastuptime,joins,percent,resultkb,download_uuid,copy_uuid)" +
+				"values" +
+				"(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		PreparedStatement m_fps = conn.prepareStatement(strSql);
+		try {
+			int index=1;
+			m_fps.setString(index++, tableInfo.get("tableShowName"));
+			m_fps.setString(index++, tableName);
+			m_fps.setString(index++, tableInfo.get("colsShowName"));
+			m_fps.setString(index++, tableInfo.get("colsName"));
+			m_fps.setString(index++, tableInfo.get("colsType"));
+			m_fps.setString(index++, tableInfo.get("splitString"));
+			m_fps.setString(index++, tableInfo.get("txtStorePath"));
+			m_fps.setString(index++, tableInfo.get("indexStorePath"));
+			m_fps.setString(index++, tableInfo.get("status"));
+			m_fps.setString(index++, username);
+			long nowtims=System.currentTimeMillis();
+			m_fps.setTimestamp(index++, new java.sql.Timestamp(nowtims));
+			m_fps.setTimestamp(index++, new java.sql.Timestamp(nowtims));
+			
+			m_fps.setString(index++, tableInfo.get("joins"));
+			m_fps.setString(index++, tableInfo.get("percent"));
+			m_fps.setInt(index++, Integer.parseInt(tableInfo.get("resultkb")));
+			m_fps.setString(index++, tableInfo.get("download_uuid"));
+			m_fps.setString(index++, copyuuid);
+
+			m_fps.executeUpdate();
+			jsonObj.put("code", "1");
+			jsonObj.put("tableid", tableName);
+			jsonObj.put("____debug", m_fps.toString());
+		} catch (Exception e) {
+			jsonObj.put("____debug2", m_fps.toString());
+			jsonObj.put("____debugerror", e.toString());
+			jsonObj.put("code", "0");
+		}finally{
+			m_fps.close();
+			m_fpsql.close();
+		}
+		
+		return jsonObj;
+
+	}
 	
 	
 	
-	public static String create(String tableShowName,String colsShowName,String splitString,String username,String joins) throws Exception
+	public static String create(String tableShowName,String colsShowName,String splitString,String username,String joins,String callback) throws Exception
 	{
 		JSONObject jsonObj = new JSONObject();
 
@@ -759,7 +924,10 @@ public class TableJoin {
 
 			m_fps.executeUpdate();
 			jsonObj.put("code", "1");
-			jsonObj.put("tableid", tableName);
+			JSONObject daa = new JSONObject();
+
+			daa.put("tableid", tableName);
+			jsonObj.put("data", daa);
 			jsonObj.put("____debug", m_fps.toString());
 		} catch (Exception e) {
 			jsonObj.put("____debug2", m_fps.toString());
@@ -770,8 +938,11 @@ public class TableJoin {
 			m_fpsql.close();
 		}
 		
-		return jsonObj.toString();
-
+		if (callback != null && callback.length() > 0) {
+			return callback + "(" + jsonObj.toString() + ")";
+		} else {
+			return jsonObj.toString();
+		}
 	}
 	
 	

@@ -4,5 +4,6 @@
 		String splitString = request.getParameter("splitString");
 		String username = request.getParameter("username");
 		String joins = request.getParameter("joins");
-String resultstr=TableJoin.create(tableShowName,colsShowName,splitString,username,joins);
+		String callback = request.getParameter("callback");
+String resultstr=TableJoin.create(tableShowName,colsShowName,splitString,username,joins,callback);
 %><%=resultstr%>

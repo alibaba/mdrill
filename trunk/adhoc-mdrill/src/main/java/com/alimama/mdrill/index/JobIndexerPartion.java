@@ -12,7 +12,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.Tool;
 
-import com.alimama.mdrill.partion.Partions;
+import com.alimama.mdrill.partion.MdrillPartions;
+import com.alimama.mdrill.partion.MdrillPartionsInterface;
 
 public class JobIndexerPartion extends Configured implements Tool {
 	private int shards;
@@ -28,6 +29,8 @@ public class JobIndexerPartion extends Configured implements Tool {
 	private String type="default";
 	
 	private JobIndexParse parse=null;
+	private MdrillPartionsInterface mdrillpartion;
+
 	public JobIndexerPartion(Configuration conf,int _shards, String _solrHome,  String _inputBase,  int _dayplus,int _maxRunDays, String _startday, String _filetype,String type)
 			throws IOException {
 		this.shards = _shards;
@@ -40,8 +43,10 @@ public class JobIndexerPartion extends Configured implements Tool {
 		this.startday = _startday;
 		this.filetype = _filetype;
 		this.fs = FileSystem.get(conf);
-		this.parse=new JobIndexParse(fs, _inputBase);
+		this.parse=new JobIndexParse(fs);
 		this.type=type;
+		this.mdrillpartion=MdrillPartions.INSTANCE(this.type);
+
 	}
 
 	
@@ -56,36 +61,9 @@ public class JobIndexerPartion extends Configured implements Tool {
 		
 		this.cleanTmp();
 		
-		if(this.type.equals("single"))
-		{
-			String partionvertify = "partionV20130513@001@single@" + this.shards + "@"+ java.util.UUID.randomUUID().toString();
-			Path indexOtherPath = new Path(this.index, "single");
-			Path tmpindexOtherPath = new Path(this.tmp, "single");
-			HashSet<String> days=new HashSet<String>();
-			days.add("*");
-			int ret  = this.subRun(days, tmpindexOtherPath.toString(),args[0],args[1]);
-			parse.writeStr(new Path(tmpindexOtherPath, "vertify"), partionvertify);
-			
-			if(this.fs.exists(indexOtherPath))
-			{
-				this.fs.delete(indexOtherPath,true);
-			}
-			
-			Path parent=indexOtherPath.getParent();
-			if(!this.fs.exists(parent))
-			{
-				this.fs.mkdirs(parent);
-			}
-			this.fs.rename(tmpindexOtherPath, indexOtherPath);
-			this.cleanTmp();
-			return ret;
-		}
-		
-		String startyyyymmddd=parse.getStartDay(dayDelay, maxRunDays, this.startday);
-		String upFinishyyyymmdd=parse.getUpdateFinishDay(dayDelay,this.startday);
-		HashSet<String> daylist = parse.getDayList(startyyyymmddd);
-		HashMap<String,HashSet<String>> partions=Partions.parseDays(daylist,this.type);
-		
+		HashSet<String> namelist = this.mdrillpartion.getNameList(fs, this.inputBase,  this.startday, dayDelay, maxRunDays);
+		HashMap<String,HashSet<String>> partions=this.mdrillpartion.indexPartions(namelist, startday, dayDelay, maxRunDays);
+		HashMap<String,String> vertifyset=this.mdrillpartion.indexVertify(partions, shards, startday, dayDelay, maxRunDays);
 		
 		HashSet<String> copy=new HashSet<String>();
 		
@@ -96,21 +74,13 @@ public class JobIndexerPartion extends Configured implements Tool {
 			String partion=e.getKey();
 			olds.remove(partion);
 			HashSet<String> days=e.getValue();
-			boolean writeDay=false;
-			for(String day:days)
+		
+			String partionvertify = vertifyset.get(partion);
+			if(partionvertify==null||partionvertify.isEmpty())
 			{
-				if(day.compareTo(upFinishyyyymmdd)>=0)
-				{
-					writeDay=true;
-					break;
-				}
+				partionvertify=	"partionV"+MdrillPartions.PARTION_VERSION+"@001@single@" + this.shards + "@"+ java.util.UUID.randomUUID().toString();
 			}
 			
-			String partionvertify = "partionV20130513@001@"+partion + "@" + this.shards + "@"+ days.size()+"@"+days.hashCode();
-			if(writeDay)
-			{
-				partionvertify+="@"+parse.getYyyymmdd()+"@"+upFinishyyyymmdd;
-			}
 			Path indexOtherPath = new Path(this.index, partion);
 			Path tmpindexOtherPath = new Path(this.tmp, partion);
 			Path otherveritify=new Path(indexOtherPath, "vertify");

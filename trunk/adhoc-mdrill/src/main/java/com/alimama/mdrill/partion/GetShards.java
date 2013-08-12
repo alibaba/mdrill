@@ -4,7 +4,6 @@ package com.alimama.mdrill.partion;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
@@ -130,30 +129,30 @@ public class GetShards {
 	}
     
     
-    public static String printSolr(String tablename) throws Exception {
-
-	String urlMain = "";
-	String urlShards = "";
-
-	Random rdm = new Random();
-	String[] cores = GetShards.get(tablename,false,100000);
-	if (cores != null && cores.length > 0) {
-	    int count = 0;
-	    int r = rdm.nextInt(cores.length);
-	    for (String c : cores) {
-		if (count == r)
-		{
-		    urlMain = "http://" + c + "/solr";
-		}
-	
-		urlShards += c + "/solr,";
-		count++;
-	    }
-	}
-
-	return urlMain+"/select/?q=*:*&start=0&rows=1&indent=on&shards="+urlShards;
-
-    }
+//    public static String printSolr(String tablename) throws Exception {
+//
+//	String urlMain = "";
+//	String urlShards = "";
+//
+//	Random rdm = new Random();
+//	String[] cores = GetShards.get(tablename,false,100000);
+//	if (cores != null && cores.length > 0) {
+//	    int count = 0;
+//	    int r = rdm.nextInt(cores.length);
+//	    for (String c : cores) {
+//		if (count == r)
+//		{
+//		    urlMain = "http://" + c + "/solr";
+//		}
+//	
+//		urlShards += c + "/solr,";
+//		count++;
+//	    }
+//	}
+//
+//	return urlMain+"/select/?q=*:*&start=0&rows=1&indent=on&shards="+urlShards;
+//
+//    }
     public static StormClusterState higozkCluster;
     public static StormClusterState getCluster() throws Exception
     {
