@@ -299,6 +299,7 @@ public class  FacetComponent extends SearchComponent
 		facets.put(cross.getKey(), cross);
 	}
 	
+	DistribFieldFacet cross;
 	void parse(SolrParams params) {
 		queryFacets = new LinkedHashMap<String, QueryFacet>();
 		facets = new LinkedHashMap<String, DistribFieldFacet>();
@@ -310,7 +311,7 @@ public class  FacetComponent extends SearchComponent
 			}
 		}
 
-		DistribFieldFacet cross = new DistribFieldFacet(params,"solrCorssFields_s");
+		this.cross = new DistribFieldFacet(params,"solrCorssFields_s");
 		facets.put(cross.getKey(), cross);
 	}
   }

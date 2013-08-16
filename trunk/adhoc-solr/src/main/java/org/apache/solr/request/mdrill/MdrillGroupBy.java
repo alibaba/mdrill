@@ -140,7 +140,7 @@ public class MdrillGroupBy {
 		
 		FacetComponent.FacetInfo fi = new FacetComponent.FacetInfo();
 	     fi.parse(params);
-        DistribFieldFacet dff = fi.facets.get("solrCorssFields_s");
+        DistribFieldFacet dff = fi.cross;
 
 	     long addtime=0;
 	     for (NamedList nl: resultlist) {
