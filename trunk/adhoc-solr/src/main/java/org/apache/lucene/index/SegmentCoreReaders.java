@@ -24,12 +24,20 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.schema.IndexSchema;
 
 import com.alimama.mdrill.buffer.BlockBufferInput;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
-final class SegmentCoreReaders {
+public class SegmentCoreReaders {
+	
+	public  void invertInit(IndexSchema schema, String field, int index){
+	      throw new UnsupportedOperationException();
+
+	}
+
+	
 
   // Counts how many other reader share the core objects
   // (freqStream, proxStream, tis, etc.) of this reader;
@@ -137,7 +145,7 @@ final class SegmentCoreReaders {
     return cfsReader;
   }
 
-  synchronized TermInfosReader getTermsReader() {
+  public synchronized TermInfosReader getTermsReader() {
     if (tis != null) {
       return tis;
     } else {

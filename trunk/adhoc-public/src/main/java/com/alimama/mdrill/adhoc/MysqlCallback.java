@@ -199,6 +199,8 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 
 	@Override
 	public void finish() {
+		this.setPercent("Stage-"+this.stage+" map = 100.0%, reduce = 100.0%");
+		
 		synchronized (lock) {
 		this.isfinish=true;
 		this.endtime=new java.util.Date();

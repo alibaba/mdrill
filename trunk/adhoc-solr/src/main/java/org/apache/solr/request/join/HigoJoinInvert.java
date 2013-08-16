@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.request.SolrQueryRequest;
@@ -16,6 +17,7 @@ import org.apache.solr.request.mdrill.MdrillPorcessUtils.TermNumToString;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.UnvertFields;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.UnvertFile;
 import org.apache.solr.request.uninverted.UnInvertedField;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
@@ -34,6 +36,18 @@ public class HigoJoinInvert {
 		this.tableName = tableName;
 		this.leftSearcher = leftSearcher;
 	}
+	public HigoJoinInvert(String tableName, SegmentReader reader,String partion,IndexSchema schema) {
+		super();
+		this.tableName = tableName;
+		this.leftSearcher = null;
+		this.partion=partion;
+		this.schema=schema;
+		this.leftreader=reader;
+	}
+	
+	SegmentReader leftreader=null;
+	String partion;
+	IndexSchema schema;
 
 	private RefCounted<SolrIndexSearcher> search=null;
 	private HigoJoinInterface join;
@@ -52,11 +66,18 @@ public class HigoJoinInvert {
 		LOG.info("##joinright##"+this.docset.size());
 		String fieldLeft=req.getParams().get(HigoJoinUtils.getLeftField(this.tableName));
 		String fieldRigth=req.getParams().get(HigoJoinUtils.getRightField(this.tableName));
-		this.join=HigoJoin.getJoin(leftSearcher, search.get(), fieldLeft, fieldRigth);
-		
 		this.ufsRight=new UnvertFields(fields, this.search.get());
+
+		if(this.leftreader!=null)
+		{
+			this.join=HigoJoin.getJoin(this.leftreader,this.partion,this.schema, search.get(), fieldLeft, fieldRigth);
+			this.uifleft = UnInvertedField.getUnInvertedField(fieldLeft,this.leftreader,this.partion,this.schema);
+
+		}else{
+			this.join=HigoJoin.getJoin(leftSearcher, search.get(), fieldLeft, fieldRigth);
+			this.uifleft = UnInvertedField.getUnInvertedField(fieldLeft,this.leftSearcher);
+		}
 		
-		this.uifleft = UnInvertedField.getUnInvertedField(fieldLeft,this.leftSearcher);
 		this.tmRigth=new TermNumToString[this.ufsRight.length];
 		for(int i=0;i<this.ufsRight.length;i++)
 		 {

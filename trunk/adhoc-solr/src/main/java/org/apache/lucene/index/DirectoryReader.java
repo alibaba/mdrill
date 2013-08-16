@@ -33,11 +33,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.IndexReader.InvertParams;
+import org.apache.lucene.index.IndexReader.InvertResult;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.MapBackedSet;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.BitDocSet;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocSet;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
@@ -550,6 +556,53 @@ class DirectoryReader extends IndexReader implements Cloneable {
     int i = readerIndex(docNumber);        // find segment num
     subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
   }
+  
+  public InvertResult invertScan(IndexSchema schema, InvertParams params)throws Exception{
+	  InvertResult rtn=new InvertResult();
+	  rtn.setParams(schema, params);
+	  DocSet docset= params.getDocset();
+	  DocSet[] subdocset=new DocSet[subReaders.length];
+	  if(subdocset.length==1)
+	  {
+		  subdocset[0]=docset;
+	  }else{
+		  for (int i = 0; i < subReaders.length; i++)
+		 {
+			  subdocset[i]=new BitDocSet();
+		 }
+		  
+		  int index=0;
+		  int end=this.getend(index);
+		  DocIterator iter = docset.iterator();
+			while (iter.hasNext()) {
+				int doc = iter.nextDoc();
+				if(doc>=end)
+				{
+					index=this.readerIndex(doc);
+					end=this.getend(index);
+				}
+				subdocset[index].add(doc-this.starts[index]);
+			}
+
+	  }
+		 for (int i = 0; i < subReaders.length; i++)
+		 {
+			 params.setDocset(subdocset[i]);
+			 rtn.merge(subReaders[i].invertScan(schema,params)) ;
+		 }
+		 return rtn;
+	}
+  
+  private int getend(int index)
+  {
+	  int end=Integer.MAX_VALUE;
+	  if(index+1<this.starts.length)
+	  {
+		  end=this.starts[index+1];
+	  }
+	  return end;
+  }
+
 
   @Deprecated
   @Override

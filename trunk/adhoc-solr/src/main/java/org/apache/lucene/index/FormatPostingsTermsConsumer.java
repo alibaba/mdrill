@@ -30,16 +30,16 @@ abstract class FormatPostingsTermsConsumer {
 
   /** Adds a new term in this field; term ends with U+FFFF
    *  char */
-  abstract FormatPostingsDocsConsumer addTerm(char[] text, int start) throws IOException;
+  abstract FormatPostingsDocsConsumer addTerm(Term term,char[] text, int start) throws IOException;
 
   char[] termBuffer;
-  FormatPostingsDocsConsumer addTerm(String text) throws IOException {
+  FormatPostingsDocsConsumer addTerm(Term term,String text) throws IOException {
     final int len = text.length();
     if (termBuffer == null || termBuffer.length < 1+len)
       termBuffer = new char[ArrayUtil.oversize(1+len, RamUsageEstimator.NUM_BYTES_CHAR)];
     text.getChars(0, len, termBuffer, 0);
     termBuffer[len] = 0xffff;
-    return addTerm(termBuffer, 0);
+    return addTerm(term,termBuffer, 0);
   }
 
   /** Called when we are done adding terms to this field */

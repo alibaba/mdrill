@@ -17,14 +17,20 @@
 
 package org.apache.solr.request.uninverted;
 
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SegmentCoreReaders;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SegmentTermDocs;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
@@ -104,6 +110,128 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
 		}
 	}
 	
+public UnInvertedField(String field, SegmentReader reader,IndexSchema schema) throws IOException {
+		Directory cacheDir=reader.directory() ;
+		File file = null;
+		FileLock flout = null;
+		RandomAccessFile out = null;
+		FileChannel fcout = null;
+		try{
+			if(cacheDir!=null&& cacheDir instanceof FSDirectory)
+			{
+				FSDirectory localdir=(FSDirectory)cacheDir;
+				file=new File(localdir.getDirectory(),"mdrill_uni_lock");
+				if (!file.exists()) {
+					file.createNewFile();
+				}
+				out = new RandomAccessFile(file, "rw");
+				fcout = out.getChannel();
+				flout = fcout.lock();
+			}
+			uninvert(field, reader,schema);
+		
+		}finally{
+			try {
+				if (flout != null) {
+					flout.release();
+				}
+				if (fcout != null) {
+					fcout.close();
+				}
+				if (out != null) {
+					out.close();
+				}
+				out = null;
+			} catch (Exception e) {
+			}
+		}
+	}
+
+
+private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader reader,String key) throws IOException
+{
+	UnInvertedField.log.info("setSingleValue " + this.field + " field "	+ this.isMultiValued + "@" + key);
+	int maxDoc = reader.maxDoc();
+	int maxDocOffset = maxDoc + 2;
+	this.index = INT_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.INT_CREATE, -1);
+	int[] docs = new int[1000];
+	int[] freqs = new int[1000];
+	if (this.dataType == Datatype.d_long|| this.dataType == Datatype.d_string) {
+		this.termValueLong =LONG_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.LONG_CREATE, (long)MINVALUE_FILL); 
+	}
+	if (this.dataType == Datatype.d_double) {
+		this.termValueDouble = DOUBLE_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.DOUBLE_CREATE, MINVALUE_FILL);
+	}
+	
+	 FieldInfo fi = reader.getFieldInfo().fieldInfo(this.field);
+	   IndexOptions indexOptions = (fi != null) ? fi.indexOptions : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+	   boolean currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
+	
+	this.maxTermNum=0;
+	while(te.next()) {
+
+		int termNum = te.getTermNumber();
+		termsInverted++;
+		SegmentTermDocs td = reader.SegmentTermDocs(1024);
+		td.seekDocs(te.getDocPos(), te.getDocCount(), indexOptions,currentFieldStoresPayloads);
+		for (;;) {
+			int n = td.read(docs, freqs);
+			if (n <= 0) {
+				break;
+			}
+			for (int i = 0; i < n; i++) {
+				termInstances++;
+				this.index.set(docs[i], termNum) ;
+			}
+		}
+		maxTermNum=Math.max(maxTermNum, termNum);
+		if (dataType == Datatype.d_long) {
+			this.termValueLong.set(termNum, te.getVVVlong()) ;
+		} else if (dataType == Datatype.d_double) {
+			this.termValueDouble.set(termNum, Double.longBitsToDouble(te.getVVVlong()));
+		} else if (dataType == Datatype.d_string) {// for dist
+			this.termValueLong.set(termNum, te.getVVVlong());
+		}
+		te.next();
+	}
+
+	if (termInstances == 0) {
+		INT_BUFFER.free(this.index);
+		this.index = null;
+	}else{ 
+		
+		int nullTerm=maxTermNum+1;
+		int finalTerm=maxTermNum+2;
+		this.setFinalIndex(nullTerm,finalTerm);
+		
+		if (this.dataType == Datatype.d_long|| this.dataType == Datatype.d_string) {
+			BlockArray<Long> bigTermValue=this.termValueLong;
+			int size=bigTermValue.getSize();
+			this.termValueLong =LONG_BUFFER.calloc(finalTerm, BigReUsedBuffer.LONG_CREATE, (long)MINVALUE_FILL); 
+			for(int i=0;i<finalTerm&&i<size;i++)
+			{
+				Long v=bigTermValue.get(i);
+				this.termValueLong.set(i, v);
+			}
+			this.termValueLong.set(nullTerm, (long)MINVALUE_FILL);
+			LONG_BUFFER.free(bigTermValue);
+			bigTermValue=null;
+		}
+		if (this.dataType == Datatype.d_double) {
+			BlockArray<Double> bigTermValue=this.termValueDouble;
+			int size=bigTermValue.getSize();
+			this.termValueDouble = DOUBLE_BUFFER.calloc(finalTerm, BigReUsedBuffer.DOUBLE_CREATE, MINVALUE_FILL);
+			for(int i=0;i<finalTerm&&i<size;i++)
+			{
+				Double v=bigTermValue.get(i);
+				this.termValueDouble.set(i, v);
+			}
+			this.termValueDouble.set(nullTerm, MINVALUE_FILL);
+			DOUBLE_BUFFER.free(bigTermValue);
+			bigTermValue=null;
+		}
+	}
+}
 	private void setSingleValue( NumberedTermEnum te,IndexReader reader,String key) throws IOException
 	{
 		UnInvertedField.log.info("setSingleValue " + this.field + " field "	+ this.isMultiValued + "@" + key);
@@ -356,6 +484,63 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
 		}
 	}
 	
+	
+	private synchronized void uninvert(String field,SegmentReader reader,IndexSchema schema) throws IOException {
+		SolrCore.log.info("####UnInverted#### SegmentReader begin");
+		this.field = field;
+		if (this.field.indexOf("higoempty_") >= 0) {
+			this.isNullField = true;
+		}
+		if (this.isNullField) {
+			this.tnr = new TermNumReadNull();
+			this.tnr.setUni(this);
+			return;
+		}
+		
+		
+		
+		long startTime = System.currentTimeMillis();
+
+		FieldType schemaft=schema.getFieldType(field);
+		String prefix=TrieField.getMainValuePrefix(schemaft);
+		SchemaField sf = schema.getField(field);
+		this.ft = sf.getType();
+		this.isMultiValued = ft.isMultiValued();
+		this.dataType = UnInvertedFieldUtils.getDataType(this.ft);
+		this.tnr = UnInvertedFieldUtils.getReadInterface(this.isMultiValued);
+
+		String key = LuceneUtils.crcKey(reader);
+		
+		
+		this.dataType = UnInvertedFieldUtils.getDataType(this.ft);
+
+		this.ti = new TermIndex(field, prefix);
+
+		if(reader.isSupportQuick()&&!this.isMultiValued)
+		{
+			TermIndex.QuickNumberedTermEnum te=ti.getEnumerator(reader,reader.getQuickTis(),reader.getpos(this.field), reader.getCount(this.field));
+			this.setSingleValue(te,reader, key);
+			te.close();
+		}else{
+			NumberedTermEnum te = ti.getEnumerator(reader);
+			
+			if (!this.isMultiValued) {
+				this.setSingleValue(te, reader, key);
+			} else {
+				this.setMultyValue(te, reader, key);
+			}
+	
+			numTermsInField = te.getTermNumber();
+			te.close();
+		}
+
+		
+		total_time = (int) (System.currentTimeMillis() - startTime);
+		this.tnr.setUni(this);
+		SolrCore.log.info("####UnInverted#### Create "+this.toString() +" " + this.isMultiValued + "@" + key+ ",dataType=" + dataType+",");
+		
+	}
+	
 	private synchronized void uninvert(String field,
 			SolrIndexSearcher searcher, IndexReader reader) throws IOException {
 	
@@ -424,6 +609,11 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
   public NumberedTermEnum getTi(SolrIndexSearcher searcher) throws IOException
   {
 	  return ti.getEnumerator(searcher.getReader());
+  }
+  
+  public NumberedTermEnum getTi(SegmentReader reader) throws IOException
+  {
+	  return ti.getEnumerator(reader);
   }
   
   
@@ -559,6 +749,26 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
 		uif.refCnt.incrementAndGet();
 		return uif;
 	}
+	
+	public static UnInvertedField getUnInvertedField(String field,SegmentReader reader,String partion,IndexSchema schema) throws IOException
+	{
+		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
+		ILruMemSizeKey key = new GrobalCache.StringKey(partion + "@@" + field + "@@"	+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
+		UnInvertedField uif = (UnInvertedField)cache.get(key);
+		if (uif == null) {
+			synchronized (cache) {
+				uif =  (UnInvertedField)cache.get(key);
+				if (uif == null) {
+					uif = new UnInvertedField(field, reader,schema);
+					cache.put(key, uif);
+				}
+			}
+		}
+		uif.refCnt.incrementAndGet();
+		return uif;
+	}
+	
+	
 	
 
 	  public NamedList getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix,Boolean returnPair,boolean isRow) throws IOException {

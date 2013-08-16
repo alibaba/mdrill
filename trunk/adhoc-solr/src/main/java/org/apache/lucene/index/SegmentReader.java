@@ -31,14 +31,19 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.request.mdrill.MdrillDetail;
+import org.apache.solr.request.mdrill.MdrillGroupBy;
+import org.apache.solr.schema.IndexSchema;
 
 
 /**
@@ -458,12 +463,54 @@ public class SegmentReader extends IndexReader implements Cloneable {
     ensureOpen();
     return core.getTermsReader().terms();
   }
+  
+  public boolean isSupportQuick() {
+    ensureOpen();
+    return core.getTermsReader().supportquick;
+  }
 
   @Override
   public TermEnum terms(Term t) throws IOException {
     ensureOpen();
     return core.getTermsReader().terms(t);
   }
+  
+  
+  public IndexInput getQuickTis()
+  {
+	  return this.core.getTermsReader().getQuickTis();
+  }
+  
+  public long getpos(String field)
+  {
+	  Integer fileNum=this.fieldInfos().fieldNumber(field);
+	  HashMap<Integer,Long> filepos=core.getTermsReader().fieldPos;
+	  return filepos.get(fileNum);
+  }
+  
+  public Integer getCount(String field)
+  {
+	  Integer fileNum=this.fieldInfos().fieldNumber(field);
+	  HashMap<Integer, Integer> fileCount=core.getTermsReader().fieldCount;
+	  return fileCount.get(fileNum);
+  }
+  
+  public InvertResult invertScan(IndexSchema schema, InvertParams params) throws Exception{
+	    ensureOpen();
+	  InvertResult rtn=new InvertResult();
+	  rtn.setParams(schema,params);
+	  if(params.isdetail)
+	  {
+		  MdrillDetail detail=new MdrillDetail(params._searcher,this, params._params, params.req); 
+		  rtn.setNamelist(detail.getDetail(params.fields, params.base));
+	  }else{
+		  MdrillGroupBy groupby=new MdrillGroupBy(params._searcher,this, params._params, params.req);
+		  rtn.setNamelist(groupby.getCross(params.fields, params.base));
+	  }
+	  
+	  return rtn;
+	}
+
 
   FieldInfos fieldInfos() {
     return core.fieldInfos;
@@ -494,6 +541,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   @Override
   public TermDocs termDocs(int buffer) throws IOException {
+    ensureOpen();
+    return new SegmentTermDocs(this,buffer);
+  }
+  
+  public SegmentTermDocs SegmentTermDocs(int buffer) throws IOException {
     ensureOpen();
     return new SegmentTermDocs(this,buffer);
   }
@@ -703,6 +755,18 @@ public class SegmentReader extends IndexReader implements Cloneable {
   void loadTermsIndex(int termsIndexDivisor) throws IOException {
     core.loadTermsIndex(si, termsIndexDivisor);
   }
+  
+  public SegmentCoreReaders getCore()
+  {
+	  return this.core;
+  }
+  
+  public FieldInfos getFieldInfo()
+  {
+	  return this.core.fieldInfos;
+  }
+  
+
 
   // for testing only
   boolean normsClosed() {
@@ -834,6 +898,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return core.segment;
   }
   
+  
   /**
    * Return the SegmentInfo of the segment this reader is reading.
    */
@@ -885,7 +950,16 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
   
   public String getStringCacheKey(){
-	  return this.toString();
+	  StringBuffer buffer=new StringBuffer();
+	  buffer.append(si.docCount).append("@");
+	  buffer.append(si.name).append("@");
+      if(core.dir instanceof FSDirectory){
+    	  FSDirectory dddir=(FSDirectory)core.dir;
+    	  buffer.append(dddir.getDirectory().getAbsolutePath()).append("@");
+      }else{
+          throw new UnsupportedOperationException();
+      }
+	  return buffer.toString();
   }
 
 
@@ -940,4 +1014,5 @@ public class SegmentReader extends IndexReader implements Cloneable {
     // longer used (all SegmentReaders sharing it have been
     // closed).
   }
+
 }

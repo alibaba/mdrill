@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +34,12 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
 import org.apache.lucene.util.VirtualMethod;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.SolrIndexSearcher;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -79,6 +86,46 @@ import org.apache.lucene.util.VirtualMethod;
 */
 public abstract class IndexReader implements Cloneable,Closeable {
 
+	public static class InvertParams{
+		public SolrIndexSearcher _searcher;
+		public SolrParams _params;
+		public SolrQueryRequest req;
+		public String[] fields;
+		public DocSet base;
+		public boolean isdetail;
+		
+		public void setDocset(DocSet base)
+		{
+			this.base=base;
+		}
+		
+		public DocSet getDocset()
+		{
+			return this.base;
+		}
+	}
+	
+	public static class InvertResult{
+		ArrayList<NamedList> result=new ArrayList<NamedList>();
+		public void setParams(IndexSchema schema,InvertParams params){
+			
+		}
+		public void merge(InvertResult r)
+		{
+			result.addAll(r.result);
+		}
+		
+		public void setNamelist(NamedList nl)
+		{
+			result.add(nl);
+		}
+		public ArrayList<NamedList> getResult(){
+			return result;
+		}
+	}
+	public abstract InvertResult invertScan(IndexSchema schema,InvertParams params) throws Exception;
+	
+	
   /**
    * A custom listener that's invoked when the IndexReader
    * is finished.
@@ -1114,6 +1161,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
     return document(n, null);
   }
+  
+  
 
   /**
    * Get the {@link org.apache.lucene.document.Document} at the <code>n</code>

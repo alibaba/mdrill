@@ -21,7 +21,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexReader.InvertParams;
+import org.apache.lucene.index.IndexReader.InvertResult;
 import org.apache.lucene.util.MapBackedSet;
+import org.apache.solr.schema.IndexSchema;
 
 import java.io.IOException;
 import java.util.*;
@@ -293,7 +296,13 @@ public class ParallelReader extends IndexReader {
     }
     hasDeletions = false;
   }
+  
+  public InvertResult invertScan(IndexSchema schema, InvertParams params)throws Exception{
 
+      throw new UnsupportedOperationException();
+	
+	}
+  
   // append fields from storedFieldReaders
   @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {

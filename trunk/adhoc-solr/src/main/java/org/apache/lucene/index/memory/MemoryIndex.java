@@ -45,6 +45,8 @@ import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader.InvertParams;
+import org.apache.lucene.index.IndexReader.InvertResult;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -54,6 +56,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants; // for javadocs
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -1172,6 +1175,12 @@ public class MemoryIndex implements Serializable {
       if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");
       return false;
     }
+    
+    public InvertResult invertScan(IndexSchema schema, InvertParams params)throws Exception{
+  	        throw new UnsupportedOperationException();
+
+  	}
+    
   
     @Override
     protected void doDelete(int docNum) {

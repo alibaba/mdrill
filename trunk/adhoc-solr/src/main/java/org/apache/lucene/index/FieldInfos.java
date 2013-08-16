@@ -34,7 +34,7 @@ import java.util.*;
  *  be adding documents at a time, with no other reader or writer threads
  *  accessing this object.
  */
-final class FieldInfos {
+public final class FieldInfos {
 
   // Used internally (ie not written to *.fnm files) for pre-2.9 files
   public static final int FORMAT_PRE = -1;

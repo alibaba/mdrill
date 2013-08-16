@@ -2,8 +2,10 @@ package org.apache.solr.request.uninverted;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -15,8 +17,8 @@ import org.slf4j.LoggerFactory;
 public class TermIndex {
 
 	  final static int intervalBits = 7;  // decrease to a low number like 2 for testing
-	  final static int intervalMask = 0xffffffff >>> (32-intervalBits);
-	  final static int interval = 1 << intervalBits;
+	  public final static int intervalMask = 0xffffffff >>> (32-intervalBits);
+	  public final static int interval = 1 << intervalBits;
 
 	  final Term fterm; // prototype to be used in term construction w/o String.intern overhead
 	  final String prefix;
@@ -76,6 +78,83 @@ public class TermIndex {
 				 te.close();
 			}
 	  }
+	  
+	  public static class QuickNumberedTermEnum{
+	      ArrayList<String> lst;
+	      TermIndex ti;
+
+		IndexInput quicktisInput;
+		int count=0;
+		int pos=0;
+		  public QuickNumberedTermEnum(TermIndex ti,IndexInput quicktisInput, long pos,int cnt) throws IOException {
+			  this.ti=ti;
+				this.quicktisInput = (IndexInput) quicktisInput.clone();
+				this.quicktisInput.seek(pos);
+				this.count=cnt;
+			}
+		  
+		  long docspos;
+		  String text="";
+		  long vvvlong=0;
+		  long lastfreqPointer=0;
+		  int doccount=0;
+		  public boolean next() throws IOException
+		  {
+			  if(pos>=this.count)
+			  {
+				  return false;
+			  }
+			  if((pos & intervalMask)==0)
+			  {
+				  text=this.quicktisInput.readString();
+				  this.ti.sizeOfStrings += text.length() << 1;
+		          if (lst==null) {
+			            lst = new ArrayList<String>();
+			          }
+			          lst.add(text);
+
+			  }
+			  vvvlong=this.quicktisInput.readVVVLong();
+			  doccount=this.quicktisInput.readVInt();
+			  long pos=this.quicktisInput.readVLong();
+			  docspos=pos+lastfreqPointer;
+			  this.lastfreqPointer=pos;
+			  return true;
+		  }
+		  
+		  public int getTermNumber()
+		  {
+			  return this.pos;
+		  }
+		  public long getVVVlong()
+		  {
+			  return this.vvvlong;
+		  }
+		  
+		  
+		  public long getDocPos()
+		  {
+			  return docspos;
+		  }
+		  
+		  public int getDocCount()
+		  {
+			  return this.doccount;
+		  }
+		  
+		  public void close()
+		  {
+			  this.ti.nTerms=pos;
+			  this.ti.index = lst!=null ? lst.toArray(new String[lst.size()]) : new String[0];
+		  }
+	  }
+	  
+	  public QuickNumberedTermEnum getEnumerator(SegmentReader reader,IndexInput quicktisInput, long pos,int cnt) throws IOException {
+		  return new QuickNumberedTermEnum(this,quicktisInput, pos, cnt);
+	  }
+
+		  
+	  
 
 	  /* The first time an enumerator is requested, it should be used
 	     with next() to fully traverse all of the terms so the index

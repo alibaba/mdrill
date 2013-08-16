@@ -12,6 +12,7 @@ import org.apache.solr.schema.*;
 import org.apache.solr.update.DocumentBuilder;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.apache.lucene.index.*;
 
 public class DocumentConverter {
 	private IndexSchema schema=null;
@@ -21,6 +22,7 @@ public class DocumentConverter {
 	    SolrConfig solrConfig = new SolrConfig(config);
 	    InputSource is = new InputSource(solrConfig.getResourceLoader().openSchema(schema));
 	    this.schema =new IndexSchema(solrConfig, "solrconfig",is);
+	    TermInfosWriter.setSchema(this.schema);
 	}
 	
 	public DocumentConverter(String[] fields,String config,String schema) {

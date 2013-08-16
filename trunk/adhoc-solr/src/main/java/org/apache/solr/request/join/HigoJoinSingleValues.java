@@ -7,12 +7,14 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.solr.request.join.HigoJoin.IntArr;
 import org.apache.solr.request.uninverted.NumberedTermEnum;
 import org.apache.solr.request.uninverted.TermIndex;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
@@ -34,6 +36,23 @@ public class HigoJoinSingleValues implements HigoJoinInterface{
 		this.fieldRigth = fieldRigth;
 		this.makejoin();
 	}
+	
+	public HigoJoinSingleValues(SegmentReader reader,String partion,IndexSchema schema,
+			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth) throws IOException {
+		this.readerleft = null;
+		this.partion=partion;
+		this.schema=schema;
+		this.leftreader=reader;
+		this.readerright = readerright;
+		this.fieldLeft = fieldLeft;
+		this.fieldRigth = fieldRigth;
+		this.makejoin();
+	}
+	
+
+SegmentReader leftreader=null;
+String partion;
+IndexSchema schema;
 	
 	long memsize = -1;
 
@@ -97,12 +116,25 @@ public class HigoJoinSingleValues implements HigoJoinInterface{
 	
 	private void makejoin() throws IOException
 	{
+		IndexSchema schema=null;
+		if(this.leftreader!=null)
+		{
+			schema=this.schema;
+		}else{
+			schema=readerleft.getSchema();
+		}
 		
-		FieldType ftleft=readerleft.getSchema().getFieldType(fieldLeft);
+		FieldType ftleft=schema.getFieldType(fieldLeft);
 		
 		String prefixLeft=TrieField.getMainValuePrefix(ftleft);
 		TermIndex tiLeft = new TermIndex(fieldLeft, prefixLeft);
-		NumberedTermEnum teLeft = tiLeft.getEnumerator(readerleft.getReader());
+		NumberedTermEnum teLeft =null;
+		if(this.leftreader!=null)
+		{
+			teLeft=tiLeft.getEnumerator(this.leftreader);
+		}else{
+			teLeft=tiLeft.getEnumerator(readerleft.getReader());
+		}
 		
 		FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
 		String prefixRight=TrieField.getMainValuePrefix(ftright);

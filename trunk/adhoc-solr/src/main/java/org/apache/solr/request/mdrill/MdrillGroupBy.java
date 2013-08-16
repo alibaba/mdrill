@@ -11,12 +11,15 @@ import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import com.alimama.mdrill.distinct.DistinctCount;
@@ -24,14 +27,18 @@ import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.compare.GroupbyAgent;
+import org.apache.solr.request.compare.GroupbyItem;
 import org.apache.solr.request.compare.GroupbyRow;
 import org.apache.solr.request.compare.RecordCount;
+import org.apache.solr.request.compare.SelectDetailRow;
 import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.ShardGroupByTermNum;
 import org.apache.solr.request.compare.ShardGroupByTermNumCompare;
 import org.apache.solr.request.join.HigoJoinInvert;
 import org.apache.solr.request.join.HigoJoinSort;
 import org.apache.solr.request.join.HigoJoinUtils;
+import org.apache.solr.request.mdrill.FacetComponent.DistribFieldFacet;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.*;
 
 /**
@@ -64,11 +71,22 @@ public class MdrillGroupBy {
 	private ShardGroupByTermNumCompare cmpTermNum;
 	private ShardGroupByGroupbyRowCompare cmpString;
 
-	TreeMap TopN;
 	public MdrillGroupBy(SolrIndexSearcher _searcher,SolrParams _params,SolrQueryRequest req)
 	{
 		this.req=req;
 		this.searcher=_searcher;
+		this.params=_params;
+		this.init();
+	}
+	
+	private SegmentReader reader;
+	private boolean isSchemaReaderType=false;
+	public MdrillGroupBy(SolrIndexSearcher _searcher,SegmentReader reader,SolrParams _params,SolrQueryRequest req)
+	{
+		this.isSchemaReaderType=true;
+		this.reader=reader;
+		this.searcher=_searcher;
+		this.req=req;
 		this.params=_params;
 		this.init();
 	}
@@ -102,6 +120,46 @@ public class MdrillGroupBy {
 		this.recordCount.setMaxUniqSize(this.maxlimit);
 	}
 	
+	
+	public NamedList getBySchemaReader(String[] fields, DocSet base)throws Exception 
+	{
+		SolrIndexReader reader=this.searcher.getReader();
+		IndexReader.InvertParams invparam=new IndexReader.InvertParams();
+		invparam._searcher=this.searcher;
+		invparam._params=this.params;
+		invparam.fields=fields;
+		invparam.base=base;
+		invparam.req=this.req;
+		invparam.isdetail=false;
+		IndexReader.InvertResult result=reader.invertScan(this.searcher.getSchema(), invparam);
+		ArrayList<NamedList> resultlist=result.getResult();
+		if(resultlist.size()==1)
+		{
+			return resultlist.get(0);
+		}
+		
+		FacetComponent.FacetInfo fi = new FacetComponent.FacetInfo();
+	     fi.parse(params);
+        DistribFieldFacet dff = fi.facets.get("solrCorssFields_s");
+
+	     long addtime=0;
+	     for (NamedList nl: resultlist) {
+	         addtime+=dff.add(nl, dff);
+	     }
+	     
+	     NamedList fieldCounts = new NamedList();
+	      GroupbyItem[] counts = dff.getPairSorted(dff.sort_column_type,dff.joinSort,dff.facetFs,dff.crossFs,dff.distFS,dff.sort_fl, dff.sort_type, dff.isdesc,this.limit_offset);
+	      if(dff.recordcount!=null)
+	      {
+	    	  GroupbyItem recordcount=dff.recordcount;
+		      fieldCounts.add(recordcount.getKey(), recordcount.toNamedList());
+	      }
+	      int end = this.limit_offset> counts.length ?counts.length:this.limit_offset;
+	      for (int i=this.offset; i<end; i++) {
+	        fieldCounts.add(counts[i].getKey(), counts[i].toNamedList());
+	      }
+		return fieldCounts;
+	}
 	
 	public NamedList getCross(String[] fields, DocSet base) throws IOException,
 			ParseException {
@@ -217,16 +275,31 @@ public class MdrillGroupBy {
 	public void execute(PriorityQueue<GroupbyRow> res,String[] fields,DocSet baseDocs) throws IOException, ParseException
 	{
 		long t1=System.currentTimeMillis();
-		UnvertFields ufs=new UnvertFields(fields, searcher);
-		UnvertFields crossufs=new UnvertFields(this.crossFs, searcher);
-		UnvertFields distufs=new UnvertFields(this.distFS, searcher);
+		UnvertFields ufs=null;
+		UnvertFields crossufs=null;
+		UnvertFields distufs=null;
+		if(!isSchemaReaderType)
+		{
+			ufs=new UnvertFields(fields, searcher);
+			crossufs=new UnvertFields(this.crossFs, searcher);
+			distufs=new UnvertFields(this.distFS, searcher);
+		}else{
+			ufs=new UnvertFields(fields, this.reader,this.searcher.getPartionKey(),this.searcher.getSchema());
+			crossufs=new UnvertFields(this.crossFs, this.reader,this.searcher.getPartionKey(),this.searcher.getSchema());
+			distufs=new UnvertFields(this.distFS, this.reader,this.searcher.getPartionKey(),this.searcher.getSchema());
+		}
 		this.joinInvert=new HigoJoinInvert[this.joinList.length];
 		this.joinSort=new HigoJoinSort[this.joinList.length];
 		int presize=baseDocs.size();
 		for(int i=0;i<this.joinList.length;i++)
 		{
 			this.joinSort[i]=new HigoJoinSort(this.joinList[i], this.req);
-			this.joinInvert[i]=new HigoJoinInvert(this.joinList[i], this.searcher);
+			if(!isSchemaReaderType)
+			{
+				this.joinInvert[i]=new HigoJoinInvert(this.joinList[i], this.searcher);
+			}else{
+				this.joinInvert[i]=new HigoJoinInvert(this.joinList[i], this.reader,this.searcher.getPartionKey(),this.searcher.getSchema());
+			}
 			this.joinInvert[i].open(this.req);
 			baseDocs=this.joinInvert[i].filterByRight(baseDocs);
 		}

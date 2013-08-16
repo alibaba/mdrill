@@ -11,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.solr.request.compare.GroupbyRow;
 import org.apache.solr.request.compare.SelectDetailRow;
 import org.apache.solr.request.compare.ShardDetailSelectDetailRowCompare;
@@ -19,6 +20,7 @@ import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare;
 import org.apache.solr.request.uninverted.NumberedTermEnum;
 import org.apache.solr.request.uninverted.UnInvertedField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import com.alimama.mdrill.distinct.DistinctCount;
@@ -301,6 +303,39 @@ public class MdrillPorcessUtils {
 			listIndex=new Integer[index.size()];
 			listIndex=index.toArray(listIndex);
 		}
+		
+		
+public UnvertFields(String[] fields, SegmentReader reader,String partion,IndexSchema schema)
+		throws IOException {
+	if (fields == null) {
+		fields = new String[0];
+	}
+	this.length=fields.length;
+	this.cols=new UnvertFile[this.length];
+
+	ArrayList<Integer> index=new ArrayList<Integer>();
+	for (int i = 0; i < this.length; i++) {
+		 if(fields[i].indexOf("higoempty_")>=0)
+		   {
+			 cols[i]=null;
+		    }else{
+		    	UnvertFile uf=  new UnvertFile();
+
+		    	uf.uif = UnInvertedField.getUnInvertedField(fields[i], reader,partion,schema);
+		    	uf.ti = uf.uif.getTi(reader);
+		    	uf.filetype = schema.getFieldType(fields[i]);
+		    	cols[i]=uf;
+
+				index.add(i);
+		    }
+	}
+	
+	listIndex=new Integer[index.size()];
+	listIndex=index.toArray(listIndex);
+}
+		
+		
+		
 		
 		public void free()
 		{

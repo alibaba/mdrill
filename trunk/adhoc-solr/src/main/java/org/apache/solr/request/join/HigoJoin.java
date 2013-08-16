@@ -5,16 +5,59 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.solr.request.uninverted.GrobalCache;
 import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeCache;
 import org.apache.solr.request.uninverted.GrobalCache.ILruMemSizeKey;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import com.alimama.mdrill.buffer.LuceneUtils;
 
 public class HigoJoin  {
+	public static HigoJoinInterface getJoin(SegmentReader reader,String partion,IndexSchema schema,
+			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth)
+			throws IOException {
+
+		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
+		StringBuffer key = new StringBuffer();
+		key.append("sig@");
+		key.append(partion);
+		key.append("@");
+		key.append(fieldLeft);
+		key.append("@");
+		key.append(LuceneUtils.crcKey(reader));
+		key.append("@");
+		key.append(readerright.getPartionKey());
+		key.append("@");
+		key.append(fieldRigth);
+		key.append("@");
+		key.append(LuceneUtils.crcKey(readerright.getReader()));
+		String cachekey = key.toString();
+		GrobalCache.StringKey fvkey = new GrobalCache.StringKey(cachekey);
+		HigoJoinInterface uif = (HigoJoinInterface) cache.get(fvkey);
+		if (uif == null) {
+			synchronized (cache) {
+				uif = (HigoJoinInterface) cache.get(fvkey);
+				if (uif == null) {
+					
+					FieldType ftleft=schema.getFieldType(fieldLeft);
+					FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
+					if(ftleft.isMultiValued()||ftright.isMultiValued())
+					{
+						uif = new HigoJoinMultyValues(reader,partion,schema,readerright,fieldLeft, fieldRigth);
+					}else{
+						uif = new HigoJoinSingleValues(reader,partion,schema,readerright,fieldLeft, fieldRigth);
+
+					}
+					cache.put(fvkey, uif);
+				}
+			}
+		}
+		return uif;
+	}
 	public static HigoJoinInterface getJoin(SolrIndexSearcher readerleft,
 			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth)
 			throws IOException {

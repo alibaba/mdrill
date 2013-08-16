@@ -20,13 +20,28 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.zip.CRC32;
+
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.solr.request.mdrill.MdrillPorcessUtils;
+import org.apache.solr.request.uninverted.TermIndex;
+import org.apache.solr.request.uninverted.UnInvertedFieldUtils;
+import org.apache.solr.request.uninverted.UnInvertedFieldUtils.Datatype;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 
-final class TermInfosWriter implements Closeable {
+public final class TermInfosWriter implements Closeable {
+	private static IndexSchema schema=null;
+	public static void setSchema(IndexSchema schema)
+	{
+		TermInfosWriter.schema=schema;
+	}
 
 	public static final int QUICK_TII = -1210;
 	public static final int FORMAT = -3;
@@ -37,6 +52,9 @@ final class TermInfosWriter implements Closeable {
   private IndexOutput output;
   private IndexOutput outputSize;
   private IndexOutput outputQuickTii=null;
+  private IndexOutput outputQuickTis=null;
+  private boolean isquickTis=false;
+  private IndexSchema schemainfo=TermInfosWriter.schema;
   private TermInfo lastTi = new TermInfo();
   private long size;
 
@@ -65,7 +83,7 @@ final class TermInfosWriter implements Closeable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(output,outputSize, other,outputQuickTii);
+        IOUtils.closeWhileHandlingException(output,outputSize, other,outputQuickTii,outputQuickTis);
       }
     }
   }
@@ -82,6 +100,12 @@ final class TermInfosWriter implements Closeable {
     isIndex = isi;
     output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));
     outputQuickTii=isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_INDEX_EXTENSION_QUICK):null;
+    if(this.schemainfo!=null)
+    {
+    	outputQuickTis=!isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_EXTENSION_QUICK):null;
+    	this.isquickTis=true;
+    }
+
     outputSize = directory.createOutput(segment + (isIndex ? "."+IndexFileNames.TERMS_INDEX_EXTENSION_SIZE : "."+IndexFileNames.TERMS_EXTENSION_SIZE));
     boolean success = false;
     try {
@@ -94,14 +118,14 @@ final class TermInfosWriter implements Closeable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(output,outputSize);
+        IOUtils.closeWhileHandlingException(output,outputSize,outputQuickTii,outputQuickTis);
       }
     }
   }
 
   void add(Term term, TermInfo ti) throws IOException {
     UnicodeUtil.UTF16toUTF8(term.text, 0, term.text.length(), utf8Result);
-    add(fieldInfos.fieldNumber(term.field), utf8Result.result, utf8Result.length, ti);
+    add(term,fieldInfos.fieldNumber(term.field), utf8Result.result, utf8Result.length, ti);
   }
 
   // Currently used only by assert statements
@@ -150,10 +174,11 @@ final class TermInfosWriter implements Closeable {
     return utf16Result1.length - utf16Result2.length;
   }
 
-  /** Adds a new <<fieldNumber, termBytes>, TermInfo> pair to the set.
-    Term must be lexicographically greater than all previous Terms added.
-    TermInfo pointers must be positive and greater than all previous.*/
-  void add(int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti)
+  int lastfieldNumber=-1;
+  Datatype dataType;
+  FieldType ft;
+  int pos=0;
+  void add(Term term,int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti)
     throws IOException {
 	  
 	  
@@ -174,22 +199,68 @@ final class TermInfosWriter implements Closeable {
 	  }
     if ( size % indexInterval == 0)
     {
-      other.add(lastFieldNumber, lastTermBytes, lastTermBytesLength, lastTi);                      // add an index term
+      other.add(term,lastFieldNumber, lastTermBytes, lastTermBytesLength, lastTi);                      // add an index term
     }
 
     writeTerm(fieldNumber, termBytes, termBytesLength);                        // write term
     output.writeVInt(ti.docFreq);                       // write doc freq
     output.writeVLong(ti.freqPointer - lastTi.freqPointer); // write pointers
     output.writeVLong(ti.proxPointer - lastTi.proxPointer);
-
+    if(this.isquickTis)
+    {
+    	this.addtis(term, fieldNumber, termBytes, termBytesLength, ti);
+    }
     if (ti.docFreq >= skipInterval) {
       output.writeVInt(ti.skipOffset);
     }
-
+    
+   
 
     lastFieldNumber = fieldNumber;
     lastTi.set(ti);
     size++;
+  }
+  
+  
+  
+  HashMap<Integer,Long> fieldPos=new HashMap<Integer,Long>();
+  HashMap<Integer,Integer> fieldCount=new HashMap<Integer,Integer>();
+  long lastfreqPointer=0;
+  void addtis(Term term,int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti) throws IOException
+  {
+	  
+      if(this.lastfieldNumber!=fieldNumber)
+      {
+    	  	fieldCount.put(this.lastfieldNumber, this.pos);
+    	  	fieldPos.put(fieldNumber, this.outputQuickTis.getFilePointer());
+	        this.ft=this.schemainfo.getField(term.field).getType();
+	        this.dataType=UnInvertedFieldUtils.getDataType(ft);
+	        this.lastfieldNumber=fieldNumber;
+	        this.pos=0;
+	        this.lastfreqPointer=0;
+      }
+      
+      if ((this.pos & TermIndex.intervalMask)==0){
+			this.outputQuickTis.writeString(term.text());
+      }
+      
+      if (dataType == Datatype.d_long){
+			long val=Long.parseLong(ft.indexedToReadable(term.text()));
+			this.outputQuickTis.writeVVVLong(val);
+		}else if (dataType == Datatype.d_double) {
+			Double val=MdrillPorcessUtils.ParseDouble(ft.indexedToReadable(term.text()));
+			this.outputQuickTis.writeVVVLong(Double.doubleToLongBits(val));
+		}else{
+			CRC32 crc32 = new CRC32();
+			crc32.update(new String(ft.indexedToReadable(term.text())).getBytes());
+			this.outputQuickTis.writeVVVLong(crc32.getValue());
+		}
+
+      
+      this.outputQuickTis.writeVInt(ti.docFreq);
+      this.outputQuickTis.writeVLong(ti.freqPointer - lastfreqPointer);
+      lastfreqPointer=ti.freqPointer;
+      this.pos++;
   }
   
 
@@ -247,8 +318,25 @@ final class TermInfosWriter implements Closeable {
 	  {
 		  outputQuickTii.close();
 	  }
+	  if(outputQuickTis!=null)
+	  {
+		  outputQuickTis.close();
+	  }
     try {
     	outputSize.writeLong(size);
+    	outputSize.writeInt(fieldPos.size());
+    	for(Entry<Integer, Long> e:fieldPos.entrySet())
+    	{
+    		outputSize.writeInt(e.getKey());
+    		outputSize.writeLong(e.getValue());
+    	}
+	  	fieldCount.put(this.lastfieldNumber, this.pos);
+    	outputSize.writeInt(fieldCount.size());
+	  	for(Entry<Integer, Integer> e:fieldCount.entrySet())
+    	{
+    		outputSize.writeInt(e.getKey());
+    		outputSize.writeInt(e.getValue());
+    	}
     } finally {
       try {
     	  outputSize.close();

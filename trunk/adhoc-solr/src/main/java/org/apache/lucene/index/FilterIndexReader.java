@@ -19,8 +19,11 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.IndexReader.InvertParams;
+import org.apache.lucene.index.IndexReader.InvertResult;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.MapBackedSet;
+import org.apache.solr.schema.IndexSchema;
 
 
 import java.io.IOException;
@@ -309,6 +312,10 @@ public class FilterIndexReader extends IndexReader {
   public Object getDeletesCacheKey() {
     return in.getDeletesCacheKey();
   }
+  
+  public InvertResult invertScan(IndexSchema schema,InvertParams params)throws Exception{
+	  return in.invertScan(schema, params);
+	}
 
   /** {@inheritDoc} */
   @Override

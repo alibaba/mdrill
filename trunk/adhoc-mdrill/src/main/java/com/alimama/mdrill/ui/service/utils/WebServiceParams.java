@@ -651,6 +651,21 @@ public static OperateType parseOperateType(int operate)
 		return null;
 	}
 	
+	public static String parseFqAlias(String key,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
+	{
+		String rtn=key;
+		if(tblname!=null&&colMap2!=null&&colMap2.containsKey(key))
+		{
+			rtn=tblname+"."+colMap2.get(key);
+		}else if(tblname!=null&&colMap!=null&&colMap.containsKey(key))
+		{
+			rtn=tblname+"."+colMap.get(key);
+		}
+		return rtn;
+	}
+
+	
+	
 	
 	private static String parseFqOperateHive(String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
 	{
@@ -662,14 +677,7 @@ public static OperateType parseOperateType(int operate)
 			ft=filetypeMap.get(key);
 		}
 		
-		
-		if(tblname!=null&&colMap2!=null&&colMap2.containsKey(key))
-		{
-			key=tblname+"."+colMap2.get(key);
-		}else if(tblname!=null&&colMap!=null&&colMap.containsKey(key))
-		{
-			key=tblname+"."+colMap.get(key);
-		}
+		key=parseFqAlias(key, colMap, colMap2, tblname);
 		
 		
 		
@@ -710,6 +718,28 @@ public static OperateType parseOperateType(int operate)
 			}
 			case 14: {
 				return "("+part + "<" + value2 + add+" )";//and "+key+"<"+value2+"
+			}
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+			{
+				boolean isNotIn=(operate==7 || operate==8);
+				String[] listStrs = value2.split(",");
+				StringBuffer sb = new StringBuffer();
+				sb.append("(");
+				String joinchar="";
+	            for(String v : listStrs){
+	            	sb.append(joinchar);
+	                if(isNotIn){
+	                	sb.append(part+"<>"+"'"+v + add+"'");
+					}else{
+	                	sb.append(part+"="+"'"+v + add+"'");
+					}
+	                joinchar=" or ";
+	            }
+	            sb.append(")");
+	            return sb.toString();
 			}
 			case 9: {
 				String[] listStrs = value2.split(",");

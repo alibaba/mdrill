@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
+import com.alimama.mdrill.buffer.PForDelta;
+
 /**
  * Abstract base class for performing read operations of Lucene's low-level
  * data types.
@@ -87,6 +89,9 @@ public abstract class DataInput implements Cloneable {
     return ((readByte() & 0xFF) << 24) | ((readByte() & 0xFF) << 16)
          | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
   }
+  
+  
+  
   
   public IndexInput readZipStream() throws IOException
   {

@@ -203,12 +203,12 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
             termStates[numToMerge++] = mergeStates[i];
         }
 
-        final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(termStates[0].text, termStates[0].textOffset);
-
+        Term term=protoTerm.createTerm(termStates[0].termText());
+        final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(term,termStates[0].text, termStates[0].textOffset);
 
         final int delDocLimit;
         if (segDeletes != null) {
-          final Integer docIDUpto = segDeletes.get(protoTerm.createTerm(termStates[0].termText()));
+          final Integer docIDUpto = segDeletes.get(term);
           if (docIDUpto != null) {
             delDocLimit = docIDUpto;
           } else {
@@ -218,162 +218,77 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
           delDocLimit = 0;
         }
         
-		if (docConsumer.isCurrentIsUseCompress()) {
-		    ByteIndexInput raminput = new ByteIndexInput();
-		    try {
-			while (numToMerge > 0) {
-			    FreqProxFieldMergeState minState = termStates[0];
-			    for (int i = 1; i < numToMerge; i++)
-				if (termStates[i].docID < minState.docID)
-				    minState = termStates[i];
+        docConsumer.reset();
 
-			    final int termDocFreq = minState.termFreq;
-			    if (docConsumer.iswriteskip(raminput)) {
-				docConsumer.writeRam(raminput);
-				raminput.close();
-				raminput = new ByteIndexInput();
-			    }
-			    final FormatPostingsPositionsConsumer posConsumer = docConsumer
-				    .addDoc(minState.docID, termDocFreq,
-				            raminput);
+	    while (numToMerge > 0) {
+		FreqProxFieldMergeState minState = termStates[0];
+		for (int i = 1; i < numToMerge; i++)
+		    if (termStates[i].docID < minState.docID)
+			minState = termStates[i];
 
-			    if (minState.docID < delDocLimit) {
-				if (state.deletedDocs == null) {
-				    state.deletedDocs = new BitVector(
-					    state.numDocs);
-				}
-				state.deletedDocs.set(minState.docID);
-			    }
+		final int termDocFreq = minState.termFreq;
+		final FormatPostingsPositionsConsumer posConsumer = docConsumer
+		        .addDoc(minState.docID, termDocFreq);
 
-			    final ByteSliceReader prox = minState.prox;
-			    if (currentFieldIndexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-				try {
-				    int position = 0;
-				    for (int j = 0; j < termDocFreq; j++) {
-					final int code = prox.readVInt();
-					position += code >> 1;
-
-					final int payloadLength;
-					if ((code & 1) != 0) {
-					    // This position has a payload
-					    payloadLength = prox.readVInt();
-
-					    if (payloadBuffer == null
-						    || payloadBuffer.length < payloadLength)
-						payloadBuffer = new byte[payloadLength];
-
-					    prox.readBytes(payloadBuffer, 0,
-						    payloadLength);
-
-					} else
-					    payloadLength = 0;
-
-					posConsumer
-					        .addPosition(position,
-					                payloadBuffer, 0,
-					                payloadLength);
-				    } // End for
-				} finally {
-				    posConsumer.finish();
-				}
-
-			    }
-
-			    if (!minState.nextDoc()) {
-				int upto = 0;
-				for (int i = 0; i < numToMerge; i++)
-				    if (termStates[i] != minState)
-					termStates[upto++] = termStates[i];
-				numToMerge--;
-				assert upto == numToMerge;
-
-				if (!minState.nextTerm()) {
-				    upto = 0;
-				    for (int i = 0; i < numFields; i++)
-					if (mergeStates[i] != minState)
-					    mergeStates[upto++] = mergeStates[i];
-				    numFields--;
-				    assert upto == numFields;
-				}
-			    }
-			}
-
-		    } finally {
-			docConsumer.writeRam(raminput);
-			raminput.close();
-			raminput = null;
+		if (minState.docID < delDocLimit) {
+		    if (state.deletedDocs == null) {
+			state.deletedDocs = new BitVector(state.numDocs);
 		    }
-
-		} else {
-		    while (numToMerge > 0) {
-			FreqProxFieldMergeState minState = termStates[0];
-			for (int i = 1; i < numToMerge; i++)
-			    if (termStates[i].docID < minState.docID)
-				minState = termStates[i];
-
-			final int termDocFreq = minState.termFreq;
-			final FormatPostingsPositionsConsumer posConsumer = docConsumer
-			        .addDoc(minState.docID, termDocFreq);
-
-			if (minState.docID < delDocLimit) {
-			    if (state.deletedDocs == null) {
-				state.deletedDocs = new BitVector(state.numDocs);
-			    }
-			    state.deletedDocs.set(minState.docID);
-			}
-
-			final ByteSliceReader prox = minState.prox;
-			if (currentFieldIndexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-			    try {
-				int position = 0;
-				for (int j = 0; j < termDocFreq; j++) {
-				    final int code = prox.readVInt();
-				    position += code >> 1;
-
-				    final int payloadLength;
-				    if ((code & 1) != 0) {
-					// This position has a payload
-					payloadLength = prox.readVInt();
-
-					if (payloadBuffer == null
-					        || payloadBuffer.length < payloadLength)
-					    payloadBuffer = new byte[payloadLength];
-
-					prox.readBytes(payloadBuffer, 0,
-					        payloadLength);
-
-				    } else
-					payloadLength = 0;
-
-				    posConsumer.addPosition(position,
-					    payloadBuffer, 0, payloadLength);
-				} // End for
-			    } finally {
-				posConsumer.finish();
-			    }
-
-			}
-
-			if (!minState.nextDoc()) {
-			    int upto = 0;
-			    for (int i = 0; i < numToMerge; i++)
-				if (termStates[i] != minState)
-				    termStates[upto++] = termStates[i];
-			    numToMerge--;
-			    assert upto == numToMerge;
-
-			    if (!minState.nextTerm()) {
-				upto = 0;
-				for (int i = 0; i < numFields; i++)
-				    if (mergeStates[i] != minState)
-					mergeStates[upto++] = mergeStates[i];
-				numFields--;
-				assert upto == numFields;
-			    }
-			}
-		    }
-		    docConsumer.finish();
+		    state.deletedDocs.set(minState.docID);
 		}
+
+		final ByteSliceReader prox = minState.prox;
+		if (currentFieldIndexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+		    try {
+			int position = 0;
+			for (int j = 0; j < termDocFreq; j++) {
+			    final int code = prox.readVInt();
+			    position += code >> 1;
+
+			    final int payloadLength;
+			    if ((code & 1) != 0) {
+				// This position has a payload
+				payloadLength = prox.readVInt();
+
+				if (payloadBuffer == null
+				        || payloadBuffer.length < payloadLength)
+				    payloadBuffer = new byte[payloadLength];
+
+				prox.readBytes(payloadBuffer, 0,
+				        payloadLength);
+
+			    } else
+				payloadLength = 0;
+
+			    posConsumer.addPosition(position,
+				    payloadBuffer, 0, payloadLength);
+			} // End for
+		    } finally {
+			posConsumer.finish();
+		    }
+
+		}
+
+		if (!minState.nextDoc()) {
+		    int upto = 0;
+		    for (int i = 0; i < numToMerge; i++)
+			if (termStates[i] != minState)
+			    termStates[upto++] = termStates[i];
+		    numToMerge--;
+		    assert upto == numToMerge;
+
+		    if (!minState.nextTerm()) {
+			upto = 0;
+			for (int i = 0; i < numFields; i++)
+			    if (mergeStates[i] != minState)
+				mergeStates[upto++] = mergeStates[i];
+			numFields--;
+			assert upto == numFields;
+		    }
+		}
+	    }
+	    docConsumer.finish();
+	
       }
       
     } finally {

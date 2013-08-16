@@ -10,6 +10,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
+import com.alimama.mdrill.index.utils.DocumentConverter;
 import com.alimama.mdrill.index.utils.HeartBeater;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
 import com.alimama.mdrill.index.utils.ShardWriter;
@@ -20,10 +21,15 @@ public class IndexReducerMerge extends
 	private ShardWriter shardWriter = null;
 	private String indexHdfsPath = null;
 	private String tmpath = null;
-
+	public DocumentConverter documentConverter;
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
 		super.setup(context);
+		Configuration conf = context.getConfiguration();
+
+		String fieldStrs = conf.get("higo.index.fields");
+		String[] fieldslist = fieldStrs.split(",");
+		this.documentConverter = new DocumentConverter(fieldslist,"solrconfig.xml", "schema.xml");
 		heartBeater = new HeartBeater(context);
 		heartBeater.needHeartBeat();
 

@@ -25,6 +25,8 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 
+import com.alimama.mdrill.buffer.PForDelta;
+
 /**
  * Abstract base class for performing write operations of Lucene's low-level
  * data types.
@@ -75,6 +77,64 @@ public abstract class DataOutput {
     }
     writeByte((byte)i);
   }
+  
+  public final static int BLOGK_SIZE_COMPRESS=10240;
+  public final static int BLOGK_SIZE_USED_COMPRESS=32;
+
+  protected final int[] buffer_compress=new int[BLOGK_SIZE_COMPRESS];
+  private int uptopos_compress=0;
+  private boolean blockmode_compress=false;
+  private boolean allowblock_compress=false;
+  public void resetBlockMode()
+  {
+	  this.blockmode_compress=false;
+      this.uptopos_compress=0;
+
+  }
+  public void setUsedBlock()
+  {
+	  allowblock_compress=true;
+  }
+  public void writeCompressblock(int v) throws IOException {
+    buffer_compress[uptopos_compress++] = v;
+    if (uptopos_compress == BLOGK_SIZE_USED_COMPRESS) {
+        this.blockmode_compress=allowblock_compress;
+    }
+    if (uptopos_compress == BLOGK_SIZE_COMPRESS) {
+        flushCompressBlock();
+    }
+  }
+  
+  static volatile int printindex_compress=0;
+  public void flushCompressBlock() throws IOException {
+	  if(this.uptopos_compress<=0)
+	  {
+		  return ;
+	  }
+	  if(!this.blockmode_compress)
+	  {
+		  for(int i=0;i<uptopos_compress;i++) {
+		        this.writeVInt(buffer_compress[i]);
+		  }
+	      this.uptopos_compress=0;
+		  return ;
+	  }
+      
+
+      final int[] compressedBuffer =PForDelta.compressOneBlock(buffer_compress, uptopos_compress);
+      if(printindex_compress++<1000)
+      {
+    	  System.out.println("##flushCompressBlock##"+compressedBuffer.length+"@"+uptopos_compress);
+      }
+      this.writeVInt(uptopos_compress);
+      this.writeVInt(compressedBuffer.length);
+      for(int i=0;i<compressedBuffer.length;i++) {
+        this.writeInt(compressedBuffer[i]);
+      }
+      this.uptopos_compress=0;
+    }
+  
+  
   
     public void writeZipStream(ByteIndexInput read) throws IOException {
 	this.writeByteZip(read.getbytes());

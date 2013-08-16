@@ -19,27 +19,18 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.DataOutput.ByteIndexInput;
 
 /**
  * @lucene.experimental
  */
 
 abstract class FormatPostingsDocsConsumer {
-    abstract  public boolean isCurrentIsUseCompress();
-  /** Adds a new doc in this term.  If this returns null
-   *  then we just skip consuming positions/payloads. */
-    abstract boolean iswriteskip(IndexOutput buffer) throws IOException;
+  abstract  public boolean reset();
 
     
-  abstract FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq,IndexOutput buffer) throws IOException;
   abstract FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException;
 
   
-  abstract void writeRam(ByteIndexInput raminput) throws IOException;
-
 
   /** Called when we are done adding docs to this term */
   abstract void finish() throws IOException;

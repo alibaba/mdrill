@@ -21,6 +21,7 @@ import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.MdrillPartionsInterface;
 import com.alimama.mdrill.partion.StatListenerInterface;
+import com.alimama.mdrill.ui.service.utils.OperateType;
 import com.alimama.mdrill.ui.service.utils.WebServiceParams;
 
 public class ThedatePartions implements MdrillPartionsInterface{
@@ -47,8 +48,21 @@ public class ThedatePartions implements MdrillPartionsInterface{
 			if (obj.has("thedate")) {
 				JSONObject thedate = obj.getJSONObject("thedate");
 				Integer operate = Integer.parseInt(thedate.get("operate").toString());
+				OperateType optype=WebServiceParams.parseOperateType(operate);
+
 				String[] val = WebServiceParams.parseFqValue(thedate.getString("value"), operate).split(",");
-				if (operate == 1 || operate == 5 || operate == 6|| operate == 7 || operate == 8 || operate == 9)// =,range
+				if (optype.equals(OperateType.eq)||optype.equals(OperateType.in))
+				{
+					for (String day : val) {
+						Date d = fmt.parse(day.replaceAll("-", ""));
+						String[] partions = get(d.getTime(), d.getTime(), parttype);
+						for (String partion : partions) {
+							rtn.add(partion);
+							isset = true;
+						}
+					}
+				}
+				if (optype.equals(OperateType.range))// =,range
 				{
 					Long min = Long.MAX_VALUE;
 					Long max = Long.MIN_VALUE;
@@ -67,7 +81,7 @@ public class ThedatePartions implements MdrillPartionsInterface{
 
 				}
 
-				if (operate == 13 || operate == 3)// <,<=
+				if (optype.equals(OperateType.gt)||optype.equals(OperateType.gteq))
 				{
 					for (String day : val) {
 						Date d = fmt.parse(day.replaceAll("-", ""));
@@ -76,7 +90,7 @@ public class ThedatePartions implements MdrillPartionsInterface{
 					}
 				}
 
-				if (operate == 14 || operate == 4)// >,>=
+				if (optype.equals(OperateType.lg)||optype.equals(OperateType.lgeq))
 				{
 					for (String day : val) {
 						Date d = fmt.parse(day.replaceAll("-", ""));
@@ -114,16 +128,17 @@ public class ThedatePartions implements MdrillPartionsInterface{
 	
 	public String SqlFilter(String queryStr) throws Exception
 	{
-		JSONArray rtn = new JSONArray();
-		JSONArray jsonStr = new JSONArray(queryStr.trim());
-
-		for (int j = 0; j < jsonStr.length(); j++) {
-			JSONObject obj = jsonStr.getJSONObject(j);
-			if (!obj.has("thedate")) {
-				rtn.put(obj);
-			}
-		}
-		return rtn.toString();
+		return queryStr;
+//		JSONArray rtn = new JSONArray();
+//		JSONArray jsonStr = new JSONArray(queryStr.trim());
+//
+//		for (int j = 0; j < jsonStr.length(); j++) {
+//			JSONObject obj = jsonStr.getJSONObject(j);
+//			if (!obj.has("thedate")) {
+//				rtn.put(obj);
+//			}
+//		}
+//		return rtn.toString();
 	 }
 	
 	private String[] get(Long min,Long max,String parttype) throws JSONException, ParseException

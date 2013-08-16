@@ -569,12 +569,9 @@ final class SegmentMerger {
   private final int appendPostings(final FormatPostingsTermsConsumer termsConsumer, SegmentMergeInfo[] smis, int n)
         throws CorruptIndexException, IOException {
 
-    final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(smis[0].term.text);
-  
+    final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(smis[0].term,smis[0].term.text);
     int df = 0;
-    if(docConsumer.isCurrentIsUseCompress())
-    {
-	      ByteIndexInput raminput=new ByteIndexInput();
+    docConsumer.reset();
 
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
@@ -588,8 +585,6 @@ final class SegmentMerger {
       if (smi.dirPayloadProcessor != null) {
         payloadProcessor = smi.dirPayloadProcessor.getProcessor(smi.term);
       }
-
-     
       while (postings.next()) {
         df++;
         int doc = postings.doc();
@@ -598,13 +593,7 @@ final class SegmentMerger {
         doc += base;                              // convert to merged space
 
         final int freq = postings.freq();
-        if(docConsumer.iswriteskip(raminput))
-        {
-            docConsumer.writeRam(raminput);
-            raminput.close();
-            raminput=new ByteIndexInput();;
-        }
-        final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(doc, freq,raminput);
+        final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(doc, freq);
 
         if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
           for (int j = 0; j < freq; j++) {
@@ -625,56 +614,8 @@ final class SegmentMerger {
         }
         
       }
-      
-      
     }
-    docConsumer.writeRam(raminput);
-    raminput.close();
-    raminput=null;
-    }else{
-	    for (int i = 0; i < n; i++) {
-	      SegmentMergeInfo smi = smis[i];
-	      TermPositions postings = smi.getPositions();
-	      assert postings != null;
-	      int base = smi.base;
-	      int[] docMap = smi.getDocMap();
-	      postings.seek(smi.termEnum);
 
-	      PayloadProcessor payloadProcessor = null;
-	      if (smi.dirPayloadProcessor != null) {
-	        payloadProcessor = smi.dirPayloadProcessor.getProcessor(smi.term);
-	      }
-	      while (postings.next()) {
-	        df++;
-	        int doc = postings.doc();
-	        if (docMap != null)
-	          doc = docMap[doc];                      // map around deletions
-	        doc += base;                              // convert to merged space
-
-	        final int freq = postings.freq();
-	        final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(doc, freq);
-
-	        if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-	          for (int j = 0; j < freq; j++) {
-	            final int position = postings.nextPosition();
-	            int payloadLength = postings.getPayloadLength();
-	            if (payloadLength > 0) {
-	              if (payloadBuffer == null || payloadBuffer.length < payloadLength)
-	                payloadBuffer = new byte[payloadLength];
-	              postings.getPayload(payloadBuffer, 0);
-	              if (payloadProcessor != null) {
-	                payloadBuffer = payloadProcessor.processPayload(payloadBuffer, 0, payloadLength);
-	                payloadLength = payloadProcessor.payloadLength();
-	              }
-	            }
-	            posConsumer.addPosition(position, payloadBuffer, 0, payloadLength);
-	          }
-	          posConsumer.finish();
-	        }
-	        
-	      }
-	    }
-    }
     docConsumer.finish();
 
     return df;

@@ -43,12 +43,14 @@ final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer implem
 
   long freqStart;
   long proxStart;
+  Term currentTermobj;
 
   /** Adds a new term in this field */
   @Override
-  FormatPostingsDocsConsumer addTerm(char[] text, int start) {
+  FormatPostingsDocsConsumer addTerm(Term term,char[] text, int start) {
     currentTerm = text;
     currentTermStart = start;
+    this.currentTermobj=term;
 
     // TODO: this is abstraction violation -- ideally this
     // terms writer is not so "invasive", looking for file
@@ -58,7 +60,6 @@ final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer implem
       proxStart = docsWriter.posWriter.out.getFilePointer();
 
     parent.skipListWriter.resetSkip();
-
     return docsWriter;
   }
 

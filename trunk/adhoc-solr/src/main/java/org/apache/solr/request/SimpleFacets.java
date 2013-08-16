@@ -208,7 +208,10 @@ public class SimpleFacets {
     } catch (ParseException e) {
       SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
-    }
+    } catch (Exception e) {
+        SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
     return facetResponse;
   }
 
@@ -288,13 +291,14 @@ public class SimpleFacets {
   /**
    * Returns a list of value constraints and the associated facet counts 
    * for each facet field specified in the params.
+ * @throws Exception 
    *
    * @see FacetParams#FACET_FIELD
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
   public NamedList getFacetFieldCounts()
-          throws IOException, ParseException {
+          throws Exception {
 
     NamedList res = new SimpleOrderedMap();
     String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
@@ -307,11 +311,11 @@ public class SimpleFacets {
             if(isdetail)
             {
             	MdrillDetail crossObj=new MdrillDetail(searcher, params,this.req);
-	            res.add("solrCorssFields_s", crossObj.getDetail(facetFs,this.base));
+	            res.add("solrCorssFields_s", crossObj.getBySchemaReader(facetFs,this.base));
             }else{
 
 	        	MdrillGroupBy crossObj=new MdrillGroupBy(searcher, params,this.req);
-	            res.add("solrCorssFields_s", crossObj.getCross(facetFs,this.base));
+	            res.add("solrCorssFields_s", crossObj.getBySchemaReader(facetFs,this.base));
             }
         }else{
 	      for (String f : facetFs) {

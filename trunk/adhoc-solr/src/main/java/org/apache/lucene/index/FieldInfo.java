@@ -32,7 +32,7 @@ public final class FieldInfo {
   public boolean omitNorms; // omit norms associated with indexed fields  
   public IndexOptions indexOptions;
   
-  boolean storePayloads; // whether this field stores payloads together with term positions
+  public boolean storePayloads; // whether this field stores payloads together with term positions
 
   /**
    * Controls how much information is stored in the postings lists.

@@ -177,6 +177,9 @@ public class MakeIndex {
 		Job job2 = new Job(new Configuration(jconf));
 		JobIndexPublic.setJars(job2.getConfiguration());
 		job2.setJobName("higo_stage_2@"+jobnameOutput);
+		Configuration conf2 = job2.getConfiguration();
+		JobIndexPublic.setDistributecache(new Path(solrHome,"solr/conf"), fs,conf2);
+		conf2.set("higo.index.fields", fields);
 		job2.setJarByClass(JobIndexerPartion.class);
 		job2.setInputFormatClass(SequenceFileInputFormat.class);
 		SequenceFileInputFormat.addInputPath(job2, new Path(smallindex,"part-r-*"));
@@ -201,9 +204,9 @@ public class MakeIndex {
 	        update.finish();
 		}else{
 			result= job2.waitForCompletion(true) ? 0 : -1;
-			if (result == 0) {
-				fs.mkdirs(new Path(output, "_SUCCESS"));
-			}
+//			if (result == 0) {
+////				fs.mkdirs(new Path(output, "_SUCCESS"));
+//			}
 		}
 
 		return result;

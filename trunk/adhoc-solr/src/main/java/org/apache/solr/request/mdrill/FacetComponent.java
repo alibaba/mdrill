@@ -39,8 +39,6 @@ import org.apache.solr.request.compare.GroupbyRow;
 import org.apache.solr.request.compare.MergerDetailSelectDetailRowCompare;
 import org.apache.solr.request.compare.MergerGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.SelectDetailRow;
-import org.apache.solr.request.compare.ShardDetailSelectDetailRowCompare;
-import org.apache.solr.request.compare.ShardDetailSelectDetailRowStringCompare;
 import org.apache.solr.request.compare.UniqTypeNum;
 import org.apache.solr.request.join.HigoJoinSort;
 import org.apache.solr.request.join.HigoJoinUtils;
@@ -114,6 +112,9 @@ public class  FacetComponent extends SearchComponent
       sreq.params.set(FacetParams.FACET, "false");
     }
   }
+  
+  
+  
 
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
@@ -297,6 +298,21 @@ public class  FacetComponent extends SearchComponent
 		DistribFieldFacet cross = new DistribFieldFacet(rb,"solrCorssFields_s");
 		facets.put(cross.getKey(), cross);
 	}
+	
+	void parse(SolrParams params) {
+		queryFacets = new LinkedHashMap<String, QueryFacet>();
+		facets = new LinkedHashMap<String, DistribFieldFacet>();
+		String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
+		if (facetQs != null) {
+			for (String query : facetQs) {
+				QueryFacet queryFacet = new QueryFacet(params, query);
+				queryFacets.put(queryFacet.getKey(), queryFacet);
+			}
+		}
+
+		DistribFieldFacet cross = new DistribFieldFacet(params,"solrCorssFields_s");
+		facets.put(cross.getKey(), cross);
+	}
   }
 
   /**
@@ -330,6 +346,24 @@ public class  FacetComponent extends SearchComponent
         key = localParams.get(CommonParams.OUTPUT_KEY, key);
       }
     }
+      
+      public FacetBase(SolrParams localParams, String facetType, String facetStr) {
+          this.facetType = facetType;
+          this.facetStr = facetStr;
+          this.localParams = localParams;
+          this.facetOn = facetStr;
+          this.key = facetStr;
+
+          if (localParams != null) {
+            // remove local params unless it's a query
+            if (!facetType.equals(FacetParams.FACET_QUERY)) {
+              facetOn = localParams.get(CommonParams.VALUE);
+              key = facetOn;
+            }
+
+            key = localParams.get(CommonParams.OUTPUT_KEY, key);
+          }
+    }
 
     /** returns the key in the response that this facet will be under */
     public String getKey() { return key; }
@@ -342,6 +376,9 @@ public class  FacetComponent extends SearchComponent
     public QueryFacet(ResponseBuilder rb, String facetStr) {
       super(rb, FacetParams.FACET_QUERY, facetStr);
     }
+    public QueryFacet(SolrParams localParams, String facetStr) {
+        super(localParams, FacetParams.FACET_QUERY, facetStr);
+      }
   }
 	public static class FieldFacet extends FacetBase {
 		public int offset;
@@ -361,10 +398,15 @@ public class  FacetComponent extends SearchComponent
 
 		public FieldFacet(ResponseBuilder rb, String facetStr) {
 			super(rb, FacetParams.FACET_FIELD, facetStr);
-			fillParams(rb, rb.req.getParams(), facetOn);
+			fillParams(rb.req.getParams(), facetOn);
+		}
+		
+		public FieldFacet(SolrParams localParams, String facetStr) {
+			super(localParams, FacetParams.FACET_FIELD, facetStr);
+			fillParams(localParams, facetOn);
 		}
 
-		private void fillParams(ResponseBuilder rb, SolrParams params,
+		private void fillParams(SolrParams params,
 				String field) {
 			this.offset = params.getInt(FacetParams.FACET_CROSS_OFFSET, 0);
 			this.limit = params.getInt(FacetParams.FACET_CROSS_LIMIT, 100);
@@ -417,9 +459,12 @@ public class  FacetComponent extends SearchComponent
     public ArrayList<SelectDetailRow> countsDetail = new ArrayList<SelectDetailRow>(128);
     
     public GroupbyItem recordcount=null;
-    DistribFieldFacet(ResponseBuilder rb, String facetStr) {
-      super(rb, facetStr);
+    DistribFieldFacet(SolrParams localParams, String facetStr) {
+      super(localParams, facetStr);
     }
+    DistribFieldFacet(ResponseBuilder rb, String facetStr) {
+        super(rb, facetStr);
+      }
 
     long add(NamedList shardCounts,DistribFieldFacet dff) {
     	long t1=System.currentTimeMillis();
@@ -505,7 +550,7 @@ public class  FacetComponent extends SearchComponent
     }
     
     
-    public GroupbyItem[] getPairSortedGroup(String sort_column_type,HigoJoinSort[] joinSort,String[] facetFs,String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
+    public  GroupbyItem[] getPairSortedGroup(String sort_column_type,HigoJoinSort[] joinSort,String[] facetFs,String[] crossFs, String[] distFS,String fl,String type,boolean isdesc,int saverecords) {
     	
     	
     	long t1=System.currentTimeMillis();

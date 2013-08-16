@@ -27,7 +27,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.DataOutput.ByteIndexInput;
 
 final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implements Closeable {
 
@@ -45,23 +44,21 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
   
   
   
-  private boolean currentIsUseCompress=false;
+  private boolean currentIsUseCompress=true;
 
-  public boolean isCurrentIsUseCompress() {
-    return currentIsUseCompress;
-}
+//  public boolean isCurrentIsUseCompress() {
+//    return currentIsUseCompress;
+//}
 
 
 FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter parent) throws IOException {
     this.parent = parent;
     out = parent.parent.dir.createOutput(IndexFileNames.segmentFileName(parent.parent.segment, IndexFileNames.FREQ_EXTENSION));
-    this.currentIsUseCompress=IndexWriterConfig.IsCompressFrq();
+    this.currentIsUseCompress=true;//IndexWriterConfig.IsCompressFrq();
     out.writeVInt(this.currentIsUseCompress?1:0);
     boolean success = false;
     try {
       totalNumDocs = parent.parent.totalNumDocs;
-      
-      // TODO: abstraction violation
       skipInterval = parent.parent.termsOut.skipInterval;
       skipListWriter = parent.parent.skipListWriter;
       skipListWriter.setFreqOutput(out);
@@ -86,19 +83,10 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
   int lastDocID;
   int df;
 
-  /** Adds a new doc in this term.  If this returns null
-   *  then we just skip consuming positions/payloads. */
-  boolean iswriteskip(IndexOutput buffer) throws IOException {
-      if(buffer.length()>=IndexWriterConfig.getMaxBlockSize())
-      {
-	      return true;
-      }
-      return false;
-  }
 
   
   @Override
-  FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq,IndexOutput buffer) throws IOException {
+  FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException {
 
       final int delta = docID - lastDocID;
     assert docID < totalNumDocs: "docID=" + docID + " totalNumDocs=" + totalNumDocs;
@@ -112,25 +100,18 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
       }
     lastDocID = docID;
     if (omitTermFreqAndPositions)
-	buffer.writeVInt(delta);
+    	this.out.writeCompressblock(delta);
     else if (1 == termDocFreq)
-	buffer.writeVInt((delta<<1) | 1);
+    	this.out.writeCompressblock((delta<<1) | 1);
     else {
-	buffer.writeVInt(delta<<1);
-	buffer.writeVInt(termDocFreq);
+    	this.out.writeCompressblock(delta<<1);
+    	this.out.writeCompressblock(termDocFreq);
     }
 
     return posWriter;
   }
   
-  FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException {
-      return this.addDoc(docID, termDocFreq,this.out);
-  }
-  
-    @Override
-    void writeRam(ByteIndexInput raminput) throws IOException {
-	out.writeZipStream(raminput);
-    }
+
 
   private final TermInfo termInfo = new TermInfo();  // minimize consing
   final UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
@@ -138,6 +119,7 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
   /** Called when we are done adding docs to this term */
   @Override
   void finish() throws IOException {
+	  this.out.flushCompressBlock();
     long skipPointer = skipListWriter.writeSkip(out);
     termInfo.set(df, parent.freqStart, parent.proxStart, (int) (skipPointer - parent.freqStart));
 
@@ -145,7 +127,7 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
     UnicodeUtil.UTF16toUTF8(parent.currentTerm, parent.currentTermStart, utf8);
 
     if (df > 0) {
-      parent.termsOut.add(fieldInfo.number,
+      parent.termsOut.add(parent.currentTermobj,fieldInfo.number,
                           utf8.result,
                           utf8.length,
                           termInfo);
@@ -158,6 +140,17 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
   public void close() throws IOException {
     IOUtils.close(out, posWriter);
   }
+
+
+@Override
+public boolean reset() {
+	if(this.currentIsUseCompress)
+	{
+		this.out.setUsedBlock();
+	}
+	this.out.resetBlockMode();
+	return true;
+}
 
 
 }

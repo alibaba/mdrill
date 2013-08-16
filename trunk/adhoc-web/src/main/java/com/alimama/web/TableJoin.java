@@ -83,7 +83,7 @@ public class TableJoin {
 	}
 	
 	
-	public static String addDownload2Table(final String tableName,final String uuid,String callback) throws SQLException, JSONException
+	public static String addDownload2Table(final String tableName,final String uuid,String callback) throws SQLException, JSONException, IOException
 	{
 		Map stormconf = Utils.readStormConfig();
 		String hdpConf = (String) stormconf.get("hadoop.conf.dir");
@@ -145,7 +145,7 @@ public class TableJoin {
 	
     private static final ExecutorService       EXECUTE  = ExecutorSerives.EXECUTE;
 
-	public static String addTxt(final String tableName,final String store,final String callback) throws JSONException, SQLException 
+	public static String addTxt(final String tableName,final String store,final String callback) throws JSONException, SQLException, IOException 
 	{
 		JSONObject jsonObj = new JSONObject();
 		final HashMap<String,String> tableInfo=getTableInfo(tableName);
@@ -169,6 +169,21 @@ public class TableJoin {
 				return jsonObj.toString();
 			}
 		}
+		final Map stormconf = Utils.readStormConfig();
+		final Configuration conf=getConf(stormconf);
+		final FileSystem fs=FileSystem.get(conf);
+		long size=HadoopUtil.duSize(fs, new Path(store));
+		if(size>500l*1024*1024)
+		{
+			jsonObj.put("code", "0");
+			jsonObj.put("message", "上传的文件不能超过500m");
+			if (callback != null && callback.length() > 0) {
+				return callback + "(" + jsonObj.toString() + ")";
+			} else {
+				return jsonObj.toString();
+			}
+		}
+
 		
 		TableJoin.updatePercent(tableName, "Stage-1 map = 0%,  reduce = 0%", "INDEXING")	;
 
@@ -180,9 +195,7 @@ public class TableJoin {
 				try{
 				SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
 				String day = fmt.format(new Date());
-				Map stormconf = Utils.readStormConfig();
-				Configuration conf=getConf(stormconf);
-				FileSystem fs=FileSystem.get(conf);
+				
 				if(!fs.exists(new Path(store)))
 				{
 					fs.mkdirs(new Path(store));
@@ -249,7 +262,7 @@ public class TableJoin {
 			}catch(Exception e){
 				TableJoin.LOG.error("make index",e);
 				try {
-					TableJoin.updatePercent(tableName, "Stage-2 map = 0%,  reduce = 0%", "FAIL")	;
+					TableJoin.updatePercent(tableName, "Stage-2 map = 100%,  reduce = 100%", "FAIL")	;
 				} catch (Exception e2) {
 					TableJoin.LOG.error("updatePercent",e2);
 				}
@@ -450,13 +463,9 @@ public class TableJoin {
 	}
 	
 	private static Pattern  pat=null;
-	public static String parsePercent(String stage,String percent,boolean issuccess)
+	public static double parsePercent(String stage,String percent,boolean issuccess)
 	{
-		if(issuccess)
-		{
-			return "100%";
-		}
-//		Stage-2 map = 100%,  reduce = 100%
+		Integer totalstage=Integer.parseInt(stage);
 		if(pat==null)
 		{
 			pat= Pattern.compile(".*Stage.*[^\\d]*(\\d+)[^\\d]map[^\\d]*(\\d+)[^\\d].*reduce[^\\d]*(\\d+)[^\\d].*");
@@ -464,10 +473,9 @@ public class TableJoin {
 		
 		if(!percent.startsWith("Stage"))
 		{
-			return "0%";
+			return 0d;
 		}
 		
-		Integer totalstage=Integer.parseInt(stage);
 		Integer currStage=0;
 		double map=0;
 		double reduce=0;
@@ -487,9 +495,9 @@ public class TableJoin {
         if(totalstage>0)
         {
         	double result= (100d*(currStage-1)+map*0.5d+reduce*0.5d)/totalstage;
-        	return String.valueOf(result)+"%";
+        	return result;
         }
-		return "100%";
+		return 100d;
 	}
 	
 	
@@ -557,10 +565,10 @@ public class TableJoin {
 			String strsqlDownload="select '2' as source " +
 			",jobname as tableShowName" +
 			",uuid as tableName" +
-			",'empty' as colsShowName" +
+			",cols as colsShowName" +
 			",'empty' as colsName" +
 			",'empty' as colsType" +
-			",'empty' as splitString" +
+			",'default' as splitString" +
 			",storedir as txtStorePath" +
 			",'empty' as indexStorePath" +
 			",extval as extval" +
@@ -581,7 +589,7 @@ public class TableJoin {
 		}
 		if(type==1)//for join
 		{
-			bufferSql.append(strsqlJoin+" and status='INDEX' order by createtime desc limit "+start+","+rows+" ");
+			bufferSql.append(strsqlJoin+" and status='INDEX' and resultkb<=512000 order by createtime desc limit "+start+","+rows+" ");
 		}
 		
 		
@@ -600,7 +608,7 @@ public class TableJoin {
 			item.put("source", res.getString("source"));
 			item.put("tableShowName", res.getString("tableShowName"));//展示名称
 			item.put("tableName", res.getString("tableName"));//uuid
-			item.put("colsShowName", res.getString("colsShowName"));
+			item.put("colsShowName", res.getString("colsShowName").replaceAll("\\(", "_").replaceAll("\\)", "_").replaceAll(" ", "").replaceAll("_,", ",").replaceAll(",$", ""));
 			item.put("colsName", res.getString("colsName"));
 			item.put("colsType", res.getString("colsType"));
 			item.put("splitString", res.getString("splitString"));
@@ -616,13 +624,18 @@ public class TableJoin {
 			item.put("percent", res.getString("percent"));
 			item.put("resultkb", res.getString("resultkb"));
 			boolean issuccess=res.getString("status").equals("INDEX")&&res.getString("extval").equals("0");
-			item.put("proccess", parsePercent(res.getString("stage"),res.getString("percent"),issuccess));
+			boolean iserror=res.getString("status").equals("FAIL")||!res.getString("extval").equals("0");
+			double percent=parsePercent(res.getString("stage"),res.getString("percent"),issuccess);
+			item.put("proccess", String.valueOf(percent)+"%");
 			boolean isallowEdit=!res.getString("status").equals("INDEXING")&&res.getString("source").equals("1");
-			item.put("allowCreate",String.valueOf(res.getString("source").equals("2")&&issuccess));//是否允许将离线下载转换为个人表
-			item.put("allowUpload",String.valueOf(isallowEdit));//上传
-			item.put("allowDownload",String.valueOf(issuccess));//下载
-			item.put("allowJoin",String.valueOf(res.getString("source").equals("1")&&issuccess));//join
-			item.put("allowSend",String.valueOf(res.getString("source").equals("1")&&issuccess));//推送
+			item.put("allowCreate",String.valueOf(res.getString("source").equals("2")&&issuccess&&percent>=100));//是否允许将离线下载转换为个人表
+			item.put("allowUpload",String.valueOf(isallowEdit&&res.getString("status").equals("init")));//上传
+			item.put("allowDownload",String.valueOf(issuccess&&percent>=100));//下载
+			item.put("allowJoin",String.valueOf(res.getString("source").equals("1")&&issuccess&&percent>=100));//join
+			item.put("allowSend",String.valueOf(res.getString("source").equals("1")&&issuccess&&percent>=100));//推送
+			item.put("isError", iserror);
+			item.put("memo", "子落后续添加，暂时还没做");
+
 			jsonArray.put(item);
 			
 		    }
@@ -670,7 +683,7 @@ public class TableJoin {
 			bufferSql.append(" from ("+strsqlJoin+" union "+strsqlDownload+" union "+strsqlJoin2+") tmp  limit 10 ");
 		}if(type==1)//for join
 		{
-			bufferSql.append(strsqlJoin+" and status='INDEX' order by createtime desc limit 10 ");
+			bufferSql.append(strsqlJoin+" and status='INDEX' and resultkb<=512000  order by createtime desc limit 10 ");
 		}
 		
 		
@@ -865,11 +878,233 @@ public class TableJoin {
 
 	}
 	
+//	public String get(String key) throws UnsupportedEncodingException{
+//		String keyPath = ZKUtil.joinZNode(PROJECT_NODE, key);
+//		HashMap<String,String> rtn=new HashMap<String,String>();
+//		rtn.put("code", "0");
+//
+//		try {
+//			byte[] d=ZKUtil.getData(zkw, keyPath);
+//			if(d!=null)
+//			{
+//				rtn.put("data", new String(d,"utf8"));
+//				rtn.put("code", "1");
+//			}else{
+//				rtn.put("message", "nodata");
+//				rtn.put("data", "");
+//				rtn.put("code", "1");
+//			}
+//			
+//		} catch (KeeperException e) {
+//			rtn.put("message", this.stringify_error(e));
+//		}
+//		return new JSONObject(rtn).toString();
+//	}
+	public static String get(String key) throws SQLException, JSONException
+	{
+		Map stormconf = Utils.readStormConfig();
+		String connstr = (String) stormconf.get("higo.download.offline.conn");
+		String uname = (String) stormconf.get("higo.download.offline.username");
+		String passwd = (String) stormconf.get("higo.download.offline.passwd");
+
+		MySqlConn m_fpsql = new MySqlConn(connstr, uname, passwd);
+
+		Connection conn = m_fpsql.getConn();
+		Statement stmt = conn.createStatement();
+
+		String sql="select tab_key,tab_value from tab_infos where tab_key='"+key+"' limit 10";
+		ResultSet res = stmt.executeQuery(sql);
+		JSONObject jsonObj = new JSONObject();
+
+		HashMap<String,String> rtn=new HashMap<String,String>();
+		jsonObj.put("code", "0");
+
+		boolean issetup=false;
+		while (res.next()) {
+			rtn.put("tab_key", res.getString("tab_key"));
+			rtn.put("tab_value", res.getString("tab_value"));
+			issetup=true;
+		    }
+		m_fpsql.close();
+		
+		if(issetup)
+ {
+			jsonObj.put("data", rtn.get("tab_key"));
+			jsonObj.put("code", "1");
+		} else {
+			jsonObj.put("message", "nodata");
+			jsonObj.put("data", "");
+			jsonObj.put("code", "1");
+		}
+		return jsonObj.toString();
+	}
 	
+	public String set(String key,String value) throws Exception{
+		HashMap<String,String> rtn=new HashMap<String,String>();
+		rtn.put("code", "0");
+
+		try {
+			JSONObject last=new JSONObject(get(key));
+			if(last.has("message")&&last.getString("message").equals("nodate"))
+			{
+				String result=insert(key,value);
+				return result;
+			}else{
+				update(key, value);
+				rtn.put("lastdata",last.getString("data"));
+			}
+			rtn.put("code", "1");
+
+		} catch (Exception e) {
+			rtn.put("message", e.toString());
+		}
+		return new JSONObject(rtn).toString();
+	}
+	
+	public static String insert(String key,String value) throws Exception
+	{
+		JSONObject jsonObj = new JSONObject();
+
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
+		String day = fmt.format(new Date());
+		Map stormconf = Utils.readStormConfig();
+		String connstr = (String) stormconf.get("higo.download.offline.conn");
+		String uname = (String) stormconf.get("higo.download.offline.username");
+		String passwd = (String) stormconf.get("higo.download.offline.passwd");
+	
+		MySqlConn m_fpsql = new MySqlConn(connstr, uname, passwd);
+		
+		Connection conn = m_fpsql.getConn();
+		String strSql = "insert into tab_infos " +
+				"(tab_key,tab_value)" +
+				"values" +
+				"(?,?)";
+		PreparedStatement m_fps = conn.prepareStatement(strSql);
+		try {
+			int index=1;
+			m_fps.setString(index++, key);
+			m_fps.setString(index++, value);
+			m_fps.executeUpdate();
+			jsonObj.put("code", "1");
+			JSONObject daa = new JSONObject();
+			jsonObj.put("data", daa);
+			jsonObj.put("____debug", m_fps.toString());
+		} catch (Exception e) {
+			jsonObj.put("____debug2", m_fps.toString());
+			jsonObj.put("message", e.toString());
+			jsonObj.put("code", "0");
+		}finally{
+			m_fps.close();
+			m_fpsql.close();
+		}
+		
+		return jsonObj.toString();
+
+	}
+	
+//	public String del(String key) throws UnsupportedEncodingException{
+//		String keyPath = ZKUtil.joinZNode(PROJECT_NODE, key);
+//		HashMap<String,String> rtn=new HashMap<String,String>();
+//		rtn.put("code", "0");
+//		try {
+//			ZKUtil.deleteNodeRecursively(zkw, keyPath);
+//			rtn.put("code", "1");
+//		} catch (KeeperException e) {
+//			rtn.put("message", this.stringify_error(e));
+//		}
+//		return new JSONObject(rtn).toString();
+//	}
+	
+	public static String del(String key) throws Exception
+	{
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("code", "0");
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
+		String day = fmt.format(new Date());
+		Map stormconf = Utils.readStormConfig();
+		String connstr = (String) stormconf.get("higo.download.offline.conn");
+		String uname = (String) stormconf.get("higo.download.offline.username");
+		String passwd = (String) stormconf.get("higo.download.offline.passwd");
+	
+		MySqlConn m_fpsql = new MySqlConn(connstr, uname, passwd);
+		
+		Connection conn = m_fpsql.getConn();
+		String strSql = "delete from tab_infos  where tab_key=? ";
+		PreparedStatement m_fps = conn.prepareStatement(strSql);
+		try {
+			int index=1;
+			m_fps.setString(index++, key);
+			m_fps.executeUpdate();
+			jsonObj.put("code", "1");
+		} catch (Exception e) {
+			jsonObj.put("message", e.toString());
+			jsonObj.put("code", "0");
+		}finally{
+			m_fps.close();
+			m_fpsql.close();
+		}
+		
+		return jsonObj.toString();
+
+	}
+	
+	public static String update(String key,String value) throws Exception
+	{
+		JSONObject jsonObj = new JSONObject();
+
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
+		String day = fmt.format(new Date());
+		Map stormconf = Utils.readStormConfig();
+		String connstr = (String) stormconf.get("higo.download.offline.conn");
+		String uname = (String) stormconf.get("higo.download.offline.username");
+		String passwd = (String) stormconf.get("higo.download.offline.passwd");
+	
+		MySqlConn m_fpsql = new MySqlConn(connstr, uname, passwd);
+		
+		Connection conn = m_fpsql.getConn();
+		String strSql = "update tab_infos set tab_value=? where tab_key=? ";
+		PreparedStatement m_fps = conn.prepareStatement(strSql);
+		try {
+			int index=1;
+			m_fps.setString(index++, value);
+			m_fps.setString(index++, key);
+			m_fps.executeUpdate();
+			jsonObj.put("code", "1");
+			JSONObject daa = new JSONObject();
+			jsonObj.put("data", daa);
+			jsonObj.put("____debug", m_fps.toString());
+		} catch (Exception e) {
+			jsonObj.put("____debug2", m_fps.toString());
+			jsonObj.put("____debugerror", e.toString());
+			jsonObj.put("code", "0");
+		}finally{
+			m_fps.close();
+			m_fpsql.close();
+		}
+		
+		return jsonObj.toString();
+
+	}
+
 	
 	public static String create(String tableShowName,String colsShowName,String splitString,String username,String joins,String callback) throws Exception
 	{
+//		public static HashMap<String,String> getUserTablesCount(String username,int type) throws SQLException
+
+		HashMap<String,String> tablecount=getUserTablesCount(username, 1);
+	
+		
 		JSONObject jsonObj = new JSONObject();
+		if(tablecount!=null&&tablecount.containsKey("cnt")&&Integer.parseInt(tablecount.get("cnt"))>=50)
+		{
+			jsonObj.put("code", "0");
+			jsonObj.put("message", "你已经创建了"+tablecount.get("cnt")+"个个人表了，单用户最多创建50个个人表");
+			if (callback != null && callback.length() > 0) {
+				return callback + "(" + jsonObj.toString() + ")";
+			} else {
+				return jsonObj.toString();
+			}
+		}
 
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
 		String day = fmt.format(new Date());

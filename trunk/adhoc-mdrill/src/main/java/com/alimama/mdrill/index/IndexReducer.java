@@ -37,10 +37,10 @@ public class IndexReducer extends  Reducer<LongWritable, DocumentList, LongWrita
 		heartBeater = new HeartBeater(context);
 		heartBeater.needHeartBeat();
 
-		shardWriter = this.initShardWriter(context);
 		String fieldStrs = conf.get("higo.index.fields");
 		String[] fieldslist = fieldStrs.split(",");
 		this.documentConverter = new DocumentConverter(fieldslist,"solrconfig.xml", "schema.xml");
+		shardWriter = this.initShardWriter(context);
 
 		try {
 			this.analyzer = JobIndexPublic.setAnalyzer(conf);

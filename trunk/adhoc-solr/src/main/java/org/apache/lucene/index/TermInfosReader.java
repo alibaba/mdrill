@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -94,8 +95,19 @@ final class TermInfosReader implements Closeable {
   }
   IndexInput tisInput=null;
   IndexInput tiiInput=null;
-  IndexInput tiiInputquick=null;
+  public IndexInput tiiInputquick=null;
   boolean isQuickMode=false;
+  public HashMap<Integer,Long> fieldPos=new HashMap<Integer,Long>();
+  public HashMap<Integer,Integer> fieldCount=new HashMap<Integer,Integer>();
+
+  public IndexInput quicktisInput=null;
+  
+  public IndexInput getQuickTis()
+  {
+	  return this.quicktisInput;
+  }
+  
+  public boolean supportquick=false;
   TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize, int indexDivisor)
        throws CorruptIndexException, IOException {
     boolean success = false;
@@ -111,11 +123,34 @@ final class TermInfosReader implements Closeable {
 
       long tisfilesize=-1;
       String tisFileSize=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION_SIZE);
-
+      String quickTis=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION_QUICK);
       if(directory.fileExists(tisFileSize))
       {
 	  IndexInput sizebuff=directory.openInput(tisFileSize, readBufferSize);
 	  tisfilesize=sizebuff.readLong();
+	  if(directory.fileExists(quickTis))
+	  {
+		  supportquick=true;
+		  if(directory instanceof FSDirectory)
+	      {
+	    	  FSDirectory dddir=(FSDirectory)directory;
+	    	  String absPath=dddir.getDirectory().getAbsolutePath();
+	    	  quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),absPath+"@"+quickTis);
+	    }else{
+			  quicktisInput=directory.openInput(quickTis, readBufferSize);
+	      }
+		  int size=sizebuff.readInt();
+		  for(int i=0;i<size;i++)
+		  {
+			  fieldPos.put(sizebuff.readInt(), sizebuff.readLong());
+		  }
+		  size=sizebuff.readInt();
+		  for(int i=0;i<size;i++)
+		  {
+			  fieldCount.put(sizebuff.readInt(), sizebuff.readInt());
+		  }
+		  
+	  }
 	  sizebuff.close();
       }
       
@@ -202,6 +237,10 @@ final class TermInfosReader implements Closeable {
   }
 
   public final void close() throws IOException {
+	  if(this.quicktisInput!=null)
+	  {
+		  quicktisInput.close();
+	  }
 	  if(this.isQuickMode)
 	  {
 		  if (tiiInput != null)

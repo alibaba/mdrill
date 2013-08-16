@@ -316,7 +316,7 @@ public class AdhocOfflineService {
 		 
 		 if(orderby2!=null)
 		 {
-			 hql=hql+" order by fq2."+colMap2.get(orderby2)+" "+desc2;
+			 hql=hql+" order by "+WebServiceParams.parseFqAlias(orderby2, colMap, colMap2, "fq2")+" "+desc2;
 		 }
 		 
 		 if(limit >1000000)
