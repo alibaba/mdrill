@@ -1,0 +1,19 @@
+########### These MUST be filled in for a storm configuration
+# storm.zookeeper.servers:
+#     - "server1"
+#     - "server2"
+# 
+# nimbus.host: "nimbus"
+# 
+# 
+# ##### These may optionally be filled in:
+#    
+## List of custom serializations
+# topology.kryo.register:
+#     - org.mycompany.MyType
+#     - org.mycompany.MyType2: org.mycompany.MyType2Serializer
+#
+## Locations of the drpc servers
+# drpc.servers:
+#     - "server1"
+#     - "server2"

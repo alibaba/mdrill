@@ -1,0 +1,79 @@
+####zookeeper配置####
+ storm.zookeeper.servers:
+     - "adhoc2.kgb.cm6"
+     - "adhoc3.kgb.cm6"
+     - "adhoc4.kgb.cm6"
+ storm.zookeeper.port: 2181
+ storm.zookeeper.root: "/higo2"
+ 
+####蓝鲸配置####
+ storm.local.dir: "/home/taobao/bluewhale/stormwork"
+ nimbus.host: "tiansuan1.kgb.cm4"
+ 
+####hadoop配置####
+ hadoop.conf.dir: "/home/taobao/config"
+ hadoop.java.opts: "-Xmx1024m"
+ 
+####蓝鲸各种心跳间隔配置####
+ nimbus.task.timeout.secs: 240
+ task.heartbeat.frequency.secs: 12
+ nimbus.supervisor.timeout.secs: 360
+ supervisor.heartbeat.frequency.secs: 10
+ nimbus.monitor.freq.secs: 20
+ supervisor.worker.timeout.secs: 240
+ supervisor.monitor.frequency.secs: 12
+ worker.heartbeat.frequency.secs: 4
+ storm.zookeeper.session.timeout: 60000
+ storm.zookeeper.retry.interval: 6000
+ storm.zookeeper.retry.times: 10
+ 
+####mdrill配置####
+ higo.workdir.list: "/disk1/taobao/bluewhile,/disk2/taobao/bluewhile,/disk3/taobao/bluewhile,/disk4/taobao/bluewhile,/disk5/taobao/bluewhile,/disk6/taobao/bluewhile,/disk7/taobao/bluewhile,/disk8/taobao/bluewhile,/disk9/taobao/bluewhile,/disk10/taobao/bluewhile"
+ #----每台机器启动的worker进程端口列表----
+ supervisor.slots.ports:
+    - 6701
+    - 6702
+    - 6703
+    - 6704
+    - 6705
+    - 6706
+    - 6707
+    - 6708
+    - 6709
+    - 6710
+    - 6711
+    - 6712
+    - 6713
+    - 6714
+    - 6601
+ #----启动的shard的数，每个shard为一个solr实例，结合cpu个数和内存进行配置，10台48G内存配置60----
+ higo.shards.count: 60
+ #----分配给merger server的端口，建议每台机器分配一个merger server----
+ higo.merge.ports: "6601,6602,6603,6604,6605,6606,6607,6608,6609,6610"
+ #----启动的merger server的worker数量，建议根据机器数量设定----
+ higo.mergeServer.count: 8
+ #----分配给实时数据源的端口，该功能在开发中，预留接口----
+ higo.realtime.ports: "6501,6502,6503,6504,6505,6506,6507,6508,6509,6510"
+ #----启动实时数据源的worker数量,预留接口----
+ higo.realtime.count: 0
+ #----mdrill同时最多加载的分区个数，取决于内存与数据量----
+ higo.cache.partions: 10
+ #----通用的worker的jvm参数配置----
+ worker.childopts: "-Xms5g -Xmx5g -Xmn2g -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-%port%.log "
+ #----个别的worker的端口的jvm参数配置，通常用于给merger server单独配置----
+ worker.childopts.6601: "-Xms5g -Xmx5g -Xmn2g -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-%port%.log "
+ #----mdrill的表格列表在hdfs下的路径-----
+ higo.table.path: "/group/taobao/external/p4p/p4padhoc/tablelist"
+ #----mdrill中启动的solr使用的初始端口号-----
+ higo.solr.ports.begin: 51110
+ #----mdrill分区方式，目前支持default,day,month,single，default是将一个月分成3个区,single意味着没有分区-----
+ higo.partion.type: "default"
+ #----mdrill个别表的分区设定，这里为rpt_seller_all_m表----
+ higo.partion.type.rpt_seller_all_m: "month"
+ higo.partion.type.rpt_seller_all_m_single: "single"
+
+####以下为adhoc项目专用，跟mdrill无关，可忽略####
+ higo.download.offline.conn: "jdbc:mysql://tiansuan1.kgb.cm4:3306/adhoc_download?useUnicode=true&characterEncoding=utf8"
+ higo.download.offline.username: "adhoc"
+ higo.download.offline.passwd: "adhoc"
+ higo.download.offline.store: "/group/taobao/external/p4p/p4padhoc/download/offline"

@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import random
+import subprocess as sub
+
+
+STORM_DIR = "/".join(os.path.abspath( __file__ ).split("/")[:-2])
+CONF_DIR = os.path.expanduser(STORM_DIR + "/conf")
+
+
+def get_jars_full(adir):
+    files = os.listdir(adir)
+    ret = []
+    for f in files:
+        if f.endswith(".jar"):
+            ret.append(adir + "/" + f)
+    return ret
+
+def get_classpath(extrajars):
+    ret = get_jars_full(STORM_DIR)
+    ret.extend(get_jars_full(STORM_DIR + "/lib"))
+    ret.extend(extrajars)
+    return ":".join(ret)
+
+def confvalue(name, extrapaths):
+    command = [
+        "java", "-client", "-cp", get_classpath(extrapaths), 
+        "com.alipay.bluewhale.core.command.ConfigValue", name
+    ]
+    p = sub.Popen(command, stdout=sub.PIPE)
+    output, errors = p.communicate()
+    lines = output.split("\n")
+    for line in lines:
+        tokens = line.split(" ")
+        if tokens[0] == "VALUE:":
+            return " ".join(tokens[1:])
+
+def exec_storm_class(klass, jvmtype="-server", childopts="", extrajars=[], args=[]):
+    nativepath = confvalue("java.library.path", extrajars)
+    command = "java " + jvmtype + " -Dstorm.home=" + STORM_DIR + " -Dfile.encoding=utf-8 -Djava.library.path=" + nativepath + " " + childopts + " -cp " + get_classpath(extrajars) + " " + klass + " " + " ".join(args)
+    os.system(command)
+
+def jar(jarfile, klass, *args):
+    exec_storm_class(
+        klass,
+        jvmtype="-client",
+        extrajars=[jarfile, CONF_DIR, STORM_DIR + "/bin"],
+        args=args,
+        childopts="-Dstorm.jar=" + jarfile)
+
+def kill(*args):
+    exec_storm_class(
+        "com.alipay.bluewhale.core.command.KillTopology", 
+        args=args, 
+        jvmtype="-client", 
+        extrajars=[CONF_DIR, STORM_DIR + "/bin"])
+        
+def mdrillui(*args):
+    childopts = "-Dlogfile.name=mdrillui.log -Dlog4j.configuration=storm.log.properties"
+    exec_storm_class(
+        "com.alimama.mdrill.ui.MdrillUi", 
+        args=args, 
+        jvmtype="-server", 
+        extrajars=[CONF_DIR, STORM_DIR + "/bin", STORM_DIR + "/log4j"],
+        childopts=childopts)
+   
+def solr(*args):
+    childopts = "-Dlogfile.name=solr.log -Dlog4j.configuration=storm.log.properties"
+    exec_storm_class(
+        "com.alimama.bluewhale.core.mdrill.SolrStartSingle", 
+        args=args, 
+        jvmtype="-server", 
+        extrajars=[CONF_DIR, STORM_DIR + "/bin", STORM_DIR + "/log4j"],
+        childopts=childopts)
+        
+def mdrill(*args):
+    exec_storm_class(
+        "com.alimama.bluewhale.core.drpc.Mdrill", 
+        jvmtype="-client",
+        extrajars=[STORM_DIR + "/bin/mdrill.jar", CONF_DIR, STORM_DIR + "/bin"],
+        args=args, 
+        childopts="-Dstorm.jar=" + STORM_DIR + "/bin/mdrill.jar")
+
+def nimbus():
+    """Syntax: [storm nimbus]
+
+    Launches the nimbus daemon. This command should be run under 
+    supervision with a tool like daemontools or monit. 
+
+    See Setting up a Storm cluster for more information.
+    (https://github.com/nathanmarz/storm/wiki/Setting-up-a-Storm-cluster)
+    """
+    cppaths = [STORM_DIR + "/log4j", STORM_DIR + "/conf"]
+    childopts = confvalue("nimbus.childopts", cppaths) + " -Dlogfile.name=nimbus.log -Dlog4j.configuration=storm.log.properties"
+    exec_storm_class(
+        "com.alipay.bluewhale.core.daemon.NimbusServer", 
+        jvmtype="-server", 
+        extrajars=cppaths, 
+        childopts=childopts)
+
+def supervisor():
+    cppaths = [STORM_DIR + "/log4j", STORM_DIR + "/conf"]
+    childopts = confvalue("supervisor.childopts", cppaths) + " -Dlogfile.name=supervisor.log -Dlog4j.configuration=storm.log.properties"
+    exec_storm_class(
+        "com.alipay.bluewhale.core.daemon.supervisor.Supervisor", 
+        jvmtype="-server", 
+        extrajars=cppaths, 
+        childopts=childopts)
+
+def print_commands():
+    print "Commands:\n\t",  "\n\t".join(sorted(COMMANDS.keys()))
+
+def unknown_command(*args):
+    print "Unknown command: [storm %s]" % ' '.join(sys.argv[1:])
+    print_usage()
+
+COMMANDS = {"jar": jar,"kill": kill, "nimbus": nimbus,
+             "supervisor": supervisor,"higo":mdrill,"higoui":mdrillui,"mdrill":mdrill,"mdrillui":mdrillui,"solr":solr}
+
+def main():
+    if len(sys.argv) <= 1:
+        print_commands()
+        sys.exit(-1)
+
+    COMMAND = sys.argv[1]
+    ARGS = sys.argv[2:]
+    (COMMANDS.get(COMMAND, unknown_command))(*ARGS)
+    
+if __name__ == "__main__":
+    main()
