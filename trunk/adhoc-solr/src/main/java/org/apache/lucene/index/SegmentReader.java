@@ -43,13 +43,18 @@ import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.request.mdrill.MdrillDetail;
 import org.apache.solr.request.mdrill.MdrillGroupBy;
+import org.apache.solr.request.uninverted.UnInvertedField;
 import org.apache.solr.schema.IndexSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * @lucene.experimental
  */
 public class SegmentReader extends IndexReader implements Cloneable {
+	  public static Logger log = LoggerFactory.getLogger(SegmentReader.class);
+
   protected boolean readOnly;
 
   private SegmentInfo si;
@@ -485,14 +490,18 @@ public class SegmentReader extends IndexReader implements Cloneable {
   {
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
 	  HashMap<Integer,Long> filepos=core.getTermsReader().fieldPos;
-	  return filepos.get(fileNum);
+	  long rtn= filepos.get(fileNum);
+	  log.info("##getpos##"+fileNum+"@"+field+","+rtn);
+	  return rtn;
   }
   
   public Integer getCount(String field)
   {
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
 	  HashMap<Integer, Integer> fileCount=core.getTermsReader().fieldCount;
-	  return fileCount.get(fileNum);
+	  int rtn= fileCount.get(fileNum);
+	  log.info("##getCount##"+fileNum+"@"+field+","+rtn);
+	  return rtn;
   }
   
   public InvertResult invertScan(IndexSchema schema, InvertParams params) throws Exception{

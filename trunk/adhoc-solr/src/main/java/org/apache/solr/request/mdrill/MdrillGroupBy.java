@@ -141,10 +141,9 @@ public class MdrillGroupBy {
 		FacetComponent.FacetInfo fi = new FacetComponent.FacetInfo();
 	     fi.parse(params);
         DistribFieldFacet dff = fi.cross;
-
-	     long addtime=0;
+        dff.isdetail=false;
 	     for (NamedList nl: resultlist) {
-	         addtime+=dff.add(nl, dff);
+	         dff.add(nl, dff);
 	     }
 	     
 	     NamedList fieldCounts = new NamedList();
@@ -158,6 +157,7 @@ public class MdrillGroupBy {
 	      for (int i=this.offset; i<end; i++) {
 	        fieldCounts.add(counts[i].getKey(), counts[i].toNamedList());
 	      }
+
 		return fieldCounts;
 	}
 	

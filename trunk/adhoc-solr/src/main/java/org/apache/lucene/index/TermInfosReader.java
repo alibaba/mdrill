@@ -27,6 +27,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.solr.request.uninverted.UnInvertedField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alimama.mdrill.buffer.BlockBufferInput;
 
@@ -36,6 +39,8 @@ import com.alimama.mdrill.buffer.BlockBufferInput;
  * set.  */
 
 final class TermInfosReader implements Closeable {
+	  public static Logger log = LoggerFactory.getLogger(TermInfosReader.class);
+
   private final Directory directory;
   private final String segment;
   private final FieldInfos fieldInfos;
@@ -144,11 +149,15 @@ final class TermInfosReader implements Closeable {
 		  {
 			  fieldPos.put(sizebuff.readInt(), sizebuff.readLong());
 		  }
+		  
+		  log.info("##fieldPos##"+fieldPos.toString());
 		  size=sizebuff.readInt();
 		  for(int i=0;i<size;i++)
 		  {
 			  fieldCount.put(sizebuff.readInt(), sizebuff.readInt());
 		  }
+		  log.info("##fieldCount##"+fieldCount.toString());
+
 		  
 	  }
 	  sizebuff.close();

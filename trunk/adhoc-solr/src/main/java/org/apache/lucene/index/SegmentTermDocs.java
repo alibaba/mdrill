@@ -167,15 +167,19 @@ public class SegmentTermDocs implements TermDocs {
 
 				int size = stream.readVInt();
 				int compresssize = stream.readVInt();
-				int[] compress = new int[compresssize];
-				for (int i = 0; i < compresssize; i++) {
-					compress[i] = stream.readInt();
+				if(compresssize>0)
+				{
+					int[] compress = new int[compresssize];
+					for (int i = 0; i < compresssize; i++) {
+						compress[i] = stream.readInt();
+					}
+					this.buffer = PForDelta.decompressOneBlock(compress, size);
+				}else{
+					this.buffer=new int[size];
+					for (int i = 0; i < size; i++) {
+						this.buffer[i] = stream.readVInt();
+					}
 				}
-				this.buffer = PForDelta.decompressOneBlock(compress, size);
-//				if (buffer.length != size || printindex++ < 1000) {
-//					System.out.println("##readCompressblock##" + compresssize
-//							+ "@" + buffer.length + "@" + size);
-//				}
 
 				this.pos = 0;
 			}

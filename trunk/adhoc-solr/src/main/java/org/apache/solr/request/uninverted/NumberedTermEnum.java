@@ -134,23 +134,36 @@ public  class NumberedTermEnum extends TermEnum {
 
 
 	  public boolean skipTo(int termNumber) throws IOException {
+//		  StringBuffer debug=new StringBuffer();
+//	      debug.append("termNumber:"+termNumber+",");
+
 	    int delta = termNumber - pos;
 	    if (delta < 0 || delta > tindex.interval || tenum==null) {
 	      int idx = termNumber >>> tindex.intervalBits;
 	      String base = tindex.index[idx];
 	      pos = idx << tindex.intervalBits;
 	      delta = termNumber - pos;
-	      if (tenum != null) tenum.close();
+	      if (tenum != null) {tenum.close();}
+//	      debug.append("pos:"+pos+",");
+
+//	      debug.append("delta:"+delta+",");
+//	      debug.append("base:"+base+",");
 	      tenum = reader.terms(tindex.createTerm(base));
 	    }
+
 	    while (--delta >= 0) {
 	      boolean b = tenum.next();
 	      if (b==false) {
+//		      debug.append("result:"+null+",");
+//		      log.info(debug.toString());
 	        t = null;
 	        return false;
 	      }
 	      ++pos;
 	    }
+	    
+//	      debug.append("result:"+tenum.term()+",");
+//	      log.info(debug.toString());
 	    return setTerm();
 	  }
 

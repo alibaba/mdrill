@@ -192,7 +192,6 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		} else if (dataType == Datatype.d_string) {// for dist
 			this.termValueLong.set(termNum, te.getVVVlong());
 		}
-		te.next();
 	}
 
 	if (termInstances == 0) {

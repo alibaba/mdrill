@@ -108,7 +108,7 @@ public class MdrillDetail {
 		invparam.fields=fields;
 		invparam.base=base;
 		invparam.req=this.req;
-		invparam.isdetail=false;
+		invparam.isdetail=true;
 		IndexReader.InvertResult result=reader.invertScan(this.searcher.getSchema(), invparam);
 		ArrayList<NamedList> resultlist=result.getResult();
 		if(resultlist.size()==1)
@@ -118,6 +118,7 @@ public class MdrillDetail {
 		FacetComponent.FacetInfo fi = new FacetComponent.FacetInfo();
 	     fi.parse(params);
 	        DistribFieldFacet dff = fi.cross;
+	        dff.isdetail=true;
 
 	     long addtime=0;
 	     for (NamedList nl: resultlist) {

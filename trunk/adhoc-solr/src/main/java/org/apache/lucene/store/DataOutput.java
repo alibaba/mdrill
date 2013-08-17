@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
@@ -105,7 +106,21 @@ public abstract class DataOutput {
     }
   }
   
-  static volatile int printindex_compress=0;
+  static volatile long printindex_compress=0;
+  static volatile long printindex_compress_error=0;
+  
+  public static boolean compressEquals(int[] a, int[] a2,int len) {
+
+      for (int i=0; i<len; i++)
+      {
+          if (a[i] != a2[i])
+          {
+              return false;
+          }
+      }
+
+      return true;
+  }
   public void flushCompressBlock() throws IOException {
 	  if(this.uptopos_compress<=0)
 	  {
@@ -121,15 +136,30 @@ public abstract class DataOutput {
 	  }
       
 
-      final int[] compressedBuffer =PForDelta.compressOneBlock(buffer_compress, uptopos_compress);
+      int[] compressedBuffer =PForDelta.compressOneBlock(buffer_compress, uptopos_compress);
       if(printindex_compress++<1000)
       {
     	  System.out.println("##flushCompressBlock##"+compressedBuffer.length+"@"+uptopos_compress);
       }
       this.writeVInt(uptopos_compress);
-      this.writeVInt(compressedBuffer.length);
-      for(int i=0;i<compressedBuffer.length;i++) {
-        this.writeInt(compressedBuffer[i]);
+      
+      
+      int[] decompress=PForDelta.decompressOneBlock(compressedBuffer, uptopos_compress);
+      if(compressEquals(decompress, buffer_compress,uptopos_compress))
+      {
+	      this.writeVInt(compressedBuffer.length);
+	      for(int i=0;i<compressedBuffer.length;i++) {
+	        this.writeInt(compressedBuffer[i]);
+	      }
+      }else{
+          if(printindex_compress_error++<1000)
+          {
+        	  System.out.println("##flushCompressBlock error##"+compressedBuffer.length+"@"+uptopos_compress+"@"+printindex_compress_error);
+          }
+    	  this.writeVInt(0);
+	      for(int i=0;i<uptopos_compress;i++) {
+	        this.writeVInt(buffer_compress[i]);
+	      } 
       }
       this.uptopos_compress=0;
     }

@@ -174,10 +174,7 @@ public final class TermInfosWriter implements Closeable {
     return utf16Result1.length - utf16Result2.length;
   }
 
-  int lastfieldNumber=-1;
-  Datatype dataType;
-  FieldType ft;
-  int pos=0;
+  
   void add(Term term,int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti)
     throws IOException {
 	  
@@ -222,25 +219,35 @@ public final class TermInfosWriter implements Closeable {
   }
   
   
-  
+  int lastquickfieldNumber=-1;
+  Datatype dataType;
+  FieldType ft;
+  int termNum=0;
   HashMap<Integer,Long> fieldPos=new HashMap<Integer,Long>();
   HashMap<Integer,Integer> fieldCount=new HashMap<Integer,Integer>();
   long lastfreqPointer=0;
   void addtis(Term term,int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti) throws IOException
   {
 	  
-      if(this.lastfieldNumber!=fieldNumber)
+      if(this.lastquickfieldNumber!=fieldNumber)
       {
-    	  	fieldCount.put(this.lastfieldNumber, this.pos);
-    	  	fieldPos.put(fieldNumber, this.outputQuickTis.getFilePointer());
+    	  	fieldCount.put(this.lastquickfieldNumber, this.termNum);
+//	  		System.out.println("addtis@"+fieldNumber+"@"+String.valueOf(fieldPos.get(fieldNumber))+"@"+this.outputQuickTis.getFilePointer());
+	  		fieldPos.put(fieldNumber, this.outputQuickTis.getFilePointer());
+
 	        this.ft=this.schemainfo.getField(term.field).getType();
 	        this.dataType=UnInvertedFieldUtils.getDataType(ft);
-	        this.lastfieldNumber=fieldNumber;
-	        this.pos=0;
+	        this.lastquickfieldNumber=fieldNumber;
+	        this.termNum=0;
 	        this.lastfreqPointer=0;
       }
       
-      if ((this.pos & TermIndex.intervalMask)==0){
+      if ((this.termNum & TermIndex.intervalMask)==0){
+//    	  if(this.termNum<=256)
+//    	  {
+//	  		System.out.println("addtermNum@"+fieldNumber+"@"+this.termNum+"@"+term.text()+"@"+this.outputQuickTis.getFilePointer());
+//    	  }
+
 			this.outputQuickTis.writeString(term.text());
       }
       
@@ -260,7 +267,7 @@ public final class TermInfosWriter implements Closeable {
       this.outputQuickTis.writeVInt(ti.docFreq);
       this.outputQuickTis.writeVLong(ti.freqPointer - lastfreqPointer);
       lastfreqPointer=ti.freqPointer;
-      this.pos++;
+      this.termNum++;
   }
   
 
@@ -323,6 +330,7 @@ public final class TermInfosWriter implements Closeable {
 		  outputQuickTis.close();
 	  }
     try {
+
     	outputSize.writeLong(size);
     	outputSize.writeInt(fieldPos.size());
     	for(Entry<Integer, Long> e:fieldPos.entrySet())
@@ -330,7 +338,7 @@ public final class TermInfosWriter implements Closeable {
     		outputSize.writeInt(e.getKey());
     		outputSize.writeLong(e.getValue());
     	}
-	  	fieldCount.put(this.lastfieldNumber, this.pos);
+	  	fieldCount.put(this.lastquickfieldNumber, this.termNum);
     	outputSize.writeInt(fieldCount.size());
 	  	for(Entry<Integer, Integer> e:fieldCount.entrySet())
     	{
