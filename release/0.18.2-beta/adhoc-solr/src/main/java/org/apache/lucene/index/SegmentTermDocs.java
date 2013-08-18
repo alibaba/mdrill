@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.alimama.mdrill.buffer.BlockBufferInput;
 import com.alimama.mdrill.buffer.PForDelta;
 import com.alimama.mdrill.buffer.BlockBufferInput.KeyInput;
+import com.alimama.mdrill.buffer.RepeatCompress;
 
 public class SegmentTermDocs implements TermDocs {
 	  public static Logger log = LoggerFactory.getLogger(SolrCore.class);
@@ -164,21 +165,32 @@ public class SegmentTermDocs implements TermDocs {
 				return stream.readVInt();
 			}
 			while (pos >= buffer.length) {
-
-				int size = stream.readVInt();
-				int compresssize = stream.readVInt();
-				if(compresssize>0)
+				int val=stream.readVInt();
+				int size = val>>2;
+				int type=val-(size<<2);
+				if(type==0)
 				{
-					int[] compress = new int[compresssize];
-					for (int i = 0; i < compresssize; i++) {
-						compress[i] = stream.readInt();
-					}
-					this.buffer = PForDelta.decompressOneBlock(compress, size);
-				}else{
 					this.buffer=new int[size];
 					for (int i = 0; i < size; i++) {
 						this.buffer[i] = stream.readVInt();
 					}
+				}else if(type==1)
+				{
+					int compresssize = size;
+					int[] compress = new int[compresssize];
+					for (int i = 0; i < compresssize; i++) {
+						compress[i] = stream.readVInt();
+					}
+					this.buffer = RepeatCompress.decompress(compress);
+				}else
+				{
+					
+					int compresssize = stream.readVInt();
+					int[] compress = new int[compresssize];
+					for (int i = 0; i < compresssize; i++) {
+						compress[i] = stream.readInt();
+					}
+					this.buffer = RepeatCompress.decompress(PForDelta.decompressOneBlock(compress, size));
 				}
 
 				this.pos = 0;
