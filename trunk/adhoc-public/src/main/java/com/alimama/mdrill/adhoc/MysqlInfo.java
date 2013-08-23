@@ -33,6 +33,13 @@ public class MysqlInfo {
 			rtn.put("cols", res.getString("cols"));
 			rtn.put("storedir", res.getString("storedir"));
 			rtn.put("jobname", res.getString("jobname"));
+			rtn.put("uuid", res.getString("uuid"));
+			rtn.put("cols", res.getString("cols"));
+			rtn.put("username", res.getString("username"));
+			rtn.put("starttime", res.getString("starttime"));
+			rtn.put("endtime", res.getString("endtime"));
+			rtn.put("resultkb", res.getString("resultkb"));
+			rtn.put("percent", res.getString("percent"));
 		    }
 		m_fpsql.close();
 		

@@ -2,6 +2,6 @@
 		String uuid = request.getParameter("uuid");
 		String mailto = request.getParameter("mailto");
 			String callback = request.getParameter("callback");
-		
-String resultstr=TableJoin.copyto(uuid,mailto,callback);
+		String memo = request.getParameter("memo");
+String resultstr=TableJoin.copyto(uuid,mailto,callback,memo);
 %><%=resultstr%>

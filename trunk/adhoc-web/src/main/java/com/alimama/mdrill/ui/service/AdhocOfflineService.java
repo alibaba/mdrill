@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -84,9 +85,13 @@ public class AdhocOfflineService {
 				&& result.containsKey("cols")) {
 
 			String tablename = result.get("jobname");
+			if(tablename.isEmpty())
+			{
+				return "adhoc.csv";
+			}
 			return tablename.replaceAll(
 					"[\n|\\/|:|\t|\\.|\\\\|\\?|<|>|\\*|\\?|\\|\"]", "_")
-					+ "_adhoc.csv";
+					+ ".csv";
 
 		}
 		return "adhoc.csv";
@@ -113,8 +118,12 @@ public class AdhocOfflineService {
 				String line;
 				while ((line = bf.readLine()) != null) {
 					bytesRead += line.getBytes().length;
-					outStream.write(line.replaceAll("\001", ",").replaceAll("\t", ","));
+					String towrite=line.replaceAll("\001", ",").replaceAll("\t", ",");
+					if(!towrite.isEmpty())
+					{
+					outStream.write(towrite);
 					outStream.write("\r\n");
+					}
 					if (bytesRead >= maxsize) {
 						bf.close();
 						in.close();
@@ -131,6 +140,12 @@ public class AdhocOfflineService {
 	public static String offline(String projectName, String jsoncallback, String queryStr, 
 			String fl, String groupby, 
 			String mailto, String username, String jobname, String params,String leftjoin,String fq2,String limit2,String orderby2,String desc2)
+			throws Exception {
+		return offline(projectName, jsoncallback, queryStr, fl, groupby, mailto, username, jobname, params, leftjoin, fq2, limit2, orderby2, desc2,"");
+	}
+	public static String offline(String projectName, String jsoncallback, String queryStr, 
+			String fl, String groupby, 
+			String mailto, String username, String jobname, String params,String leftjoin,String fq2,String limit2,String orderby2,String desc2,String memo)
 			throws Exception {
 		int limit=0;
 		if(limit2!=null)
@@ -154,7 +169,6 @@ public class AdhocOfflineService {
 		
 		queryStr = WebServiceParams.query(queryStr);
 	
-//		String sqlSort = WebServiceParams.sortHive(sort, order);
 	
 		TablePartion part = GetPartions.partion(projectName);
 		String[] cores = GetShards.get(part.name, false, 10000);
@@ -168,123 +182,48 @@ public class AdhocOfflineService {
 		HashMap<String, String> filetypeMap = MdrillService.readFieldsFromSchemaXml(part.name);
 		ArrayList<String> fqList = WebServiceParams.fqListHive(hpart,queryStr, shard,
 				isPartionByPt, filetypeMap,null,null,null);
-		StringBuffer sqlWhere = new StringBuffer();
-		String join = " where ";
-		for (String fq : fqList) {
-			sqlWhere.append(join);
-			sqlWhere.append(fq);
-			join = " and ";
-		}
+		StringBuffer sqlWhere =AdhocWebServiceParams.makeWhere(fqList);
 	
+	
+		
+		
 		ArrayList<String> groupFields = WebServiceParams.groupFields(groupby);
-		StringBuffer sqlGroup = new StringBuffer();
-		String daycols="";
-		join = " group by ";
-		for (String field : groupFields) {
-			sqlGroup.append(join);
-			sqlGroup.append(field);
-			if(field.equals("thedate"))
-			{
-				daycols="日期,";
-			}
-			join = ",";
-		}
-	
-		
-		HashMap<String,String> colMap=new HashMap<String, String>();
 		ArrayList<String> showFields = WebServiceParams.showHiveFields(fl);
-		StringBuffer cols = new StringBuffer();
-		join = "";
-		int nameindex=0;
-		for (String field : groupFields) {
-			cols.append(join);
-			cols.append(field);
-			String alias="tmp_"+nameindex++;
-			cols.append(" as "+alias);
-			colMap.put(field, alias);
-			join = ",";
-		}
-		for (String field : showFields) {
-			if(field.equals("thedate"))
-			{
-				daycols="日期,";
-			}
-			if(!groupFields.contains(field))
-			{
-				cols.append(join);
-				cols.append(field);
-				String alias="tmp_"+nameindex++;
-				cols.append(" as "+alias);
-				colMap.put(field, alias);
-				join = ",";
-			}
-		}
-		
 		HigoAdhocJoinParams[] joins=AdhocWebServiceParams.parseJoinsHive(leftjoin, shard);
+		String daycols=AdhocWebServiceParams.parseDayCols(groupFields,showFields);
+		HashMap<String,String> colMap=new HashMap<String, String>();
+		HashMap<String,String> colMapforStatFilter=new HashMap<String, String>();
 
-		for(int i=0;i<joins.length;i++)
+		StringBuffer cols_inner = new StringBuffer();
+		StringBuffer cols = new StringBuffer();
+		String join = "";
+		AtomicInteger nameindex=new AtomicInteger(0);
+		String hql="";
+		if(joins.length<=0)
 		{
-			HigoAdhocJoinParams jp=joins[i];
-			if(!groupFields.contains(jp.leftkey)&&!showFields.contains(jp.leftkey))
-			{
-				cols.append(join);
-				cols.append(jp.leftkey);
-				String alias="tmp_"+nameindex++;
-				cols.append(" as "+alias);
-				colMap.put(jp.leftkey, alias);
+			AdhocWebServiceParams.parseColsNoJoins(cols, groupFields, showFields,colMapforStatFilter, nameindex);
+			hql = "select " + cols.toString() + " from " + projectName + " "
+			+ sqlWhere.toString() + " " ;
+			
+			StringBuffer sqlGroup = new StringBuffer();
+			join = " group by ";
+			for (String field : groupFields) {
+				sqlGroup.append(join);
+				sqlGroup.append(field);
 				join = ",";
 			}
-		}
+			hql+=" "+sqlGroup.toString();
 
-	
-		String hql = "select " + cols.toString() + " from " + projectName + " "
-				+ sqlWhere.toString() + " " + sqlGroup.toString() + " ";
-		
-		HashMap<String,String> colMap2=new HashMap<String, String>();
-
-		if(joins.length>0)
+		}else
 		{
+			AdhocWebServiceParams.parseColsWithJoins(cols,cols_inner, joins, colMap,colMapforStatFilter, groupFields, showFields, nameindex);
+			
 			StringBuffer buffer=new StringBuffer();
 			buffer.append("select ");
-			join = "";
-			for (String field : groupFields) {
-				buffer.append(join);
-				buffer.append("jl1.");
-				buffer.append(colMap.get(field));
-				String alias="tmp_"+nameindex++;
-				buffer.append(" as "+alias);
-				colMap2.put(field, alias);
-				join = ",";
-			}
-			for (String field : showFields) {
-				if(!groupFields.contains(field))
-				{
-					buffer.append(join);
-					buffer.append("jl1.");
-					buffer.append(colMap.get(field));
-					String alias="tmp_"+nameindex++;
-					buffer.append(" as "+alias);
-					colMap2.put(field, alias);
-					join = ",";
-				}
-			}
-			
-			for(int i=0;i<joins.length;i++)
-			{
-				HigoAdhocJoinParams jp=joins[i];
-				for (String field : jp.fl) {
-					buffer.append(join);
-					buffer.append("jr"+i+".");
-					buffer.append(field);
-					String alias="tmp_"+nameindex++;
-					buffer.append(" as "+alias);
-					join = ",";
-				}
-			}
-			
+			buffer.append(cols.toString());
 			buffer.append(" from ");
 			
-			buffer.append(" ("+hql+") jl1 ");
+			buffer.append(" (select "+cols_inner.toString()+"  from " + projectName + " "	+ sqlWhere.toString() + " ) jl1 ");
 			
 			for(int i=0;i<joins.length;i++)
 			{
@@ -294,12 +233,37 @@ public class AdhocOfflineService {
 			
 			hql=buffer.toString();
 			
+			StringBuffer sqlGroup = new StringBuffer();
+			join = " group by ";
+			for (String field : groupFields) {
+				sqlGroup.append(join);
+				sqlGroup.append("jl1."+colMap.get(field));
+				join = ",";
+			}
+			
+			if(AdhocWebServiceParams.hasStatFiled(showFields))
+			{
+				for(int i=0;i<joins.length;i++)
+				{
+					HigoAdhocJoinParams jp=joins[i];
+					for(String s:jp.fl)
+					{
+						sqlGroup.append(join);
+						sqlGroup.append("jr"+i+"."+s);
+					}
+				}
+			}
+			
+			hql+=" "+sqlGroup.toString();
+
+			
 		}
 		
-//		String fq2,int limit
+		
+		
 		
 		 ArrayList<String> fq2list=WebServiceParams.fqListHive(hpart,fq2, shard,
-					isPartionByPt, filetypeMap,colMap,colMap2,"fq2");
+					isPartionByPt, filetypeMap,colMap,colMapforStatFilter,"fq2");
 		 if(fq2list.size()>0)
 		 {
 				StringBuffer buffer=new StringBuffer();
@@ -314,9 +278,12 @@ public class AdhocOfflineService {
 				hql=buffer.toString();
 		 }
 		 
+		
+
+		 
 		 if(orderby2!=null)
 		 {
-			 hql=hql+" order by "+WebServiceParams.parseFqAlias(orderby2, colMap, colMap2, "fq2")+" "+desc2;
+			 hql=hql+" order by "+WebServiceParams.parseFqAlias(orderby2, colMap, colMapforStatFilter, "fq2")+" "+desc2;
 		 }
 		 
 		 if(limit >1000000)
@@ -410,6 +377,7 @@ public class AdhocOfflineService {
 				jobname = day + "_" + md5;
 			}
 			download.setJobName(jobname);
+			download.setMemo(String.valueOf(memo));
 			download.setDisplayParams((params == null || params.isEmpty()) ? hql
 					: params);
 			download.setStoreDir(store);

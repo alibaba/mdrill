@@ -503,6 +503,12 @@ public static OperateType parseOperateType(int operate)
 			case 1: {
 				return OperateType.eq;
 			}
+			case 32: {
+				return OperateType.like;
+			}
+			case 33: {
+				return OperateType.notlike;
+			}
 			case 2: {
 				return OperateType.neq;
 			}
@@ -516,6 +522,12 @@ public static OperateType parseOperateType(int operate)
 				return OperateType.gteq;
 			}
 			case 14: {
+				return OperateType.lgeq;
+			}
+			case 30: {
+				return OperateType.gteq;
+			}
+			case 31: {
 				return OperateType.lgeq;
 			}
 			case 5:
@@ -559,6 +571,22 @@ public static OperateType parseOperateType(int operate)
 			}
 			return key+":"+TdateFormat.transformSolrMetacharactor(value2);
 		}
+		case 32:
+		{
+			if(isdate)
+			{
+				return key+":*"+TdateFormat.transformSolrMetacharactor(TdateFormat.ensureTdateForSearch(value2))+"*";
+			}
+			return key+":*"+TdateFormat.transformSolrMetacharactor(value2)+"*";
+		}
+		case 33:
+		{
+			if(isdate)
+			{
+				return "-"+key+":*"+TdateFormat.transformSolrMetacharactor(TdateFormat.ensureTdateForSearch(value2))+"*";
+			}
+			return "-"+key+":*"+TdateFormat.transformSolrMetacharactor(value2)+"*";
+		}
 		case 2:
 		{
 			if(isdate)
@@ -592,6 +620,22 @@ public static OperateType parseOperateType(int operate)
 			return key+":{"+value2+" TO *}";
 		}
 		case 14:
+		{
+			if(isdate)
+			{
+				return key+":{* TO "+TdateFormat.ensureTdateForSearch(value2)+"}";
+			}
+			return key+":{* TO "+value2+"}";
+		}
+		case 30:
+		{
+			if(isdate)
+			{
+				return key+":{"+TdateFormat.ensureTdateForSearch(value2)+" TO 2098-09-09T00:00:00Z}";
+			}
+			return key+":{"+value2+" TO *}";
+		}
+		case 31:
 		{
 			if(isdate)
 			{
@@ -719,6 +763,12 @@ public static OperateType parseOperateType(int operate)
 			case 14: {
 				return "("+part + "<" + value2 + add+" )";//and "+key+"<"+value2+"
 			}
+			case 30: {
+				return "("+part + ">" + value2 + add+" )";//and "+key+">"+value2+"
+			}
+			case 31: {
+				return "("+part + "<" + value2 + add+" )";//and "+key+"<"+value2+"
+			}
 			case 5:
 			case 6:
 			case 7:
@@ -783,6 +833,14 @@ public static OperateType parseOperateType(int operate)
 			}
 			return "transhigo_udf("+key+",'"+ft+"')"+"='"+value2+"'";
 		}
+		case 32:
+		{
+			return "transhigo_udf("+key+",'"+ft+"')"+" like '%"+value2.replaceAll("\\*", "%")+"%'";
+		}
+		case 33:
+		{
+			return "transhigo_udf("+key+",'"+ft+"')"+" not like '%"+value2.replaceAll("\\*", "%")+"%'";
+		}
 		case 2:
 		{
 			if(isdate)
@@ -821,6 +879,23 @@ public static OperateType parseOperateType(int operate)
 			return "transhigo_udf("+key+",'"+ft+"')"+">"+value2;
 		}
 		case 14:
+		{
+			if(isdate)
+			{
+				return "transhigo_udf("+key+",'"+ft+"')"+"<'"+TdateFormat.ensureTdateForSearch(value2)+"' and transhigo_udf("+key+",'"+ft+"')"+"<'2098-09-09T00:00:00Z'";
+			}
+			return "transhigo_udf("+key+",'"+ft+"')"+"<"+value2;
+		}
+		
+		case 30:
+		{
+			if(isdate)
+			{
+				return "transhigo_udf("+key+",'"+ft+"')"+">'"+TdateFormat.ensureTdateForSearch(value2)+"' and transhigo_udf("+key+",'"+ft+"')"+"<'2098-09-09T00:00:00Z'";
+			}
+			return "transhigo_udf("+key+",'"+ft+"')"+">"+value2;
+		}
+		case 31:
 		{
 			if(isdate)
 			{
@@ -1225,6 +1300,10 @@ public static OperateType parseOperateType(int operate)
 		String[] values = EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString()));
 	   	
 	   	for(int j =0;j<values.length&&j<groupFields.size();j++){
+	   		if(groupFields.get(j).equals("higoempty_groupby_forjoin_l"))
+	   		{
+	   			continue;
+	   		}
 	   		if(values[j]==null || values[j].equals(""))
 	   		{
 		   	   	jo.put(groupFields.get(j), " ");
@@ -1252,10 +1331,64 @@ public static OperateType parseOperateType(int operate)
 		}
 	}
 	
+	
+	public static class StateField{
+		public boolean isstat;
+		public String realField;
+		public String type;
+	}
+	public static StateField parseStat(String showfield)
+	{
+		StateField rtn=new StateField();
+		rtn.realField=showfield;
+		rtn.isstat=false;
+		if(showfield.startsWith("count(")){
+			rtn.realField = showfield.substring(6,showfield.length()-1);
+			rtn.isstat=true;
+			rtn.type="count";
+		}
+		if(showfield.startsWith("sum(")){
+			rtn.realField = showfield.substring(4,showfield.length()-1);
+			rtn.isstat=true;
+			rtn.type="sum";
+		}
+		if(showfield.startsWith("max(")){
+			rtn.realField = showfield.substring(4,showfield.length()-1);
+			rtn.isstat=true;
+			rtn.type="max";
+		}
+		if(showfield.startsWith("min(")){
+			rtn.realField = showfield.substring(4,showfield.length()-1);
+			rtn.isstat=true;
+			rtn.type="min";
+		}
+		if(showfield.startsWith("average(")){
+			rtn.realField = showfield.substring(8,showfield.length()-1);
+			rtn.isstat=true;
+			rtn.type="avg";
+		}
+		if(showfield.startsWith("avg(")){
+			rtn.realField = showfield.substring(4,showfield.length()-1);
+			rtn.isstat=true;
+			rtn.type="avg";
+		}
+		if(showfield.startsWith("dist(")){
+			rtn.realField = showfield.substring(5,showfield.length()-1);
+			rtn.isstat=true;
+			rtn.type="dist";
+		}
+		
+		return rtn;
+	}
+	
 	public static void setStat(JSONObject jo,ArrayList<String> showFields,	Count row) throws JSONException
 	{
 		HashMap<String, String[]> statFieldAll =fillStatFields(row);
 		for(String showfield : showFields){
+			if(showfield.equals("higoempty_groupby_forjoin_l"))
+			{
+				continue;
+			}
 			if(jo.has(showfield))
 			{
 				continue;
@@ -1328,6 +1461,10 @@ public static OperateType parseOperateType(int operate)
 				   	String[] values =  EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString()));
 				   	int valuesoffset=2;
 				   	for(int j =0;j<(values.length-valuesoffset)&&j<showFields.size();j++){
+				   		if(showFields.get(j).equals("higoempty_groupby_forjoin_l"))
+				   		{
+				   			continue;
+				   		}
 				   		if(values[j+valuesoffset]==null || values[j+valuesoffset].equals(""))
 				   		{
 					   	   	jo.put(showFields.get(j), " ");

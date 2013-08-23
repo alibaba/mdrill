@@ -150,13 +150,13 @@ final class TermInfosReader implements Closeable {
 			  fieldPos.put(sizebuff.readInt(), sizebuff.readLong());
 		  }
 		  
-		  log.info("##fieldPos##"+fieldPos.toString());
+//		  log.info("##fieldPos##"+fieldPos.toString());
 		  size=sizebuff.readInt();
 		  for(int i=0;i<size;i++)
 		  {
 			  fieldCount.put(sizebuff.readInt(), sizebuff.readInt());
 		  }
-		  log.info("##fieldCount##"+fieldCount.toString());
+//		  log.info("##fieldCount##"+fieldCount.toString());
 
 		  
 	  }

@@ -18,7 +18,7 @@ import com.alimama.mdrill.index.utils.RamWriter;
 import com.alimama.mdrill.index.utils.ShardWriter;
 
 
-public class IndexReducer extends  Reducer<LongWritable, DocumentList, LongWritable, Text> {
+public class IndexReducer extends  Reducer<Text, DocumentList, Text, Text> {
     private HeartBeater heartBeater = null;
     private ShardWriter shardWriter = null;
     private String tmpath = null;
@@ -31,6 +31,7 @@ public class IndexReducer extends  Reducer<LongWritable, DocumentList, LongWrita
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
 		super.setup(context);
+		context.getCounter("higo", "dumpcount").increment(0);
 
 		Configuration conf = context.getConfiguration();
 
@@ -63,7 +64,7 @@ public class IndexReducer extends  Reducer<LongWritable, DocumentList, LongWrita
 				fs.rename(new Path(tmpath), new Path(indexHdfsPath));
 			}
 			if (shardWriter.getNumDocs() > 0 && lastkey != null) {
-				context.write(new LongWritable(lastkey.get()),new Text(indexHdfsPath));
+				context.write(lastkey,new Text(indexHdfsPath));
 			}
 			FileSystem lfs = FileSystem.getLocal(conf);
 			if(lfs.exists(new Path(localtmpath)))
@@ -92,10 +93,25 @@ public class IndexReducer extends  Reducer<LongWritable, DocumentList, LongWrita
 		return shardWriter;
 	}
 
-    private LongWritable lastkey = null;
+    private Text lastkey = null;
 
-	protected void reduce(LongWritable key, Iterable<DocumentList> values,
+	protected void reduce(Text key, Iterable<DocumentList> values,
 			Context context) throws java.io.IOException, InterruptedException {
+		if(key.toString().startsWith("uniq_"))
+		{
+			int dumps=0;
+			Iterator<DocumentList> iterator = values.iterator();
+			while (iterator.hasNext()) {
+				DocumentList doclist = iterator.next();
+				dumps++;
+			}
+			if(dumps>1)
+			{
+				context.getCounter("higo", "dumpcount").increment(1);;
+			}
+			return ;
+		}
+		
 		lastkey = key;
 		RamWriter ramMerger = null;
 		Iterator<DocumentList> iterator = values.iterator();

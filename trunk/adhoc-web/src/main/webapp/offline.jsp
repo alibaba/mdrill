@@ -24,7 +24,7 @@
 	String limit2= request.getParameter("limit2");
 	String orderby2= request.getParameter("orderby2");
 	String desc2= request.getParameter("desc2");
-	
+		String memo= request.getParameter("memo");
 
-	String resultstr=AdhocOfflineService.offline(projectName, callback, queryStr, fl, groupby,mailto,username,jobname,jobparam,leftjoin,fq2,limit2,orderby2,desc2);
+	String resultstr=AdhocOfflineService.offline(projectName, callback, queryStr, fl, groupby,mailto,username,jobname,jobparam,leftjoin,fq2,limit2,orderby2,desc2,memo);
 %><%=resultstr%>

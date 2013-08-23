@@ -19,7 +19,6 @@ package org.apache.solr.request.uninverted;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.SegmentCoreReaders;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SegmentTermDocs;
 import org.apache.lucene.index.Term;
@@ -52,13 +51,11 @@ import org.slf4j.LoggerFactory;
 
 
 import com.alimama.mdrill.buffer.LuceneUtils;
+import com.alimama.mdrill.buffer.TryLock;
 import com.alimama.mdrill.utils.UniqConfig;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
+
 
 import java.util.zip.CRC32;
 
@@ -72,85 +69,31 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
 	public boolean isNullField = false;
 	public TermNumReadInterface tnr;
 	
+	
 	public UnInvertedField(String field, SolrIndexSearcher searcher,
 			IndexReader reader) throws IOException {
-		Directory cacheDir=searcher.getFieldcacheDir() ;
-		File file = null;
-		FileLock flout = null;
-		RandomAccessFile out = null;
-		FileChannel fcout = null;
+		TryLock lock=new TryLock(searcher.getFieldcacheDir());
 		try{
-			if(cacheDir!=null&& cacheDir instanceof FSDirectory)
-			{
-				FSDirectory localdir=(FSDirectory)cacheDir;
-				file=new File(localdir.getDirectory(),"mdrill_uni_lock");
-				if (!file.exists()) {
-					file.createNewFile();
-				}
-				out = new RandomAccessFile(file, "rw");
-				fcout = out.getChannel();
-				flout = fcout.lock();
-			}
+			lock.tryLock();
 			uninvert(field, searcher, reader);
-		
 		}finally{
-			try {
-				if (flout != null) {
-					flout.release();
-				}
-				if (fcout != null) {
-					fcout.close();
-				}
-				if (out != null) {
-					out.close();
-				}
-				out = null;
-			} catch (Exception e) {
-			}
+			lock.unlock();
 		}
 	}
 	
 public UnInvertedField(String field, SegmentReader reader,IndexSchema schema) throws IOException {
-		Directory cacheDir=reader.directory() ;
-		File file = null;
-		FileLock flout = null;
-		RandomAccessFile out = null;
-		FileChannel fcout = null;
+	TryLock lock=new TryLock(reader.directory());
 		try{
-			if(cacheDir!=null&& cacheDir instanceof FSDirectory)
-			{
-				FSDirectory localdir=(FSDirectory)cacheDir;
-				file=new File(localdir.getDirectory(),"mdrill_uni_lock");
-				if (!file.exists()) {
-					file.createNewFile();
-				}
-				out = new RandomAccessFile(file, "rw");
-				fcout = out.getChannel();
-				flout = fcout.lock();
-			}
+			lock.tryLock();
 			uninvert(field, reader,schema);
-		
 		}finally{
-			try {
-				if (flout != null) {
-					flout.release();
-				}
-				if (fcout != null) {
-					fcout.close();
-				}
-				if (out != null) {
-					out.close();
-				}
-				out = null;
-			} catch (Exception e) {
-			}
+			lock.unlock();
 		}
 	}
 
-
 private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader reader,String key) throws IOException
 {
-	UnInvertedField.log.info("setSingleValue " + this.field + " field "	+ this.isMultiValued + "@" + key);
+	UnInvertedField.log.info("setSingleValue QuickNumberedTermEnum " + this.field + " field "	+ this.isMultiValued + "@" + key);
 	int maxDoc = reader.maxDoc();
 	int maxDocOffset = maxDoc + 2;
 	this.index = INT_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.INT_CREATE, -1);
@@ -483,8 +426,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		}
 	}
 	
-	
-	private synchronized void uninvert(String field,SegmentReader reader,IndexSchema schema) throws IOException {
+	private void uninvert(String field,SegmentReader reader,IndexSchema schema) throws IOException {
 		SolrCore.log.info("####UnInverted#### SegmentReader begin");
 		this.field = field;
 		if (this.field.indexOf("higoempty_") >= 0) {
@@ -515,7 +457,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 
 		this.ti = new TermIndex(field, prefix);
 
-		if(reader.isSupportQuick()&&!this.isMultiValued)
+		if(reader.isSupportQuick()&&!this.isMultiValued&&reader.getpos(this.field)!=null&&reader.getCount(this.field)!=null)
 		{
 			TermIndex.QuickNumberedTermEnum te=ti.getEnumerator(reader,reader.getQuickTis(),reader.getpos(this.field), reader.getCount(this.field));
 			this.setSingleValue(te,reader, key);
@@ -540,7 +482,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		
 	}
 	
-	private synchronized void uninvert(String field,
+	private void uninvert(String field,
 			SolrIndexSearcher searcher, IndexReader reader) throws IOException {
 	
 		
@@ -717,27 +659,24 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
     
   }
   
-  
-  
-  public void LRUclean()
-  {
-	  if (this.refCnt.get() == 0) {
-			this.free();
-		}
-  }
 
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
 	  return getUnInvertedField(field, searcher.getReader());
   }
 
+  
+  private static Object lock=new Object();
 	public static UnInvertedField getUnInvertedField(String field,
 			SolrIndexReader reader) throws IOException {
+		
+			
+		
 		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
 		SolrIndexSearcher searcher = reader.getSearcher();
 		ILruMemSizeKey key = new GrobalCache.StringKey(searcher.getPartionKey() + "@@" + field + "@@"	+ LuceneUtils.crcKey(reader));
 		UnInvertedField uif = (UnInvertedField)cache.get(key);
 		if (uif == null) {
-			synchronized (cache) {
+			synchronized (lock) {
 				uif =  (UnInvertedField)cache.get(key);
 				if (uif == null) {
 					uif = new UnInvertedField(field, searcher,searcher.getReader());
@@ -752,10 +691,10 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 	public static UnInvertedField getUnInvertedField(String field,SegmentReader reader,String partion,IndexSchema schema) throws IOException
 	{
 		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
-		ILruMemSizeKey key = new GrobalCache.StringKey(partion + "@@" + field + "@@"	+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
+		ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+partion + "@" + field + "@"	+reader.getStringCacheKey()+"@"+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
 		UnInvertedField uif = (UnInvertedField)cache.get(key);
 		if (uif == null) {
-			synchronized (cache) {
+			synchronized (lock) {
 				uif =  (UnInvertedField)cache.get(key);
 				if (uif == null) {
 					uif = new UnInvertedField(field, reader,schema);

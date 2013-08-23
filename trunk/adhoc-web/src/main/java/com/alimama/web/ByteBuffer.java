@@ -8,7 +8,7 @@ public class ByteBuffer {
      *
      * Any array elements following the last element in the ByteBuffer are 0.
      */
-    protected byte elementData[];
+    protected char elementData[];
 
     /**
      * The number of valid components in this <tt>ByteBuffer</tt> object. 
@@ -44,7 +44,7 @@ public class ByteBuffer {
         if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal Capacity: "+
                                                initialCapacity);
-	this.elementData = new byte[initialCapacity];
+	this.elementData = new char[initialCapacity];
 	this.capacityIncrement = capacityIncrement;
     }
 
@@ -80,8 +80,8 @@ public class ByteBuffer {
     public void trimToSize() {
 	int oldCapacity = elementData.length;
 	if (elementCount < oldCapacity) {
-	    byte oldData[] = elementData;
-	    elementData = new byte[elementCount];
+	    char oldData[] = elementData;
+	    elementData = new char[elementCount];
 	    System.arraycopy(oldData, 0, elementData, 0, elementCount);
 	}
     }
@@ -97,13 +97,13 @@ public class ByteBuffer {
     private void ensureCapacityHelper(int minCapacity) {
 	int oldCapacity = elementData.length;
 	if (minCapacity > oldCapacity) {
-	    byte oldData[] = elementData;
+	    char oldData[] = elementData;
 	    int newCapacity = (capacityIncrement > 0) ?
 		(oldCapacity + capacityIncrement) : (oldCapacity * 2);
     	    if (newCapacity < minCapacity) {
 		newCapacity = minCapacity;
 	    }
-	    elementData = new byte[newCapacity];
+	    elementData = new char[newCapacity];
 	    System.arraycopy(oldData, 0, elementData, 0, elementCount);
 	}
     }
@@ -139,36 +139,36 @@ public class ByteBuffer {
 	return elementCount == 0;
     }
 
-    public void append(byte value) 
+    public void append(char value) 
     {
 	ensureCapacityHelper(elementCount + 1);
 	elementData[elementCount++] = value;
     }
 
-    public void append( int value ) 
-    {
-	ensureCapacityHelper(elementCount + 4);
-	doAppend( value ) ;
-    }
+//    public void append( int value ) 
+//    {
+//	ensureCapacityHelper(elementCount + 4);
+//	doAppend( value ) ;
+//    }
 
-    private void doAppend( int value )
-    {
-	int current = value ;
-	for (int ctr=0; ctr<4; ctr++) {
-	    elementData[elementCount+ctr] = (byte)(current & 255) ;
-	    current = current >> 8 ;
-	}
-	elementCount += 4 ;
-    }
-
-    public void append( String value ) 
-    {
-	byte[] data = value.getBytes() ;
-	ensureCapacityHelper( elementCount + data.length + 4 ) ;
-	doAppend( data.length ) ;
-	System.arraycopy( data, 0, elementData, elementCount, data.length ) ;
-	elementCount += data.length ;
-    }
+//    private void doAppend( int value )
+//    {
+//	int current = value ;
+//	for (int ctr=0; ctr<4; ctr++) {
+//	    elementData[elementCount+ctr] = (byte)(current & 255) ;
+//	    current = current >> 8 ;
+//	}
+//	elementCount += 4 ;
+//    }
+//
+//    public void append( String value ) 
+//    {
+//	byte[] data = value.getBytes() ;
+//	ensureCapacityHelper( elementCount + data.length + 4 ) ;
+//	doAppend( data.length ) ;
+//	System.arraycopy( data, 0, elementData, elementCount, data.length ) ;
+//	elementCount += data.length ;
+//    }
 
     /**
      * Returns an array containing all of the elements in this ByteBuffer
@@ -176,7 +176,7 @@ public class ByteBuffer {
      *
      * @since 1.2
      */
-    public byte[] toArray() {
+    public char[] toArray() {
 	return elementData ;
     }
 }

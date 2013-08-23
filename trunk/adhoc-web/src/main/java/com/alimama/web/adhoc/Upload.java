@@ -1,6 +1,9 @@
 package com.alimama.web.adhoc;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,10 +24,10 @@ public class Upload {
 
 	private static int BUFFER_LEN=10240;
 	private static int HEADER_SIZE=102400;
-	byte[]  buffer = new byte[BUFFER_LEN];
+	char[]  buffer = new char[BUFFER_LEN];
     
 	//----boundary----
-    private byte[] m_boundary = new byte[HEADER_SIZE];
+    private char[] m_boundary = new char[HEADER_SIZE];
     private int m_boundary_length=0;
     private boolean foundBoundary = false;
     
@@ -62,7 +65,7 @@ public class Upload {
             {
                 foundBoundary = true;
                 
-                byte[] newboundary=new byte[m_boundary_length];
+                char[] newboundary=new char[m_boundary_length];
                 for(int j=0;j<m_boundary_length;j++)
                 {
                 	newboundary[j]=m_boundary[j];
@@ -80,15 +83,15 @@ public class Upload {
 		return i;
 	}
 	
-	private static byte[] headerSplit={13,42,13};
+	private static char[] headerSplit={13,42,13};
 	
 	
-	private byte[] splitbuffer=new byte[0];
+	private char[] splitbuffer=new char[0];
 	private boolean setHearder(int readBytes,int i,String charset) throws UnsupportedEncodingException
 	{
 		int leftdata=readBytes-i;
 		int lastlen=splitbuffer.length;
-		byte[] tmpbyte=new byte[lastlen+leftdata];
+		char[] tmpbyte=new char[lastlen+leftdata];
 		for(int j=0;j<lastlen;j++)
 		{
 			tmpbyte[j]=splitbuffer[j];
@@ -103,9 +106,9 @@ public class Upload {
 		foundHeader=split.isfullcut;
  	    if(foundHeader)
  	    {
-				dataHeader = new String(split.read, 0, split.read.length,charset);
+				dataHeader = new String(split.read, 0, split.read.length);
 				LOG.info("@@@@@@@dataHeader:" + dataHeader + "@@@@"
-						+ new String(m_boundary, 0, m_boundary_length, "utf-8"));
+						+ new String(m_boundary, 0, m_boundary_length));
 
 				isFile = dataHeader.indexOf("filename") > 0;
 				fieldName = getDataFieldValue(dataHeader, "name");
@@ -126,11 +129,11 @@ public class Upload {
  	    return foundHeader;
 	}
 	
-	private boolean setHeadVal(int readBytes,int i,String charset,FSDataOutputStream out,HashMap<String,String> params) throws IOException
+	private boolean setHeadVal(int readBytes,int i,String charset,OutputStreamWriter out,HashMap<String,String> params) throws IOException
 	{
 		int leftdata=readBytes-i;
 		int lastlen=splitbuffer.length;
-		byte[] tmpbyte=new byte[lastlen+leftdata];
+		char[] tmpbyte=new char[lastlen+leftdata];
 		for(int j=0;j<lastlen;j++)
 		{
 			tmpbyte[j]=splitbuffer[j];
@@ -168,24 +171,37 @@ public class Upload {
 	
     ByteBuffer writebuff=new ByteBuffer(10752);
     
-	public void mergerTo(HttpServletRequest request, HttpServletResponse response,String charset,FSDataOutputStream out,HashMap<String,String> params) throws IOException
+	public void mergerTo(HttpServletRequest request, HttpServletResponse response,String charset,OutputStreamWriter out,HashMap<String,String> params) throws IOException
 	{
-		int totalBytes  = request.getContentLength();
-        ServletInputStream in=request.getInputStream();
+//		int totalBytes  = request.getContentLength();
+//        ServletInputStream in=request.getInputStream();
+        InputStreamReader in=new InputStreamReader(request.getInputStream(), "gbk") ;
+//	    OutputStreamWriter osw = new OutputStreamWriter(System.out, "UTF-8");
+//	    osw.
+
         int readBytes = 0;
         
         this.resetHeader();
         boolean isReadHeader=true;
         
+        
         int index=0;
-        for(int totalRead=0; totalRead < totalBytes; totalRead += readBytes)
+        int totalRead=0;
+        while(true)
         {
-        	int size=totalBytes - totalRead;
-            readBytes = in.read(buffer, 0, Math.min(size,BUFFER_LEN));
+//        	int size=totalBytes - totalRead;
+            readBytes = in.read(buffer, 0, BUFFER_LEN);
             if(index++%10000==0)
             {
             	Log.info("total read="+totalRead);
             }
+            
+            if(readBytes<0)
+            {
+            	break;
+            }
+            
+            totalRead += readBytes;
             
             int i=0;
             i=this.setBoundary(readBytes, i);
@@ -234,7 +250,7 @@ public class Upload {
         	{
         		out.write(writebuff.toArray(),0,writebuff.size());
         	}else{
-        		String val=new String(writebuff.toArray(),0,writebuff.size(),charset).replaceAll("^[\r|\n]*", "").replaceAll("[\r|\n]*$", "");
+        		String val=new String(writebuff.toArray(),0,writebuff.size()).replaceAll("^[\r|\n]*", "").replaceAll("[\r|\n]*$", "");
 				params.put(fieldName, val);
     			LOG.info("@@@@@@@keyval_final:"+fieldName+"="+val);
         	}
@@ -248,14 +264,14 @@ public class Upload {
 	
 	HashSet<String> keys=new HashSet<String>(); 
 	
-	private void skip(FSDataOutputStream out, ByteBuffer writebuff,String charset,HashMap<String,String> params) throws IOException
+	private void skip(OutputStreamWriter out, ByteBuffer writebuff,String charset,HashMap<String,String> params) throws IOException
 	{
 		keys.add(fieldName);
 		if(this.isFile)
 		{
 			out.write(writebuff.toArray(),0,writebuff.size());
 		}else{
-			String val=new String(writebuff.toArray(),0,writebuff.size(),charset).replaceAll("^[\r|\n]*", "").replaceAll("[\r|\n]*$", "");
+			String val=new String(writebuff.toArray(),0,writebuff.size()).replaceAll("^[\r|\n]*", "").replaceAll("[\r|\n]*$", "");
 			params.put(fieldName, val);
 			LOG.info("@@@@@@@keyval:"+fieldName+"="+val);
 
@@ -371,9 +387,9 @@ public class Upload {
 
 	    private static class ByteSplit{
 	    	public boolean isfullcut;
-			public byte[] read;
-	    	public byte[] left;
-	    	public ByteSplit(boolean isfullcut, byte[] read, byte[] left) {
+			public char[] read;
+	    	public char[] left;
+	    	public ByteSplit(boolean isfullcut, char[] read, char[] left) {
 				super();
 				this.isfullcut = isfullcut;
 				this.read = read;
@@ -381,7 +397,7 @@ public class Upload {
 			}
 	    	
 	    }
-	    private ByteSplit readUntil(byte[] buffer,byte[] search,boolean fuzzle) {
+	    private ByteSplit readUntil(char[] buffer,char[] search,boolean fuzzle) {
 	        final int len = buffer.length;
 	        int matpos=len;
 	        boolean isfound=false;
@@ -396,7 +412,7 @@ public class Upload {
 	        }
 	        
 	        boolean isfullcut=isfound&&(len-matpos>=search.length);
-	        byte[] read=new byte[matpos];
+	        char[] read=new char[matpos];
 	        for(int i=0;i<matpos;i++)
 	        {
 	        	read[i]=buffer[i];
@@ -410,7 +426,7 @@ public class Upload {
 	        int leftlen=len-offset;
 	        leftlen=leftlen>0?leftlen:0;
 	        
-	        byte[] left=new byte[leftlen];
+	        char[] left=new char[leftlen];
 	        for(int i=0;i<leftlen;i++)
 	        {
 	        	left[i]=buffer[i+offset];
@@ -420,7 +436,7 @@ public class Upload {
 	        return new ByteSplit(isfullcut, read, left);
 	      }
 	    
-	    private boolean ismatch(byte[] buffer,byte[] search,int offset,int start,int end,boolean fuzzle)
+	    private boolean ismatch(char[] buffer,char[] search,int offset,int start,int end,boolean fuzzle)
 	    {
 	    	 boolean isallMatch=true;
 	   		 for(int j=start;j<end;j++)
@@ -435,7 +451,7 @@ public class Upload {
 	   		 return isallMatch;
 	    }
 	    
-	    private boolean ismatch(byte a,byte mat,boolean fuzzle){
+	    private boolean ismatch(char a,char mat,boolean fuzzle){
 	    	if(fuzzle)
 	    	{
 	    		return mat==42||a==mat;

@@ -308,6 +308,16 @@ public class MdrillService {
 		CommonsHttpSolrServer server = WebServiceParams.makeServer(shard);
 		SolrQuery query = WebServiceParams.makeSolrQuery(shard);
 		JSONObject jsonObj = new JSONObject();
+		
+		if(groupbyFields.size()==0&&joins.length>0)
+		{
+			if(commonStatMap.size() > 0
+					|| distStatFieldMap.size() > 0)
+			{
+				groupbyFields.add("higoempty_groupby_forjoin_l");
+			}
+			showFields.add("higoempty_groupby_forjoin_l");
+		}
 		try {
 			if (groupbyFields.size() > 0) {
 				int minstart = start;

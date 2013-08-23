@@ -16,7 +16,6 @@ import org.apache.solr.request.mdrill.MdrillPorcessUtils.GroupList;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.TermNumToString;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.UnvertFields;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils.UnvertFile;
-import org.apache.solr.request.uninverted.UnInvertedField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -36,6 +35,7 @@ public class HigoJoinInvert {
 		this.tableName = tableName;
 		this.leftSearcher = leftSearcher;
 	}
+	
 	public HigoJoinInvert(String tableName, SegmentReader reader,String partion,IndexSchema schema) {
 		super();
 		this.tableName = tableName;
@@ -45,18 +45,17 @@ public class HigoJoinInvert {
 		this.leftreader=reader;
 	}
 	
-	SegmentReader leftreader=null;
-	String partion;
-	IndexSchema schema;
+	private SegmentReader leftreader=null;
+	private String partion;
+	private IndexSchema schema;
 
 	private RefCounted<SolrIndexSearcher> search=null;
 	private HigoJoinInterface join;
 	private DocSet docset;
 	private String[] fields;
 	private UnvertFields ufsRight;
-	private UnInvertedField uifleft;
 	private TermNumToString[] tmRigth;
-	public void open(SolrQueryRequest req) throws IOException, ParseException
+	public synchronized void open(SolrQueryRequest req) throws IOException, ParseException
 	{
 		this.search=HigoJoinUtils.getSearch(req, this.tableName);
 		this.fields = req.getParams().getParams(HigoJoinUtils.getFields(this.tableName));
@@ -71,11 +70,9 @@ public class HigoJoinInvert {
 		if(this.leftreader!=null)
 		{
 			this.join=HigoJoin.getJoin(this.leftreader,this.partion,this.schema, search.get(), fieldLeft, fieldRigth);
-			this.uifleft = UnInvertedField.getUnInvertedField(fieldLeft,this.leftreader,this.partion,this.schema);
 
 		}else{
 			this.join=HigoJoin.getJoin(leftSearcher, search.get(), fieldLeft, fieldRigth);
-			this.uifleft = UnInvertedField.getUnInvertedField(fieldLeft,this.leftSearcher);
 		}
 		
 		this.tmRigth=new TermNumToString[this.ufsRight.length];
@@ -96,8 +93,6 @@ public class HigoJoinInvert {
 		return this.join.filterByRight(leftDocs, this.docset);
 	}
 	
-	
-
 	public void setfieldNum(String[] values,int offset,GroupList group)
 	{
 		UnvertFields ufs=ufsRight;
@@ -115,8 +110,8 @@ public class HigoJoinInvert {
 	
 	public boolean contains(int doc) throws IOException
 	{
-		int termNum=this.uifleft.termNum(doc);
-		IntArr doclist=this.join.getRight(doc, termNum);
+//		int termNum=this.uifleft.termNum(doc);
+		IntArr doclist=this.join.getRight(doc, -1);
 		if(doclist==null)
 		{
 			return false;
@@ -137,8 +132,8 @@ public class HigoJoinInvert {
 	public Integer fieldNumTop(int doc,int offset,boolean isdesc) throws IOException
 	{
 		Integer rtn=isdesc?Integer.MIN_VALUE:Integer.MAX_VALUE;
-		int termNum=this.uifleft.termNum(doc);
-		IntArr doclist=this.join.getRight(doc, termNum);
+//		int termNum=this.uifleft.termNum(doc);
+		IntArr doclist=this.join.getRight(doc, -1);
 		if(doclist==null)
 		{
 			return ufsRight.cols[offset].uif.getNullTm();
@@ -188,8 +183,8 @@ public class HigoJoinInvert {
 	
 	public GroupList[] fieldNum(int doc,int offset,GroupList base,LinkedBlockingQueue<GroupList> cache) throws IOException
 	{
-		int termNum=this.uifleft.termNum(doc);
-		IntArr doclist=this.join.getRight(doc, termNum);
+//		int termNum=this.uifleft.termNum(doc);
+		IntArr doclist=this.join.getRight(doc, -1);
 		if(doclist==null)
 		{
 			return null;
@@ -226,18 +221,6 @@ public class HigoJoinInvert {
 		return group;
 	}
 	
-//	private GroupList nullGroup(GroupList base,int offset,LinkedBlockingQueue<GroupList> cache)
-//	{
-//		GroupList rtn=base.copy(cache);
-//		for (int j:ufsRight.listIndex) {
-//			UnvertFile uf=ufsRight.cols[j];
-//
-//			rtn.list[j+offset]=uf.uif.getNullTm();
-//		}
-//		
-//		return rtn;
-//	}
-//	
 	public GroupList[] fieldNum(int doc,GroupList base) throws IOException
 	{
 		return this.fieldNum(doc, 0, base,this.groupListCache);
@@ -276,11 +259,6 @@ public class HigoJoinInvert {
 		{
 			this.ufsRight.free();
 			this.ufsRight=null;
-		}
-		if(this.uifleft!=null)
-		{
-			this.uifleft.free();
-			this.uifleft=null;
 		}
 		if(search!=null)
 		{

@@ -25,7 +25,7 @@ public class UniqConfig {
 	
 	public static Integer getMaxMergerShard()
 	{
-		return 8;
+		return 12;
 	}
 	
 	public static Integer fqCacheSize()
@@ -47,6 +47,11 @@ public class UniqConfig {
 	public static String GroupJoinString()
 	{
 		return "@";
+	}
+	
+	public static String GroupJoinTagString()
+	{
+		return "m";
 	}
 	
 	public static Integer defaultCrossMaxLimit()

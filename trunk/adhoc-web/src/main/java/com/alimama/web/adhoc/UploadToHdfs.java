@@ -43,8 +43,12 @@ public class UploadToHdfs {
 		
 		HashMap<String,String> params=new HashMap<String, String>();
 		FSDataOutputStream out=fs.create(new Path(store,String.valueOf(System.currentTimeMillis())));
+	    OutputStreamWriter osw = new OutputStreamWriter(out, "UTF-8");
+
 		Upload up=new Upload();
-		up.mergerTo(request, response, "utf-8", out, params);
+		up.mergerTo(request, response, "gbk", osw, params);
+		osw.close();
+
 		out.close();
 		
 		outStream.append(store);

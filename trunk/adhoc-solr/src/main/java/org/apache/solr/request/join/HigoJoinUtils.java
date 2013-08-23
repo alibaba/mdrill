@@ -20,6 +20,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.mdrill.MdrillPorcessUtils;
@@ -31,6 +33,7 @@ import org.apache.solr.util.RefCounted;
 
 import com.alimama.mdrill.utils.HadoopUtil;
 import com.alimama.mdrill.utils.IndexUtils;
+import com.alimama.mdrill.utils.TryLockFile;
 
 public class HigoJoinUtils {
 	private static Logger LOG = Logger.getLogger(HigoJoinUtils.class);
@@ -82,8 +85,12 @@ public class HigoJoinUtils {
 	{
 		String path=pathToLocal(req, tablename);
 		LOG.info("###joinpath###"+path);
-		return req.getCore().getSearcherByPath(SolrResourceLoader.getCacheFlushKey()+"@"+String.valueOf(path), path, false, false, false);
+		
+		return  req.getCore().getSearcherByPath("join@"+SolrResourceLoader.getCacheFlushKey()+"@"+String.valueOf(path), path, false, false, false);
+
 	}
+	
+	
 	
 	
 	public static interface MakeGroups
@@ -175,17 +182,10 @@ public class HigoJoinUtils {
 		{
 			lockbase.mkdirs();
 		}
-		if (!lockPath.exists()) {
-			lockPath.createNewFile();
-		}
-		FileLock flout = null;
-		RandomAccessFile out = null;
-		FileChannel fcout = null;
-		try{
-				out = new RandomAccessFile(lockPath, "rw");
-				fcout = out.getChannel();
-				flout = fcout.lock();
+		TryLockFile lck=new TryLockFile((lockPath).getAbsolutePath());
 
+		try{
+				lck.trylock();
 				Configuration conf=getConf();
 				FileSystem lfs = FileSystem.getLocal(conf);
 				Path basepath=new Path(key);
@@ -242,20 +242,7 @@ public class HigoJoinUtils {
 		
 		}finally
 		{
-			try {
-				if (flout != null) {
-					flout.release();
-				}
-				if (fcout != null) {
-					fcout.close();
-				}
-				if (out != null) {
-					out.close();
-				}
-				out = null;
-			} catch (Exception e) {
-			}
-			
+			lck.unlock();
 			lockPath.delete();
 
 		}
@@ -271,6 +258,61 @@ public class HigoJoinUtils {
 			this.t = t;
 		}
 	}
+	
+//	public static synchronized void exec(SolrQueryRequest req,String tablename,HigoJoinInvert open) throws IOException, ParseException
+//	{
+//		int hashcode=tablename.hashCode();
+//		hashcode=hashcode<0?hashcode*-1:hashcode;
+//		int len= HigoJoinUtils.localStoreBase.length;
+//		String choosepase= HigoJoinUtils.localStoreBase[hashcode%len];
+//		File lockbase=new File(choosepase,"higojoin_lock_lockOpen");
+//		
+//		File lockPath=new File(lockbase,tablename);
+//		FileLock flout = null;
+//		RandomAccessFile out = null;
+//		FileChannel fcout = null;
+//		try {
+//		
+//			
+//			if(!lockbase.exists())
+//			{
+//				lockbase.mkdirs();
+//			}
+//		
+//			
+//			
+//			if (!lockPath.exists()) {
+//				lockPath.createNewFile();
+//			}
+//
+//			out = new RandomAccessFile(lockPath, "rw");
+//			fcout = out.getChannel();
+//			flout = fcout.lock();
+//			LOG.info("log exec "+lockPath.getAbsolutePath());
+//			open.lockopen(req);
+//			
+//		}finally{
+//			
+//			try {
+//				if (flout != null) {
+//					flout.release();
+//				}
+//				if (fcout != null) {
+//					fcout.close();
+//				}
+//				if (out != null) {
+//					out.close();
+//				}
+//				out = null;
+//			} catch (Exception e) {
+//			}
+//			lockPath.delete();
+//
+//		}
+//		
+//		
+//	}
+	
 	private static synchronized String pathToLocal(SolrQueryRequest req,String tablename) throws IOException
 	{
 		int hashcode=tablename.hashCode();
@@ -291,9 +333,7 @@ public class HigoJoinUtils {
 		maybeclear(basedir,lockbase);
 
 		
-		FileLock flout = null;
-		RandomAccessFile out = null;
-		FileChannel fcout = null;
+		TryLockFile lock=new TryLockFile(lockPath.getAbsolutePath());
 		try {
 			if(completePath.exists())
 			{
@@ -318,9 +358,8 @@ public class HigoJoinUtils {
 				lockPath.createNewFile();
 			}
 
-			out = new RandomAccessFile(lockPath, "rw");
-			fcout = out.getChannel();
-			flout = fcout.lock();
+			lock.trylock();
+		
 		
 			if(!completePath.exists())
 			{
@@ -347,20 +386,7 @@ public class HigoJoinUtils {
 				}
 			}
 		}finally{
-			
-			try {
-				if (flout != null) {
-					flout.release();
-				}
-				if (fcout != null) {
-					fcout.close();
-				}
-				if (out != null) {
-					out.close();
-				}
-				out = null;
-			} catch (Exception e) {
-			}
+			lock.unlock();
 			lockPath.delete();
 
 		}
@@ -387,6 +413,7 @@ public class HigoJoinUtils {
 		
 		return filters;
 	}
+	
 	      
 	 
 }

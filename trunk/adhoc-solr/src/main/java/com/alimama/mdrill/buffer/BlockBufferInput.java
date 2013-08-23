@@ -64,6 +64,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 	
 	
 	private int createcount=0;
+	private static Object lock=new Object();
 	private int getbuff(long position,byte[] b,int offset,int len) throws IOException
 	{
 		long blockIndex=position>>BLOCK_SIZE_OFFSET;
@@ -78,22 +79,29 @@ public class BlockBufferInput extends BufferedIndexInput {
 		if(blockdata==null){
 			block blk=new block(this.key, blockIndex);
 			blockdata=(blockData) GrobalCache.fieldValueCache.get(blk);
-			if(blockdata==null)
-			{
-				long end=this.length();
-				int size=BLOCK_SIZE;
-				if(blocktart+size>=end)
-				{
-					size=(int) (end-blocktart);
+			if (blockdata == null) {
+				synchronized (lock) {
+					blockdata = (blockData) GrobalCache.fieldValueCache.get(blk);
+					if (blockdata == null) {
+						long end = this.length();
+						int size = BLOCK_SIZE;
+						if (blocktart + size >= end) {
+							size = (int) (end - blocktart);
+						}
+						blockdata = BlockBufferMalloc.malloc(size);// new
+																	// blockData(new
+																	// byte[BLOCK_SIZE],size);
+						synchronized (this.descriptor.in) {
+							this.descriptor.in.seek(blocktart);
+							this.descriptor.in.readBytes(blockdata.buff, 0,size);
+						}
+						blockdata.allowFree.incrementAndGet();
+						GrobalCache.fieldValueCache.put(blk, blockdata);
+						createcount++;
+					} else {
+						blockdata.allowFree.incrementAndGet();
+					}
 				}
-				blockdata=BlockBufferMalloc.malloc(size);//new blockData(new byte[BLOCK_SIZE],size);
-				synchronized (this.descriptor.in) {
-					this.descriptor.in.seek(blocktart);
-					this.descriptor.in.readBytes(blockdata.buff, 0, size);
-				}
-				blockdata.allowFree.incrementAndGet();
-				GrobalCache.fieldValueCache.put(blk, blockdata);
-				createcount++;
 			}else{
 				blockdata.allowFree.incrementAndGet();
 

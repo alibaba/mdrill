@@ -10,9 +10,8 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.TermEnum;
 import org.apache.solr.request.join.HigoJoin.IntArr;
-import org.apache.solr.request.uninverted.NumberedTermEnum;
-import org.apache.solr.request.uninverted.TermIndex;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.TrieField;
@@ -40,7 +39,6 @@ public class HigoJoinSingleValues implements HigoJoinInterface{
 	public HigoJoinSingleValues(SegmentReader reader,String partion,IndexSchema schema,
 			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth) throws IOException {
 		this.readerleft = null;
-		this.partion=partion;
 		this.schema=schema;
 		this.leftreader=reader;
 		this.readerright = readerright;
@@ -50,9 +48,8 @@ public class HigoJoinSingleValues implements HigoJoinInterface{
 	}
 	
 
-SegmentReader leftreader=null;
-String partion;
-IndexSchema schema;
+	private SegmentReader leftreader=null;
+	private IndexSchema schema;
 	
 	long memsize = -1;
 
@@ -62,17 +59,16 @@ IndexSchema schema;
 			return memsize;
 		}
 
-		memsize = 64;
-		for (Entry<Integer, IntArr> e : join.entrySet()) {
-			memsize += 16;
-			memsize += e.getValue().memsize();
+		memsize = 256;
+		memsize+=join.length*4;
+		memsize+=joinRevert.length*8;
+		
+		for(int[] list:this.join){
+			if(list!=null)
+			{
+				memsize+=list.length*8;
+			}
 		}
-
-		for (Entry<Integer, IntArr> e : joinRevert.entrySet()) {
-			memsize += 16;
-			memsize += e.getValue().memsize();
-		}
-
 		return memsize;
 	}
 
@@ -81,25 +77,21 @@ IndexSchema schema;
 			
 		}
 	  
-
-	 //right,left
-	private HashMap<Integer,IntArr> join=new HashMap<Integer,IntArr>();
-	private HashMap<Integer,HashSet<Integer>> join_tmp=new HashMap<Integer,HashSet<Integer>>();
-	//left,right
-	private HashMap<Integer,IntArr> joinRevert=new HashMap<Integer,IntArr>();
-	
+		
+	int[][] join=null;
+	private int[] joinRevert=null;
 	public DocSet filterByRight(DocSet leftDocs,DocSet rightDocs)
 	{
 		BitDocSet docset=new BitDocSet();
 		DocIterator iter = rightDocs.iterator();
 		while (iter.hasNext()) {
 			int doc = iter.nextDoc();
-			IntArr list=join.get(doc);
+			int[] list=join[doc];
 			if(list==null)
 			{
 				continue;
 			}
-			for(int jp:list.list)
+			for(int jp:list)
 			{
 				docset.add(jp);
 			}
@@ -108,12 +100,56 @@ IndexSchema schema;
 		return leftDocs.intersection(docset);
 	}
 	
+	
+	IntArr singleint=IntArr.parse(0);
 	public IntArr getRight(int leftDocid,int termNum)
 	{
-		return joinRevert.get(leftDocid);
+		int rtn=joinRevert[leftDocid];
+		if(rtn<0)
+		{
+			return null;
+		}
+		singleint.list[0]=rtn;
+		return singleint;
 	}
 
 	
+	
+	private IntArr getListArr(TermEnum teLeft,TermDocs tdleft,int[] docs,int[] freqs,int limit) throws IOException
+	{
+
+		IntArr LeftArr=new IntArr();
+
+		ArrayList<Integer> jpleft=new ArrayList<Integer>();
+		tdleft.seek(teLeft);
+		int index=0;
+		for (;;) {
+			int n = tdleft.read(docs, freqs);
+			if (n <= 0) {
+				break;
+			}
+			for (int i = 0; i < n; i++) {
+				if(index<limit)
+				{
+					index++;
+					jpleft.add(docs[i]);
+				}else{
+					break;
+				}
+				
+			}
+		}
+		
+		LeftArr.list=new int[jpleft.size()];
+		index=0;
+		for(Integer d:jpleft)
+		{
+			LeftArr.list[index]=d;
+			index++;
+		}
+		
+		return LeftArr;
+	}
 	private void makejoin() throws IOException
 	{
 		IndexSchema schema=null;
@@ -127,20 +163,38 @@ IndexSchema schema;
 		FieldType ftleft=schema.getFieldType(fieldLeft);
 		
 		String prefixLeft=TrieField.getMainValuePrefix(ftleft);
-		TermIndex tiLeft = new TermIndex(fieldLeft, prefixLeft);
-		NumberedTermEnum teLeft =null;
+		Term tiLeft=new Term(fieldLeft, prefixLeft==null?"":prefixLeft);
+		TermEnum teLeft = null;
+		TermDocs tdleft=null;
 		if(this.leftreader!=null)
 		{
-			teLeft=tiLeft.getEnumerator(this.leftreader);
+			this.joinRevert=new int[this.leftreader.maxDoc()+1];
+			tdleft=this.leftreader.termDocs();
+			teLeft=this.leftreader.terms(tiLeft);
 		}else{
-			teLeft=tiLeft.getEnumerator(readerleft.getReader());
+			this.joinRevert=new int[readerleft.getReader().maxDoc()+1];
+			teLeft=readerleft.getReader().terms(tiLeft);
+			tdleft=readerleft.getReader().termDocs();
 		}
+		
+		for(int i=0;i<this.joinRevert.length;i++)
+		{
+			this.joinRevert[i]=-1;
+		}
+		
+
 		
 		FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
 		String prefixRight=TrieField.getMainValuePrefix(ftright);
-		TermIndex tiRight = new TermIndex(fieldRigth, prefixRight);
+		Term tiRight=new Term(fieldRigth, prefixRight==null?"":prefixRight);
 		
-		NumberedTermEnum teRight = tiRight.getEnumerator(readerright.getReader());
+		TermEnum teRight = readerright.getReader().terms(tiRight.createTerm(prefixRight==null?"":prefixRight));
+		TermDocs tdRight=readerright.getReader().termDocs();
+		this.join=new int[readerright.getReader().maxDoc()+1][];
+		for(int i=0;i<this.join.length;i++)
+		{
+			this.join[i]=null;
+		}
 		
 		int[] docs = new int[1000];
 		int[] freqs = new int[1000];
@@ -148,6 +202,8 @@ IndexSchema schema;
 		
 		int debugline=0;
 		
+		HashMap<Integer,HashSet<Integer>> join_tmp=new HashMap<Integer,HashSet<Integer>>();
+//		HashMap<Integer,Integer> joinRevert_tmp=new HashMap<Integer,Integer>();
 		for (;;) {
 			Term tleft= teLeft.term();
 			Term tRight=teRight.term();
@@ -155,7 +211,11 @@ IndexSchema schema;
 			
 			if (tleft == null||tRight==null) {
 				LOG.info("###termbreak###"+String.valueOf(tleft)+">>>>"+String.valueOf(tRight)+","+fieldLeft+","+fieldRigth);
-
+				break;
+			}
+			if((!tleft.field().equals(fieldLeft))||(!tRight.field().equals(fieldRigth)))
+			{
+				LOG.info("###termbreak fieldchange###"+String.valueOf(tleft)+">>>>"+String.valueOf(tRight)+","+fieldLeft+","+fieldRigth);
 				break;
 			}
 			
@@ -168,62 +228,31 @@ IndexSchema schema;
 				if(debugline++<10)
 				{
 					LOG.info("###termok###"+String.valueOf(tvleft)+">>>>"+String.valueOf(tvRight)+","+fieldLeft+","+fieldRigth);
-
 				}
 
-				IntArr jp=new IntArr();
-//				jp.termNum = teLeft.getTermNumber();
-
-				ArrayList<Integer> jpleft=new ArrayList<Integer>();
-				TermDocs tdleft = teLeft.getTermDocs();
-				tdleft.seek(teLeft);
-				for (;;) {
-					int n = tdleft.read(docs, freqs);
-					if (n <= 0) {
-						break;
-					}
-					for (int i = 0; i < n; i++) {
-						jpleft.add(docs[i]);
-					}
-				}
-				
-				jp.list=new int[jpleft.size()];
-				int index=0;
-				for(Integer d:jpleft)
+				if(tvleft!=null&&!tvleft.trim().isEmpty())
 				{
-					jp.list[index]=d;
-					index++;
-				}
-				
-				
-				ArrayList<Integer> RightList=new ArrayList<Integer>();
-				TermDocs tdRight = teRight.getTermDocs();
-				tdRight.seek(teRight);
-				for (;;) {
-					int n = tdRight.read(docs, freqs);
-					if (n <= 0) {
-						break;
-					}
-					for (int i = 0; i < n; i++) {
-						int docid=docs[i];
-						RightList.add(docid);
+					IntArr LeftArr=this.getListArr(teLeft, tdleft, docs, freqs,Integer.MAX_VALUE);
+					IntArr RightArr=this.getListArr(teRight, tdRight, docs, freqs,1);
+	
+					for (Integer docid:RightArr.list) {
 						HashSet<Integer> list=join_tmp.get(docid);
 						if(list==null)
 						{
 							list=new HashSet<Integer>();
 							join_tmp.put(docid, list);
 						}
-						for(int jid:jp.list)
+						for(int jid:LeftArr.list)
 						{
+	//						joinRevert_tmp.put(jid, docid);
+							this.joinRevert[jid]=docid;
 							list.add(jid);
 						}
 					}
+				}else{
+					LOG.info("###empty###"+String.valueOf(tvleft)+">>>>"+String.valueOf(tvRight)+","+fieldLeft+","+fieldRigth);
 				}
 				
-				for(Integer leftid:jp.list)
-				{
-					joinRevert.put(leftid, IntArr.parse(RightList));
-				}
 				
 				teLeft.next();
 				teRight.next();
@@ -237,18 +266,14 @@ IndexSchema schema;
 		
 		teLeft.close();
 		teRight.close();
-		
-		for(Entry<Integer, HashSet<Integer>> e:this.join_tmp.entrySet())
+				
+		for(Entry<Integer, HashSet<Integer>> e:join_tmp.entrySet())
 		{
-			this.join.put(e.getKey(), IntArr.parse(e.getValue()));
+			this.join[e.getKey()]=IntArr.parse(e.getValue()).list;
 		}
-		this.join_tmp.clear();
+		join_tmp=null;
 		
-		LOG.info("###join###"+join.size()+","+joinRevert.size());
+		LOG.info("###join###"+join.length+","+joinRevert.length);
 	}
-	
-	
-
-
-	
+		
 }

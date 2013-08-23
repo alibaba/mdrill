@@ -486,22 +486,46 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  return this.core.getTermsReader().getQuickTis();
   }
   
-  public long getpos(String field)
+  public Long getpos(String field)
   {
+	  StringBuffer buff=new StringBuffer();
+	  buff.append("##getpos##"+field);
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
-	  HashMap<Integer,Long> filepos=core.getTermsReader().fieldPos;
-	  long rtn= filepos.get(fileNum);
-	  log.info("##getpos##"+fileNum+"@"+field+","+rtn);
-	  return rtn;
+	  buff.append("fileNum#"+String.valueOf(fileNum));
+	  if(fileNum!=null)
+	  {
+		  HashMap<Integer,Long> filepos=core.getTermsReader().fieldPos;
+		  long rtn= filepos.get(fileNum);
+		  buff.append("pos#"+rtn);
+		  log.info(buff.toString());
+		  return rtn;
+	  }
+	  buff.append("pos#null");
+
+	  log.info(buff.toString());
+
+	  return null;
   }
   
   public Integer getCount(String field)
   {
+	  StringBuffer buff=new StringBuffer();
+	  buff.append("##getCount##"+field);
+
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
-	  HashMap<Integer, Integer> fileCount=core.getTermsReader().fieldCount;
-	  int rtn= fileCount.get(fileNum);
-	  log.info("##getCount##"+fileNum+"@"+field+","+rtn);
-	  return rtn;
+	  buff.append("fileNum#"+String.valueOf(fileNum));
+
+	  if(fileNum!=null)
+	  {
+		  HashMap<Integer, Integer> fileCount=core.getTermsReader().fieldCount;
+		  int rtn= fileCount.get(fileNum);
+		  buff.append("count#"+rtn);
+		  return rtn;
+	  }
+	  
+	  buff.append("count#null");
+
+	  return null;
   }
   
   public InvertResult invertScan(IndexSchema schema, InvertParams params) throws Exception{

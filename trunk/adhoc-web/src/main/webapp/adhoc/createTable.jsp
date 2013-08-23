@@ -3,7 +3,8 @@
 		String colsShowName = request.getParameter("colsShowName");
 		String splitString = request.getParameter("splitString");
 		String username = request.getParameter("username");
+		String memo = request.getParameter("memo");
 		String joins = request.getParameter("joins");
 		String callback = request.getParameter("callback");
-String resultstr=TableJoin.create(tableShowName,colsShowName,splitString,username,joins,callback);
+String resultstr=TableJoin.create(tableShowName,colsShowName,splitString,username,joins,callback,memo);
 %><%=resultstr%>

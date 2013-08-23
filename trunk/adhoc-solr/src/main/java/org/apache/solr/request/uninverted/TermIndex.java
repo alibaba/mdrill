@@ -48,7 +48,7 @@ public class TermIndex {
 	  
 	  Directory cachedir=null;
 	  String key=null;
-	  void setCacheDir(Directory dir,String key)
+	 public void setCacheDir(Directory dir,String key)
 	  {
 		  cachedir=dir;
 		  this.key=key;

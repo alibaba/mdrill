@@ -104,7 +104,7 @@ public class UnInvertedFieldBase {
 				}
 			}
 		}
-	public void free()
+	private void free()
 	{
 		 if(isShutDown){
 			 return ;
@@ -135,6 +135,13 @@ public class UnInvertedFieldBase {
 			DOUBLE_BUFFER.free(this.termValueDouble);
 		}
 	}
+	
+	 public void LRUclean()
+	  {
+		  if (this.refCnt.get() == 0) {
+				this.free();
+			}
+	  }
 	
 	protected void finalize() throws Throwable
      {

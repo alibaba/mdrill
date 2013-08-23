@@ -22,6 +22,7 @@ public class OfflineDownload {
 
 	private String useName = null;
 	private String jobName = null;
+	private String memo = "";
 	private String displayParams = null;
 
 	private HiveExecute hivexec=new HiveExecute();
@@ -65,6 +66,10 @@ public class OfflineDownload {
     
     public void setJobName(String jobName) {
 		this.jobName = jobName;
+	}
+    
+    public void setMemo(String memo) {
+		this.memo = memo;
 	}
     
     public void run() {

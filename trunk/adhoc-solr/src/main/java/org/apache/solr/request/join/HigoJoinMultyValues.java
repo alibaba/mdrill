@@ -132,17 +132,18 @@ IndexSchema schema;
 		
 		String prefixLeft=TrieField.getMainValuePrefix(ftleft);
 		TermIndex tiLeft = new TermIndex(fieldLeft, prefixLeft);
+		tiLeft.setCacheDir(null, String.valueOf(System.currentTimeMillis()));
 		NumberedTermEnum teLeft =null;
 		if(this.leftreader!=null)
 		{
 			teLeft=tiLeft.getEnumerator(this.leftreader);
 		}else{
 			teLeft=tiLeft.getEnumerator(readerleft.getReader());
-		}		
+		}	
 		FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
 		String prefixRight=TrieField.getMainValuePrefix(ftright);
 		TermIndex tiRight = new TermIndex(fieldRigth, prefixRight);
-		
+		tiRight.setCacheDir(null,String.valueOf( System.currentTimeMillis()));
 		NumberedTermEnum teRight = tiRight.getEnumerator(readerright.getReader());
 		
 		int[] docs = new int[1000];
@@ -202,12 +203,18 @@ IndexSchema schema;
 				ArrayList<Integer> RightList=new ArrayList<Integer>();
 				TermDocs tdRight = teRight.getTermDocs();
 				tdRight.seek(teRight);
+				boolean isset=false;
+
 				for (;;) {
 					int n = tdRight.read(docs, freqs);
 					if (n <= 0) {
 						break;
 					}
 					for (int i = 0; i < n; i++) {
+						if(isset)
+						{
+							continue;
+						}
 						int docid=docs[i];
 						RightList.add(docid);
 						ArrayList<JoinPair> list=join_tmp.get(docid);
@@ -217,6 +224,8 @@ IndexSchema schema;
 							join_tmp.put(docid, list);
 						}
 						list.add(jp);
+						isset=true;
+
 					}
 				}
 				

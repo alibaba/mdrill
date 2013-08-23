@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
@@ -39,6 +40,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.mdrill.FacetComponent;
 import org.apache.solr.request.mdrill.MdrillDetail;
 import org.apache.solr.request.mdrill.MdrillGroupBy;
 import org.apache.solr.request.uninverted.UnInvertedField;
@@ -58,6 +60,7 @@ import java.util.*;
  * to leverage any of it's functionality.
  */
 public class SimpleFacets {
+    private static Logger LOG = Logger.getLogger(SimpleFacets.class);
 
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docs;
@@ -202,14 +205,8 @@ public class SimpleFacets {
       facetResponse.add("facet_dates", getFacetDateCounts());
       facetResponse.add("facet_ranges", getFacetRangeCounts());
 
-    } catch (IOException e) {
-      SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (ParseException e) {
-      SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
-      throw new SolrException(ErrorCode.BAD_REQUEST, e);
-    } catch (Exception e) {
-        SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
+    } catch (Throwable e) {
+    	LOG.error("getFacetCounts",e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     return facetResponse;

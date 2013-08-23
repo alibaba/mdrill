@@ -22,7 +22,10 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 	public MysqlCallback(MySqlConn m_fpsql) {
 		this.m_fpsql = m_fpsql;
 	}
-	
+	private String memo = "";
+	 public void setMemo(String memo) {
+			this.memo = memo;
+		}
 	private boolean isfinish=false;
 	private MySqlConn m_fpsql = null;
 	private String mailto="yannian.mu@alipay.com";
@@ -385,10 +388,10 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 		Connection conn = m_fpsql.getConn();
 		String strSql = "insert into adhoc_download " +
 				"(isfinish,cols,mailto,hql,cmd,env,stdmsg,errmsg,exceptionmsg,failmsg,slotcount,resultkb,rows" +
-				",percent,hadoopjobid,extval,isfail,username,storedir,jobname,params,starttime,endtime,stage,md5,uuid)" +
+				",percent,hadoopjobid,extval,isfail,username,storedir,jobname,params,starttime,endtime,stage,md5,uuid,memo)" +
 				"values" +
 				"(?,?,?,?,?,?,?,?,?,?,?,?,?" +
-				",?,?,?,?,?,?,?,?,?,?,?,?,?)";
+				",?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		PreparedStatement m_fps = conn.prepareStatement(strSql);
 		try {
 			int index=1;
@@ -418,7 +421,7 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 			m_fps.setString(index++, this.stage);
 			m_fps.setString(index++, this.md5);
 			m_fps.setString(index++, this.uuid);
-
+			m_fps.setString(index++, this.memo);
 			m_fps.executeUpdate();
 			String fullstrSql=m_fps.toString();
 			return fullstrSql;

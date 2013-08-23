@@ -75,7 +75,29 @@ public class MakeIndex {
 	
 	public static interface updateStatus{
 		public void update(int statge,Job job);
+		public boolean dump(Job job);
 		public void finish();
+	}
+	
+	public static int make(
+			FileSystem fs,
+			String solrHome,
+			Configuration jconf ,
+			String filetype,
+			
+			String inputBase,
+			HashSet<String> inputs,
+			String inputmatch,
+			String output,
+			Path smallindex,
+			int shards,
+			String split,
+			boolean usedthedate,
+			String custFields,
+			updateStatus update
+			) throws Exception
+	{
+		return make(fs, solrHome, jconf, filetype, inputBase, inputs, inputmatch, output, smallindex, shards, split, usedthedate, custFields, update,"");
 	}
    
 	public static int make(
@@ -93,7 +115,7 @@ public class MakeIndex {
 			String split,
 			boolean usedthedate,
 			String custFields,
-			updateStatus update
+			updateStatus update,String uniqCheckField
 			) throws Exception
 	{
 		Job job = new Job(new Configuration(jconf));
@@ -137,6 +159,8 @@ public class MakeIndex {
 			conf.set("higo.column.split", split);
 		}
 		
+		conf.set("uniq.check.field", uniqCheckField);
+		
 		if(split.equals("\t"))
 		{
 			conf.set("higo.column.split", "tab");
@@ -151,10 +175,10 @@ public class MakeIndex {
 		conf.set("mapred.reduce.slowstart.completed.maps", "0.01");
 		conf.set("higo.index.fields", fields);
 		job.setMapperClass(IndexMapper.class);
-		job.setMapOutputKeyClass(LongWritable.class);
+		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(DocumentList.class);
 		job.setReducerClass(IndexReducer.class);
-		job.setOutputKeyClass(LongWritable.class);
+		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
 		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 		FileOutputFormat.setOutputPath(job, smallindex);
@@ -166,6 +190,9 @@ public class MakeIndex {
 	        {
 	        	update.update(1, job);
 	        	Thread.sleep(3000);
+	        }
+	        if(update.dump(job)){
+	        	return -1;
 	        }
 		}else{
 			job.waitForCompletion(true);
@@ -183,10 +210,10 @@ public class MakeIndex {
 		job2.setJarByClass(JobIndexerPartion.class);
 		job2.setInputFormatClass(SequenceFileInputFormat.class);
 		SequenceFileInputFormat.addInputPath(job2, new Path(smallindex,"part-r-*"));
-		job2.setMapOutputKeyClass(LongWritable.class);
+		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 		job2.setReducerClass(IndexReducerMerge.class);
-		job2.setOutputKeyClass(LongWritable.class);
+		job2.setOutputKeyClass(Text.class);
 		job2.setOutputValueClass(Text.class);
 		job2.setOutputFormatClass(SequenceFileOutputFormat.class);
 		job2.setNumReduceTasks(shards);

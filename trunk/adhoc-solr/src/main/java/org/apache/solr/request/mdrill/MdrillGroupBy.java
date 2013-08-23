@@ -3,11 +3,9 @@ package org.apache.solr.request.mdrill;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -27,11 +25,9 @@ import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.compare.GroupbyAgent;
 import org.apache.solr.request.compare.GroupbyItem;
 import org.apache.solr.request.compare.GroupbyRow;
 import org.apache.solr.request.compare.RecordCount;
-import org.apache.solr.request.compare.SelectDetailRow;
 import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.ShardGroupByTermNum;
 import org.apache.solr.request.compare.ShardGroupByTermNumCompare;

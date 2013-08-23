@@ -4,5 +4,7 @@
 		String rows = request.getParameter("rows");
 		String type = request.getParameter("type");
 		String callback = request.getParameter("callback");
-String resultstr=TableJoin.getUserTables(username,Integer.parseInt(start),Integer.parseInt(rows),Integer.parseInt(type),callback);
+		String moduleName = request.getParameter("moduleName");
+		
+String resultstr=TableJoin.getUserTables(username,Integer.parseInt(start),Integer.parseInt(rows),Integer.parseInt(type),callback,moduleName);
 %><%=resultstr%>

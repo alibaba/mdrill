@@ -17,6 +17,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import com.alimama.mdrill.buffer.LuceneUtils;
 
 public class HigoJoin  {
+	public static Object lock=new Object();
 	public static HigoJoinInterface getJoin(SegmentReader reader,String partion,IndexSchema schema,
 			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth)
 			throws IOException {
@@ -39,7 +40,7 @@ public class HigoJoin  {
 		GrobalCache.StringKey fvkey = new GrobalCache.StringKey(cachekey);
 		HigoJoinInterface uif = (HigoJoinInterface) cache.get(fvkey);
 		if (uif == null) {
-			synchronized (cache) {
+			synchronized (lock) {
 				uif = (HigoJoinInterface) cache.get(fvkey);
 				if (uif == null) {
 					
@@ -64,6 +65,7 @@ public class HigoJoin  {
 
 		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
 		StringBuffer key = new StringBuffer();
+		key.append("join");
 		key.append(readerleft.getPartionKey());
 		key.append("@");
 		key.append(fieldLeft);
@@ -79,7 +81,7 @@ public class HigoJoin  {
 		GrobalCache.StringKey fvkey = new GrobalCache.StringKey(cachekey);
 		HigoJoinInterface uif = (HigoJoinInterface) cache.get(fvkey);
 		if (uif == null) {
-			synchronized (cache) {
+			synchronized (lock) {
 				uif = (HigoJoinInterface) cache.get(fvkey);
 				if (uif == null) {
 					
@@ -103,6 +105,15 @@ public class HigoJoin  {
 
 	public static class IntArr {
 		public int[] list = new int[0];
+
+		
+		public static IntArr parse(Integer d) {
+			IntArr rtn = new IntArr();
+			rtn.list = new int[1];
+			rtn.list[0]=d;
+
+			return rtn;
+		}
 
 		public static IntArr parse(ArrayList<Integer> d) {
 			IntArr rtn = new IntArr();

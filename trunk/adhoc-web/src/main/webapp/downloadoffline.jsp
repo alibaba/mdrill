@@ -6,7 +6,7 @@
 	
 	String uuid = request.getParameter("uuid");
 		String did=AdhocOfflineService.readHiveResultID(uuid);
-	response.setHeader("Content-disposition","attachment; filename="+did+"");
+	response.setHeader("Content-disposition","attachment; filename="+new String( new String(did).getBytes("utf-8"), "ISO8859-1" ) +"");
 
 	
 	

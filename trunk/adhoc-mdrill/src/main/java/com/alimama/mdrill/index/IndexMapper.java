@@ -20,7 +20,7 @@ import com.alimama.mdrill.index.utils.TdateFormat;
 
 
 
-public class IndexMapper extends   Mapper<WritableComparable, Text, LongWritable, DocumentList> {
+public class IndexMapper extends   Mapper<WritableComparable, Text, Text, DocumentList> {
     private String[] fields = null;
     private Boolean[] isDate;
     private Boolean[] isString;
@@ -31,6 +31,9 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, LongWritable
     private String thedate=null;
     
     private Integer Index=(int) (Math.random()*10000);
+    
+    private String uniqfield="";
+    private boolean isuniqcheck=false;
 
 	private ArrayList<HashMap<String, String>> doclist = new ArrayList<HashMap<String, String>>();
     private static int PER = 100;
@@ -38,6 +41,11 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, LongWritable
     public void setup(Context context) throws IOException, InterruptedException {
 		super.setup(context);
 		String fieldStrs = context.getConfiguration().get("higo.index.fields");
+		this.uniqfield= context.getConfiguration().get("uniq.check.field");
+		if(this.uniqfield!=null&&this.uniqfield.length()>0)
+		{
+			this.isuniqcheck=true;
+		}
 		split=MakeIndex.parseSplit(context.getConfiguration().get("higo.column.split",split));
 		String custfields=context.getConfiguration().get("higo.column.custfields","");
 		usedthedate=context.getConfiguration().getBoolean("higo.column.userthedate", usedthedate);
@@ -92,7 +100,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, LongWritable
 	    InterruptedException {
     	if(doclist.size()>0)
     	{
-		    context.write(new LongWritable(this.Index++), new DocumentList(this.doclist));
+		    context.write(new Text(String.valueOf(this.Index++)), new DocumentList(this.doclist));
 		    doclist.clear();
     	}
     }
@@ -188,8 +196,17 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, LongWritable
     	
     	this.doclist.add(res);
     	if (this.doclist.size() >= PER) {
-    	    context.write(new LongWritable(this.Index++), new DocumentList(this.doclist));
+    	    context.write(new Text(String.valueOf(this.Index++)), new DocumentList(this.doclist));
     	    this.doclist.clear();
+    	}
+    	
+    	if(this.isuniqcheck&&res.containsKey(this.uniqfield))
+    	{
+    		String notempty=res.get(this.uniqfield);
+    		if(notempty.length()>0)
+    		{
+    	    context.write(new Text("uniq_"+notempty), new DocumentList());
+    		}
     	}
     	
     	return true;

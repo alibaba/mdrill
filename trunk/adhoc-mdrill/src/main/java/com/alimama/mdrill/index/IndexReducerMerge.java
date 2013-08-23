@@ -16,7 +16,7 @@ import com.alimama.mdrill.index.utils.JobIndexPublic;
 import com.alimama.mdrill.index.utils.ShardWriter;
 
 public class IndexReducerMerge extends
-		Reducer<LongWritable, Text, LongWritable, Text> {
+		Reducer<Text, Text, Text, Text> {
 	private HeartBeater heartBeater = null;
 	private ShardWriter shardWriter = null;
 	private String indexHdfsPath = null;
@@ -70,7 +70,7 @@ public class IndexReducerMerge extends
 		return shardWriter;
 	}
 
-	protected void reduce(LongWritable key, Iterable<Text> values,
+	protected void reduce(Text key, Iterable<Text> values,
 			Context context) throws java.io.IOException, InterruptedException {
 		Configuration conf = context.getConfiguration();
 		FileSystem fs = FileSystem.get(conf);

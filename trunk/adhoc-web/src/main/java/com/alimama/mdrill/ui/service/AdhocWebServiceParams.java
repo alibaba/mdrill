@@ -3,12 +3,15 @@ package com.alimama.mdrill.ui.service;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.alimama.mdrill.json.JSONArray;
 import com.alimama.mdrill.json.JSONException;
 import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetPartions;
 import com.alimama.mdrill.ui.service.utils.WebServiceParams;
+import com.alimama.mdrill.ui.service.utils.WebServiceParams.StateField;
 import com.alimama.web.TableJoin;
 
 public class AdhocWebServiceParams {
@@ -30,6 +33,192 @@ public class AdhocWebServiceParams {
 		public String frQuer="";
 //		public Stri
 		
+	}
+	
+	
+	public static void parseColsNoJoins(StringBuffer cols,ArrayList<String> groupFields,ArrayList<String> showFields,HashMap<String,String> colMapforStatFilter,AtomicInteger nameindex)
+	{
+		String join = "";
+
+		for (String field : groupFields) {
+
+			cols.append(join);
+			cols.append(field);
+			join = ",";
+		}
+		for (String field : showFields) {
+			StateField showfield=WebServiceParams.parseStat(field);
+
+			if(!groupFields.contains(field))
+			{
+				cols.append(join);
+				cols.append(field);
+				
+				if(showfield.isstat)
+				{
+					String alias="tmp_"+nameindex.incrementAndGet();
+					cols.append(" as "+alias);
+					colMapforStatFilter.put(field, alias);
+				}
+				join = ",";
+			}
+		}
+	}
+	
+	public static boolean hasStatFiled(ArrayList<String> showFields)
+	{
+		for (String field : showFields) {
+			StateField showfield=WebServiceParams.parseStat(field);
+			if(showfield.isstat)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public static void parseColsWithJoins(StringBuffer cols,StringBuffer cols_inner,HigoAdhocJoinParams[] joins,HashMap<String,String> colMap,HashMap<String,String> colMapforStatFilter,ArrayList<String> groupFields,ArrayList<String> showFields,AtomicInteger nameindex)
+	{
+		//----inner begin-----
+		String join = "";
+
+		for (String field : groupFields) {
+			if(colMap.containsKey(field))
+			{
+				continue;
+			}
+			cols_inner.append(join);
+			cols_inner.append(field);
+			String alias="tmp_"+nameindex.incrementAndGet();
+			cols_inner.append(" as "+alias);
+			colMap.put(field, alias);
+			join = ",";
+		}
+		for (String field : showFields) {
+			StateField showfield=WebServiceParams.parseStat(field);
+			if(!groupFields.contains(showfield.realField))
+			{
+				if(colMap.containsKey(showfield.realField))
+				{
+					continue;
+				}
+				cols_inner.append(join);
+				cols_inner.append(showfield.realField);
+				String alias="tmp_"+nameindex.incrementAndGet();
+				cols_inner.append(" as "+alias);
+				colMap.put(showfield.realField, alias);
+				join = ",";
+			}
+		}
+		
+		for(int i=0;i<joins.length;i++)
+		{
+			HigoAdhocJoinParams jp=joins[i];
+			if(!groupFields.contains(jp.leftkey)&&!showFields.contains(jp.leftkey))
+			{
+				if(colMap.containsKey(jp.leftkey))
+				{
+					continue;
+				}
+				cols_inner.append(join);
+				cols_inner.append(jp.leftkey);
+				String alias="tmp_"+nameindex.incrementAndGet();
+				cols_inner.append(" as "+alias);
+				colMap.put(jp.leftkey, alias);
+				join = ",";
+			}
+		}
+		
+		
+		//----inner end-----
+		
+		
+		
+		
+		
+		join = "";
+		for (String field : groupFields) {
+			cols.append(join);
+			cols.append("jl1.");
+			cols.append(colMap.get(field));
+			String alias="tmp_"+nameindex.incrementAndGet();
+			cols.append(" as "+alias);
+			join = ",";
+		}
+		
+		for(int i=0;i<joins.length;i++)
+		{
+			HigoAdhocJoinParams jp=joins[i];
+			for (String field : jp.fl) {
+				cols.append(join);
+				cols.append("jr"+i+".");
+				cols.append(field);
+				String alias="tmp_"+nameindex.incrementAndGet();
+				cols.append(" as "+alias);
+				join = ",";
+			}
+			
+			
+			
+		}
+		for (String field : showFields) {
+			
+			StateField showfield=WebServiceParams.parseStat(field);
+			
+			if(!groupFields.contains(showfield.realField))
+			{
+				cols.append(join);
+				if(showfield.isstat)
+				{
+					cols.append(showfield.type);
+					cols.append("(");
+					cols.append("jl1.");
+					cols.append(colMap.get(showfield.realField));
+					cols.append(")");
+					
+					String alias="tmp_"+nameindex.incrementAndGet();
+					cols.append(" as "+alias);
+					colMapforStatFilter.put(field, alias);
+				}else{
+					cols.append("jl1.");
+					cols.append(colMap.get(showfield.realField));
+				}
+				join = ",";
+			}
+		}
+		
+		
+	}
+	
+	public static String parseDayCols(ArrayList<String> groupFields,ArrayList<String> showFields)
+	{
+		String daycols="";
+		for (String field : groupFields) {
+			if(field.equals("thedate"))
+			{
+				daycols="日期,";
+			}
+		}
+		for (String field : showFields) {
+			if(field.equals("thedate"))
+			{
+				daycols="日期,";
+			}
+		}
+		return daycols;
+	}
+	
+	public  static StringBuffer makeWhere(ArrayList<String> fqList)
+	{
+		StringBuffer sqlWhere = new StringBuffer();
+		String join = " where ";
+		for (String fq : fqList) {
+			sqlWhere.append(join);
+			sqlWhere.append(fq);
+			join = " and ";
+		}
+		
+		return sqlWhere;
 	}
 	public static HigoAdhocJoinParams[] parseJoinsHive(String leftjoin,GetPartions.Shards shard) throws JSONException, SQLException
 	{
@@ -70,7 +259,23 @@ public class AdhocWebServiceParams {
 				sqlWhere.append(fq);
 				join = " and ";
 			}
-			p.frQuer="select "+ obj.getString("fl")+" from "+tmptblname +" "+sqlWhere.toString();
+			HashSet<String> allfl=new HashSet<String>();
+			for(String s:obj.getString("fl").split(","))
+			{
+				allfl.add(s.trim());
+			}
+			allfl.add(p.rightkey);
+			
+			StringBuffer buff=new StringBuffer();
+			String joinchar="";
+			for(String fl:allfl)
+			{
+				buff.append(joinchar);
+				buff.append(fl);
+				joinchar=",";
+			}
+			
+			p.frQuer="select "+ buff.toString()+" from "+tmptblname +" "+sqlWhere.toString();
 			rtn[i]=p;
 		}
 		return rtn;

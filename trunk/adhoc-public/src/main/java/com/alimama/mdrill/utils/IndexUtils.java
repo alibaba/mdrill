@@ -53,20 +53,9 @@ public class IndexUtils {
     
 	private static synchronized boolean  diskCheck(String stopath, FileSystem lfs) {
 		Path localpath = new Path(new Path(stopath, "higo"), "diskcheck");
-		FileLock flout = null;
-		RandomAccessFile out = null;
-		FileChannel fcout = null;
+		TryLockFile lck=new TryLockFile((new File(localpath.toString(), "lock")).getAbsolutePath());
 		try {
-			File file = new File(localpath.toString(), "lock");
-			if (!file.exists()) {
-				file.createNewFile();
-			}
-
-			out = new RandomAccessFile(file, "rw");
-			fcout = out.getChannel();
-			flout = fcout.lock();
-
-
+			lck.trylock();
 			try {
 				if (lfs.exists(localpath)) {
 					lfs.delete(localpath, true);
@@ -77,8 +66,7 @@ public class IndexUtils {
 
 				Long vertify = System.currentTimeMillis();
 
-				DataOutputStream dos = new DataOutputStream(
-						new FileOutputStream(vfile));
+				DataOutputStream dos = new DataOutputStream(new FileOutputStream(vfile));
 				dos.writeLong(vertify);
 				dos.close();
 
@@ -100,19 +88,7 @@ public class IndexUtils {
 		} catch (Exception e) {
 			return false;
 		} finally {
-			try {
-				if (flout != null) {
-					flout.release();
-				}
-				if (fcout != null) {
-					fcout.close();
-				}
-				if (out != null) {
-					out.close();
-				}
-				out = null;
-			} catch (Exception e) {
-			}
+			lck.unlock();
 		}
 	}
 
