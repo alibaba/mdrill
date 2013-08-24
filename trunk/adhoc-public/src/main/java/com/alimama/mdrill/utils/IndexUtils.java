@@ -55,12 +55,12 @@ public class IndexUtils {
 		Path localpath = new Path(new Path(stopath, "higo"), "diskcheck");
 		TryLockFile lck=new TryLockFile((new File(localpath.toString(), "lock")).getAbsolutePath());
 		try {
-			lck.trylock();
 			try {
 				if (lfs.exists(localpath)) {
 					lfs.delete(localpath, true);
 				}
 				lfs.mkdirs(localpath);
+				lck.trylock();
 
 				File vfile = new File(localpath.toString(), "vertify");
 

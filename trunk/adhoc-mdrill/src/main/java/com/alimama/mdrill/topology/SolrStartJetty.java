@@ -221,6 +221,10 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     	    	{
     	    		Thread.sleep(1000l);
     	    	}
+    	    	if(statcollect.isTimeout(600l*1000))
+    	    	{
+    				statcollect.setLastTime(System.currentTimeMillis());
+    	    	}
     			this.startJetty();
     			isInit.set(true);
     			LOG.info("higolog table end:" + this.tablename);
@@ -325,6 +329,10 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 	    	while(!exe.isfinish()&&!statcollect.isTimeout(600l*1000))
 	    	{
 	    		Thread.sleep(1000l);
+	    	}
+	    	if(statcollect.isTimeout(600l*1000))
+	    	{
+				statcollect.setLastTime(System.currentTimeMillis());
 	    	}
 		    this.startJetty();
 		}

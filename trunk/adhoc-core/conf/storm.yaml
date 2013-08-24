@@ -8,7 +8,7 @@
  
 ####蓝鲸配置####
  storm.local.dir: "/home/taobao/bluewhale/stormwork"
- nimbus.host: "tiansuan1.kgb.cm4"
+ nimbus.host: "adhocbak.kgb.cm6"
  
 ####hadoop配置####
  hadoop.conf.dir: "/home/taobao/config"
@@ -28,7 +28,7 @@
  storm.zookeeper.retry.times: 10
  
 ####mdrill配置####
- higo.workdir.list: "/disk1/taobao/bluewhile,/disk2/taobao/bluewhile,/disk3/taobao/bluewhile,/disk4/taobao/bluewhile,/disk5/taobao/bluewhile,/disk6/taobao/bluewhile,/disk7/taobao/bluewhile,/disk8/taobao/bluewhile,/disk9/taobao/bluewhile,/disk10/taobao/bluewhile"
+ higo.workdir.list: "/disk1/taobao/mdrill,/disk2/taobao/mdrill,/disk3/taobao/mdrill,/disk4/taobao/mdrill,/disk5/taobao/mdrill,/disk6/taobao/mdrill,/disk7/taobao/mdrill,/disk8/taobao/mdrill,/disk9/taobao/mdrill,/disk10/taobao/mdrill"
  #----每台机器启动的worker进程端口列表----
  supervisor.slots.ports:
     - 6701
@@ -48,10 +48,26 @@
     - 6601
  #----启动的shard的数，每个shard为一个solr实例，结合cpu个数和内存进行配置，10台48G内存配置60----
  higo.shards.count: 60
+ #----固定分配task----
+ higo.fixed.shards: 10
+ higo.fixed.shards.1: "tiansuan1.kgb.cm4:0,1,2,3,4"
+ higo.fixed.shards.2: "tiansuan2.kgb.cm4:5,6,7,8,9"
+ higo.fixed.shards.3: "adhoc2.kgb.cm6:10,11,12,13,14"
+ higo.fixed.shards.4: "adhoc3.kgb.cm6:15,16,17,18,19"
+ higo.fixed.shards.5: "adhoc4.kgb.cm6:20,21,22,23,24"
+ higo.fixed.shards.6: "adhoc5.kgb.cm6:25,26,27,28,29,30"
+ higo.fixed.shards.7: "adhoc6.kgb.cm6:31,32,33,34,35,36"
+ higo.fixed.shards.8: "adhoc7.kgb.cm6:37,38,39,40,41"
+ higo.fixed.shards.9: "adhoc8.kgb.cm6:42,43,44,45,46,47"
+ higo.fixed.shards.10: "adhoc1.kgb.cm6:48,49,50,51,52,53"
+ #higo.fixed.shards.11: "adhocbak.kgb.cm6:54,55,56,57,58,59"
+
+ #----分配给merger server的端口，建议每台机器分配一个merger server----
+ higo.merge.ports: "6601,6602,6603,6604,6605,6606,6607,6608,6609,6610"
  #----分配给merger server的端口，建议每台机器分配一个merger server----
  higo.merge.ports: "6601,6602,6603,6604,6605,6606,6607,6608,6609,6610"
  #----启动的merger server的worker数量，建议根据机器数量设定----
- higo.mergeServer.count: 8
+ higo.mergeServer.count: 11
  #----分配给实时数据源的端口，该功能在开发中，预留接口----
  higo.realtime.ports: "6501,6502,6503,6504,6505,6506,6507,6508,6509,6510"
  #----启动实时数据源的worker数量,预留接口----
@@ -71,6 +87,7 @@
  #----mdrill个别表的分区设定，这里为rpt_seller_all_m表----
  higo.partion.type.rpt_seller_all_m: "month"
  higo.partion.type.rpt_seller_all_m_single: "single"
+ higo.partion.type.rpt_seller_all_m_dir: "dir@thedate"
 
 ####以下为adhoc项目专用，跟mdrill无关，可忽略####
  higo.download.offline.conn: "jdbc:mysql://tiansuan1.kgb.cm4:3306/adhoc_download?useUnicode=true&characterEncoding=utf8"

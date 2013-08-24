@@ -488,42 +488,64 @@ public class SegmentReader extends IndexReader implements Cloneable {
   
   public Long getpos(String field)
   {
+	  ensureOpen();
 	  StringBuffer buff=new StringBuffer();
 	  buff.append("##getpos##"+field);
+
+	  try{
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
 	  buff.append("fileNum#"+String.valueOf(fileNum));
-	  if(fileNum!=null)
+	  if(fileNum!=null&&core!=null&&core.getTermsReader()!=null)
 	  {
 		  HashMap<Integer,Long> filepos=core.getTermsReader().fieldPos;
-		  long rtn= filepos.get(fileNum);
-		  buff.append("pos#"+rtn);
-		  log.info(buff.toString());
-		  return rtn;
+		  if(filepos!=null)
+		  {
+			  long rtn= filepos.get(fileNum);
+			  buff.append("pos#"+rtn);
+			  log.info(buff.toString());
+			  return rtn;
+		  }
 	  }
 	  buff.append("pos#null");
 
 	  log.info(buff.toString());
+	  }catch(Throwable e)
+	  {
+		  log.error(buff.toString(),e);
+	  }
 
 	  return null;
   }
   
   public Integer getCount(String field)
   {
+	  ensureOpen();
 	  StringBuffer buff=new StringBuffer();
 	  buff.append("##getCount##"+field);
 
+	  try{
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
 	  buff.append("fileNum#"+String.valueOf(fileNum));
 
-	  if(fileNum!=null)
+	  if(fileNum!=null&&core!=null&&core.getTermsReader()!=null)
 	  {
 		  HashMap<Integer, Integer> fileCount=core.getTermsReader().fieldCount;
-		  int rtn= fileCount.get(fileNum);
-		  buff.append("count#"+rtn);
-		  return rtn;
+		  if(fileCount!=null)
+		  {
+			  int rtn= fileCount.get(fileNum);
+			  buff.append("count#"+rtn);
+			  return rtn;
+		  }
 	  }
 	  
 	  buff.append("count#null");
+	  log.info(buff.toString());
+  }catch(Throwable e)
+  {
+	  log.error(buff.toString(),e);
+
+  }
+	  
 
 	  return null;
   }

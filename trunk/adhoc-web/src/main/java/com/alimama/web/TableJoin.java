@@ -681,19 +681,17 @@ public class TableJoin {
 			boolean iserror=res.getString("status").equals("FAIL")||!res.getString("extval").equals("0");
 			double percent=parsePercent(res.getString("stage"),res.getString("percent"),issuccess);
 			
-			if(res.getString("status").equals("DUMP"))
-			{
-				percent=0d;
-			}
-			item.put("proccess", (iserror?"0":String.valueOf(percent))+"%");
+			
 			boolean isallowEdit=!res.getString("status").equals("INDEXING")&&res.getString("source").equals("1");
 			item.put("allowCreate",String.valueOf(res.getString("source").equals("2")&&issuccess&&percent>=100&&!isoversize));//是否允许将离线下载转换为个人表
 			item.put("allowUpload",String.valueOf(isallowEdit&&res.getString("status").equals("init")));//上传
-			item.put("allowDownload",String.valueOf(issuccess&&percent>=100));//下载
+			item.put("allowDownload",String.valueOf((issuccess||res.getString("status").equals("DUMP"))&&percent>=100));//下载
 			item.put("allowJoin",String.valueOf(res.getString("source").equals("1")&&issuccess&&percent>=100&&!isoversize));//join
 			item.put("allowSend",String.valueOf(issuccess&&percent>=100));//推送
 			item.put("isError", iserror);
 			String uuidshow=iserror?("<br>"+res.getString("tableName")):"";
+			item.put("proccess", ((res.getString("status").equals("DUMP")||iserror)?"0":String.valueOf(percent))+"%");
+
 			item.put("msg", String.valueOf(iserror?"服务器异常":isoversize?"数据文件超过500M	":res.getString("status").equals("DUMP")?"设置关联关系的字段有重复值":issuccess&&percent>=100?"成功":res.getString("status").equals("init")?"等待上传数据":"处理中...")+uuidshow);
 
 			

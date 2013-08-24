@@ -353,10 +353,7 @@ public class HigoJoinUtils {
 				basedir.mkdirs();
 			}
 			
-			
-			if (!lockPath.exists()) {
-				lockPath.createNewFile();
-			}
+		
 
 			lock.trylock();
 		

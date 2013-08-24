@@ -29,7 +29,6 @@ import com.alimama.mdrill.partion.GetPartions.TablePartion;
 import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.MdrillPartionsInterface;
 import com.alimama.mdrill.partion.StatListenerInterface;
-import com.alimama.mdrill.partion.thedate.ThedateListener;
 import com.alimama.mdrill.topology.utils.Interval;
 import com.alimama.mdrill.topology.utils.SolrStartJettyExcetionCollection;
 import com.alimama.mdrill.utils.IndexUtils;
@@ -339,6 +338,11 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
     	    	{
     	    		Thread.sleep(1000l);
     	    	}
+    	    	
+    	    	if(statcollect.isTimeout(1200l*1000))
+    	    	{
+    				statcollect.setLastTime(System.currentTimeMillis());
+    	    	}
 				
 				this.startService();
     			isInit.set(true);
@@ -437,6 +441,10 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
     	{
     		Thread.sleep(1000l);
     	}
+    	if(statcollect.isTimeout(900l*1000))
+    	{
+			statcollect.setLastTime(System.currentTimeMillis());
+    	}
 		
 		boolean needRestart = exe.isfinish()?exe.result():false;
 		if (!needRestart) {
@@ -452,6 +460,10 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	    	while(!statcollect.isTimeout(900l*1000))
 	    	{
 	    		Thread.sleep(1000l);
+	    	}
+	    	if(statcollect.isTimeout(900l*1000))
+	    	{
+				statcollect.setLastTime(System.currentTimeMillis());
 	    	}
 			this.startService();
 		}

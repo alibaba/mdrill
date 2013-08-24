@@ -92,7 +92,7 @@ public class MdrillTaskAssignmentBase {
 	public static class HostSlots {
 		public String host;
 		public Integer index = 0;
-
+		public boolean fixd = false;
 		@Override
 		public String toString() {
 			return "HostSlots [host=" + host + ", ports=" + ports + "]";
@@ -132,11 +132,7 @@ public class MdrillTaskAssignmentBase {
 		public HashSet<Integer> shardTask = new HashSet<Integer>();
 		public HashSet<Integer> otherTask = new HashSet<Integer>();
 		
-		/**
-		 * ��������shards,merger server��ֿ�
-		 * 
-		 * @param reassignIds
-		 */
+		
 		public void setSpecialTask(Set<Integer> reassignIds,MdrillTaskAssignment assen) {
 			for (Integer tid : reassignIds) {
 				TaskInfo info = assen.zkCluster.task_info(assen.topologyId, tid);

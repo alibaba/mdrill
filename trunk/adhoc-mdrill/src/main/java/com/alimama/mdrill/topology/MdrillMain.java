@@ -217,6 +217,8 @@ public class MdrillMain {
 
 		Integer shards = StormUtils
 				.parseInt(stormconf.get("higo.shards.count"));
+		
+		Integer fixassign = StormUtils.parseInt(stormconf.containsKey("higo.fixed.shards")?stormconf.get("higo.fixed.shards"):0);
 		Integer partions = StormUtils.parseInt(stormconf
 				.get("higo.cache.partions"));
 		Integer portbase = StormUtils.parseInt(stormconf
@@ -238,6 +240,12 @@ public class MdrillMain {
 		conf.setMaxSpoutPending(100);
 		conf.put(CustomAssignment.TOPOLOGY_CUSTOM_ASSIGNMENT,
 				MdrillTaskAssignment.class.getName());
+		
+		conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS,fixassign);
+		for(int i=1;i<=fixassign;i++)
+		{
+		conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS+"."+i,(String) stormconf.get("higo.fixed.shards"+"."+i));
+		}
 		conf.put(MdrillTaskAssignment.MS_PORTS,
 				(String) stormconf.get("higo.merge.ports"));
 		conf.put(MdrillTaskAssignment.REALTIME_PORTS,
