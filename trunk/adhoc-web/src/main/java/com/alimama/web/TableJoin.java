@@ -1051,7 +1051,7 @@ public class TableJoin {
 		return jsonObj.toString();
 	}
 	
-	public String set(String key,String value) throws Exception{
+	public static String set(String key,String value) throws Exception{
 		HashMap<String,String> rtn=new HashMap<String,String>();
 		rtn.put("code", "0");
 
