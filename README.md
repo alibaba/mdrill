@@ -9,7 +9,7 @@
 <h1> 发行日志</h1>
  2013.7.24 version 0.18-beta  初始化版本  <br>
  2013.8.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
- 2013.8.17 version 0.18.2-beta speed up <a href="https://github.com/alibaba/mdrill/wiki/018_2">see detail</a>  (推荐版本,<a href="http://yunpan.cn/QXn4tRAzx8NIL">下载</a>) <br>
+ 2013.8.17 version 0.18.2-beta speed up <a href="https://github.com/alibaba/mdrill/wiki/018_2">see detail</a>  (推荐版本,<a href="http://yunpan.cn/QXn4tRAzx8NIL" target="_blank">下载</a>) <br>
 
  
  <h1>版本源码路径</h1>
