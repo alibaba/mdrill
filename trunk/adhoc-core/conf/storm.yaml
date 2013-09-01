@@ -105,7 +105,7 @@
  #----mdrill中启动的solr使用的初始端口号-----
  higo.solr.ports.begin: 51110
  #----mdrill分区方式，目前支持default,day,month,single，default是将一个月分成3个区,single意味着没有分区-----
- higo.partion.type: "default"
+ higo.partion.type: "month"
  #----mdrill个别表的分区设定，这里为rpt_seller_all_m表----
  higo.partion.type.rpt_seller_all_m: "month"
  higo.partion.type.r_rpt_cps_luna_item: "default"

@@ -140,11 +140,11 @@ public class ZipUtils {
         while (emu.hasMoreElements()) {
             entry = (ZipEntry) emu.nextElement();
             if (entry.isDirectory()) {
-            	fs2.mkdirs(new Path(destDir + entry.getName()));
+            	fs2.mkdirs(new Path(destDir , entry.getName()));
                 continue;
             }
             bis = new BufferedInputStream(zipFile.getInputStream(entry));
-            file = new Path(destDir + entry.getName());
+            file = new Path(destDir , entry.getName());
             parentFile = file.getParent();
             if (parentFile != null && (!fs2.exists(parentFile))) {
             	fs2.mkdirs(parentFile);
