@@ -58,7 +58,7 @@ public class TableList {
 		    		
 		    		for(Entry<String, ShardCount> e:info.daycount.entrySet())
 		    		{
-		    			Long sc=dayCount.get(e.getKey());
+		    			Long sc=dayCount.get(e.getKey()+"@"+info.replicationindex);
 		    			long cnt=e.getValue().cnt;
 		    			if(sc==null)
 		    			{
@@ -68,7 +68,7 @@ public class TableList {
 		    			dayCount.put(e.getKey()+"@"+info.replicationindex, sc);
 		    			
 		    			
-		    			Long amt=dayAmt.get(e.getKey());
+		    			Long amt=dayAmt.get(e.getKey()+"@"+info.replicationindex);
 		    			if(amt==null)
 		    			{
 		    				amt=0l;
