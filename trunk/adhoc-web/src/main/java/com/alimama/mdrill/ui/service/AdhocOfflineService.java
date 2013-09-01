@@ -30,6 +30,7 @@ import com.alimama.mdrill.adhoc.OfflineDownload;
 import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetPartions;
 import com.alimama.mdrill.partion.GetShards;
+import com.alimama.mdrill.partion.GetShards.ShardsList;
 import com.alimama.mdrill.partion.GetPartions.*;
 import com.alimama.mdrill.ui.service.AdhocWebServiceParams.HigoAdhocJoinParams;
 import com.alimama.mdrill.ui.service.MdrillService;
@@ -171,11 +172,10 @@ public class AdhocOfflineService {
 	
 	
 		TablePartion part = GetPartions.partion(projectName);
-		String[] cores = GetShards.get(part.name, false, 10000);
-		String[] ms = GetShards.get(part.name, true, 10000);
+		ShardsList[] cores = GetShards.get(part.name, false);
+		ShardsList[] ms = GetShards.get(part.name, true);
 		String[] partionsAll = AdhocHivePartions.get(queryStr, part.parttype);
-		GetPartions.Shards shard = GetPartions.getshard(part, partionsAll,
-				cores, ms, 10000, 0);
+		GetPartions.Shards shard = GetPartions.getshard(part, partionsAll,cores, ms);
 		
 		
 		

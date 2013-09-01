@@ -46,7 +46,7 @@ public class SolrInfo implements Serializable{
 
     public String memInfo=MemInfo.getInfo(1024*1024);
     public Boolean isMergeServer=false;
-    public Boolean isRealTime=false;
+//    public Boolean isRealTime=false;
     
     public String processId=pid();
    
@@ -58,10 +58,17 @@ public class SolrInfo implements Serializable{
      
           return processID;
     }
+    
+    public  int replication;
+    public  int replicationindex;
+    public int taskIndex;
 
-    public SolrInfo(boolean isRealTime, String localpath, String hdfsPath,
+    public SolrInfo(int replication,int replicationindex,int taskIndex,boolean isRealTime, String localpath, String hdfsPath,
             String hdfsfolder, Integer port, ShardsState stat,HashMap<String,ShardCount> count,HashMap<String,ShardCount> daycount,Long starttimes,Long solrhbTimes,Boolean isMergeServer) throws UnknownHostException {
 	super();
+	this.taskIndex=taskIndex;
+	this.replication=replication;
+	this.replicationindex=replicationindex;
 	this.localip = java.net.InetAddress.getLocalHost().getHostAddress();;
 	this.localpath = localpath;
 	this.hdfsPath = hdfsPath;
@@ -77,7 +84,7 @@ public class SolrInfo implements Serializable{
 	this.solrhbTimes=solrhbTimes;
 	this.memInfo=MemInfo.getInfo(1024*1024);
 	this.isMergeServer=isMergeServer;
-	this.isRealTime=isRealTime;
+//	this.isRealTime=isRealTime;
     }
     
     @Override
@@ -86,9 +93,9 @@ public class SolrInfo implements Serializable{
 	String yyyymmmddd=fmt.format(new Date(times));
 	String yyyymmmdddstart=fmt.format(new Date(startTimes));
 	String yyyymmmdddhb=fmt.format(new Date(solrhbTimes));
-	if(this.isMergeServer||this.isRealTime)
+	if(this.isMergeServer)
 	{
-		return this.isMergeServer+" "+this.isRealTime+" ["+this.hostname +"][" + localip + ":"+port+ "]["+this.stat+"] " +" ["+memInfo+"] " +" ["+yyyymmmdddhb+ "][" + yyyymmmddd + "][" + yyyymmmdddstart + "]  "+this.workport  +"<hr>";
+		return this.isMergeServer+" "+this.replicationindex+"@"+this.replication+" ["+this.hostname +"][" + localip + ":"+port+ "]["+this.stat+"] " +" ["+memInfo+"] " +" ["+yyyymmmdddhb+ "][" + yyyymmmddd + "][" + yyyymmmdddstart + "]  "+this.workport  +"<hr>";
 	}
 	
 	
@@ -106,7 +113,7 @@ public class SolrInfo implements Serializable{
 	
 	
 	
-	return this.isMergeServer+" "+this.isRealTime+" ["+this.hostname +"][" + localip + ":"+port+ "]["+this.stat+"] " + hdfsfolder+" ["+memInfo+"] " +" ["+yyyymmmdddhb+ "][" + yyyymmmddd + "][" + yyyymmmdddstart + "]  "+this.workport +recorecountStr +daycountStr+"<br> [" + localpath+"]<br>["+this.hdfsPath+"]<hr>";
+	return this.isMergeServer+" "+this.replicationindex+"@"+this.replication+" ["+this.hostname +"][" + localip + ":"+port+ "]["+this.stat+"] " + hdfsfolder+" ["+memInfo+"] " +" ["+yyyymmmdddhb+ "][" + yyyymmmddd + "][" + yyyymmmdddstart + "]  "+this.workport +recorecountStr +daycountStr+"<br> [" + localpath+"]<br>["+this.hdfsPath+"]<hr>";
 	
     }
 

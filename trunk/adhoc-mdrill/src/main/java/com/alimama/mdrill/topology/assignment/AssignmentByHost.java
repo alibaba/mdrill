@@ -30,15 +30,22 @@ public class AssignmentByHost {
 		HostFreePorts hostFreePorts=new HostFreePorts(params);
 		hostFreePorts.parse(freeResource);
 		Map<Integer, NodePort> rtn = new HashMap<Integer, NodePort>();
-		rtn.putAll(assignment( hostFreePorts.shard,freeResource.shard,jobids.shardTask, this.index2host.shardfixdMap));
-		rtn.putAll(assignment( hostFreePorts.ms,freeResource.ms,jobids.msTask, this.index2host.mergerMap));
-		rtn.putAll(assignment( hostFreePorts.realtime,freeResource.realtime,jobids.realtimeTask, this.index2host.realtimeMap));
+		for(int i=0;i<params.replication;i++)
+		{
+		rtn.putAll(assignment(i, hostFreePorts.shard,freeResource.shard,jobids.shardTask.get(i), this.index2host.shardfixdMap.get(i)));
+		}
+		for(int i=0;i<params.replication;i++)
+		{
+		rtn.putAll(assignment( i,hostFreePorts.realtime,freeResource.realtime,jobids.realtimeTask.get(i), this.index2host.realtimeMap.get(i)));
+		}
+
+		rtn.putAll(assignment(0, hostFreePorts.ms,freeResource.ms,jobids.msTask, this.index2host.mergerMap));
 
 		return rtn;
 	}
 	
 	
-	private Map<Integer, NodePort> assignment(HostSlots[] hostFreeResource,HashSet<NodePort> freeResource,HashSet<Integer> jobids,HashMap<Integer,String> fixassgin)
+	private Map<Integer, NodePort> assignment(int index,HostSlots[] hostFreeResource,HashSet<NodePort> freeResource,HashSet<Integer> jobids,HashMap<Integer,String> fixassgin)
 	{
 		Map<Integer, NodePort> rtn = new HashMap<Integer, NodePort>();
 		if(jobids.size()<=0)
@@ -69,7 +76,7 @@ public class AssignmentByHost {
 		{
 			for(Integer tid:jobids)
 			{
-				Integer tindex=this.index2host.taskId2Index.get(tid);
+				Integer tindex=this.index2host.taskId2Index.get(index).get(tid);
 				if(tindex==null||!fixassgin.containsKey(tindex))
 				{
 					continue;
@@ -108,15 +115,15 @@ public class AssignmentByHost {
 			if(hslist.size()>0)
 			{
 				for (Integer tid : jobids) {
-					Integer tindex=this.index2host.taskId2Index.get(tid);
+					Integer tindex=this.index2host.taskId2Index.get(index).get(tid);
 	
 					if(tindex!=null&&fixassgin.containsKey(tindex))
 					{
 						continue;
 					}
 					
-					Integer index = tid % hslist.size();
-					HostSlots hostslot = hslist.get(index);
+					Integer index2 = tid % hslist.size();
+					HostSlots hostslot = hslist.get(index2);
 					List<NodePort> list = hostslot.ports;
 					if (hostslot.index < list.size()) {
 						NodePort np = list.get(hostslot.index);

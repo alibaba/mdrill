@@ -9,9 +9,13 @@ public class UniqConfig {
 		return maxfieldvaluemem;
 	}
 		
+	public static int maxHbTablesParal()
+	{
+		return 2;
+	}
 	public static int getMergerRequestThreads()
 	{
-		return 15;
+		return 25;
 	}
 	public static int getMergerRequestMaxDepth()
 	{

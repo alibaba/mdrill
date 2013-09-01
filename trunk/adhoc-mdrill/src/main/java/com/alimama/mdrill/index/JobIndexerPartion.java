@@ -87,7 +87,7 @@ public class JobIndexerPartion extends Configured implements Tool {
 			if (!partionvertify.equals(parse.readFirstLineStr(otherveritify))) {
 				int ret = 0;
 				if (days.size() > 0) {
-					ret = this.subRun(days, tmpindexOtherPath.toString(),args[0],args[1]);
+					ret = this.subRun(days, tmpindexOtherPath.toString(),args[0],args[1],Integer.parseInt(args[2]));
 					parse.writeStr(new Path(tmpindexOtherPath, "vertify"), partionvertify);
 					copy.add(partion);
 				}
@@ -124,9 +124,9 @@ public class JobIndexerPartion extends Configured implements Tool {
 
 	
 
-	private int subRun(HashSet<String> inputs, String output,String split,String submatch) throws Exception {
+	private int subRun(HashSet<String> inputs, String output,String split,String submatch,Integer parallel) throws Exception {
 		Path smallindex = this.parse.smallIndex(output);
-		return MakeIndex.make(fs, solrHome, getConf(), this.filetype, this.inputBase, inputs, submatch, output, smallindex, shards, split,true,"",null);
+		return MakeIndex.make(fs, solrHome, getConf(), this.filetype, this.inputBase, inputs, submatch, output, smallindex, shards, split,true,"",null,parallel);
 		
 	}
 }

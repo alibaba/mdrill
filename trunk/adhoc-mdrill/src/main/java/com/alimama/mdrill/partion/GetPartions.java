@@ -1,8 +1,11 @@
 package com.alimama.mdrill.partion;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import com.alimama.mdrill.partion.GetShards.ShardsList;
 
 
 import backtype.storm.utils.Utils;
@@ -44,34 +47,24 @@ public class GetPartions {
     	String projectName=pname;
     	return new TablePartion(projectName,parttype);
     }
-    public static Shards getshard(TablePartion pname,String[] partionsAll,String[] cores,String[] tmp,int len,int pos) throws Exception
+    public static Shards getshard(TablePartion pname,String[] partions,ShardsList[] cores,ShardsList[] tmp) throws Exception
     {
 	String projectName=pname.name;
-	ArrayList<String> partions=new ArrayList<String>();
-	int start=pos*len;
-	for(int i=start;i<(start+len)&&i<partionsAll.length;i++)
-	{
-		partions.add(partionsAll[i]);
-	}
 	
-	if(partions.size()<=0)
-	{
-		return null;
-	}
 	
 	
 	Shards rtn=new Shards();
         	
         Random rdm = new Random();
-        String[] ms =null;
+        ShardsList[] ms =null;
         if(tmp!=null&&tmp.length>0)
         {
             int mslen=Math.max(tmp.length, 10);
-            ms=new String[mslen];
+            ms=new ShardsList[mslen];
             for(int i=0;i<mslen;i++)
             {
         	Integer index=i%tmp.length;
-        	ms[i]=tmp[index];
+        		ms[i]=tmp[index];
             }
         }
         
@@ -82,10 +75,10 @@ public class GetPartions {
         if (cores != null && cores.length > 0) {
             int count = 0;
             for (int i=0;i< cores.length;i++) {
-            	String c=cores[i];
+            	ShardsList c=cores[i];
         	for(String part:partions)
         	{
-        	    rtn.urlShards += c + "/solr/"+projectName+"@"+part+"@"+i+",";
+        	    rtn.urlShards += c.randomGet() + "/solr/"+projectName+"@"+part+"@"+i+",";
         	}
         	count++;
             }
@@ -95,16 +88,16 @@ public class GetPartions {
             int count = 0;
             int r = rdm.nextInt(ms.length);
             int r2 = rdm.nextInt(cores.length);
-            for (String c : ms) {
+            for (ShardsList c : ms) {
         	if (count == r2)
         	{
-        	    rtn.randomShard = c + "/solr/"+projectName;
+        	    rtn.randomShard = c.randomGet() + "/solr/"+projectName;
         	}
         	if (count == r)
         	{
-        	    rtn.urlMain = "http://" + c + "/solr/"+projectName;
+        	    rtn.urlMain = "http://" + c.randomGet() + "/solr/"+projectName;
         	}
-    	    rtn.urlMSs += c + "/solr/"+projectName+",";
+    	    rtn.urlMSs += c.randomGet() + "/solr/"+projectName+",";
 
         	count++;
             }

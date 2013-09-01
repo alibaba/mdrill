@@ -12,7 +12,6 @@ public interface SolrStartInterface {
     public void start() throws Exception ;
 
     
-    public void run() ;
     
     public void stop() throws Exception ;
     

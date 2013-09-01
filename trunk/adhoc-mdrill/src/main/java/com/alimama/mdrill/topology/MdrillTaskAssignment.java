@@ -13,6 +13,7 @@ import com.alipay.bluewhale.core.cluster.StormClusterState;
 import com.alipay.bluewhale.core.custom.IAssignment;
 import com.alipay.bluewhale.core.daemon.NodePort;
 import com.alipay.bluewhale.core.daemon.supervisor.SupervisorInfo;
+import com.alipay.bluewhale.core.utils.StormUtils;
 
 public class MdrillTaskAssignment implements IAssignment {
 	private static Logger LOG = Logger.getLogger(MdrillTaskAssignment.class);
@@ -23,13 +24,15 @@ public class MdrillTaskAssignment implements IAssignment {
 	public static String SHARD_NAME = "higo.shard.componname";
 	public static String REALTIME_NAME = "higo.realtime.componname";
 	public static String HIGO_FIX_SHARDS = "higo.fixed.shards.assigns";
-	
+	public static String SHARD_REPLICATION = "higo.assign.shards.replication";
+
 
 	public String topologyId;
 	public StormClusterState zkCluster;
 	public String ms_name;
 	public String shard_name;
 	public String realtime_name;
+	public Integer replication=1;
 
 	public SupervisorPortType porttype=new SupervisorPortType();
 	
@@ -47,7 +50,8 @@ public class MdrillTaskAssignment implements IAssignment {
 		this.ms_name = String.valueOf(topology_conf.get(MS_NAME));
 		this.shard_name = String.valueOf(topology_conf.get(SHARD_NAME));
 		this.realtime_name = String.valueOf(topology_conf.get(REALTIME_NAME));
-		
+		this.replication = StormUtils.parseInt(topology_conf.containsKey(SHARD_REPLICATION)?topology_conf.get(SHARD_REPLICATION):1);
+
 		this.supInfos = supInfos;
 		this.topologyId = topologyId;
 		this.zkCluster = zkCluster;

@@ -367,7 +367,7 @@ public class HigoJoinUtils {
 				
 				String rtnpath=workPath.getAbsolutePath();
 				Path storepath=new Path(rtnpath,"store");
-				boolean iscopy=IndexUtils.copyToLocal(fs, lfs, new Path(hdfsstorepath),storepath,new Path(tmp.getAbsolutePath()));
+				boolean iscopy=IndexUtils.copyToLocal(fs, lfs, new Path(hdfsstorepath),storepath,new Path(tmp.getAbsolutePath()),true);
 				
 				Path indexlinks=new Path(rtnpath,"indexLinks");
 				if(iscopy)

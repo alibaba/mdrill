@@ -19,10 +19,12 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.mdrill.FacetComponent;
@@ -45,10 +47,6 @@ import java.util.concurrent.*;
 
 public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 {
-  static final String INIT_COMPONENTS = "components";
-  static final String INIT_FIRST_COMPONENTS = "first-components";
-  static final String INIT_LAST_COMPONENTS = "last-components";
-
   protected static Logger log = LoggerFactory.getLogger(SearchHandler.class);
 
   protected List<SearchComponent> components = null;
@@ -61,7 +59,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     return names;
   }
 
-  @SuppressWarnings("unchecked")
   public void inform(SolrCore core)
   {
 	  if(components!=null)
@@ -96,105 +93,93 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     for( SearchComponent c : components ) {
         c.prepare(rb);
       }
+    SolrParams paramsr=req.getParams();
+    String shards = paramsr.get(ShardParams.SHARDS);
 
-    if (rb.shards == null) {
+    if (shards == null) {
 	 for( SearchComponent c : components ) {
          c.process(rb);
        }
-    } else {
-      //merger server的逻辑
-    	int depth=req.getParams().getInt("__higo_ms_depth__", 0);
-      HttpCommComponent comm = new HttpCommComponent(depth);
-
-      if (rb.outgoing == null) {
-        rb.outgoing = new LinkedList<ShardRequest>();
-      }
-      rb.finished = new ArrayList<ShardRequest>();
-
-      int nextStage = 0;
-      do {
-        rb.stage = nextStage;
-        nextStage = ResponseBuilder.STAGE_DONE;
-
-        // call all components
-        for( SearchComponent c : components ) {
-          // the next stage is the minimum of what all components report
-          nextStage = Math.min(nextStage, c.distributedProcess(rb));
-        }
-
-
-        // check the outgoing queue and send requests
-        while (rb.outgoing.size() > 0) {
-
-          // submit all current request tasks at once
-          while (rb.outgoing.size() > 0) {
-            ShardRequest sreq = rb.outgoing.remove(0);
-            sreq.actualShards = sreq.shards;
-            if (sreq.actualShards==ShardRequest.ALL_SHARDS) {
-              sreq.actualShards = rb.shards;
-            }
-            sreq.responses = new ArrayList<ShardResponse>();
-
-            for (int i=0;i<sreq.actualShards.length;i++) {
-            	String shard=sreq.actualShards[i];
-                ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-                params.remove(ShardParams.SHARDS);      // not a top-level request
-          		params.remove("indent");
-          		params.remove(CommonParams.HEADER_ECHO_PARAMS);
-          		params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
-          		params.set("higolockCount", rb.lockCnt);
-                if(rb.issubshard)
-                {
-               	  params.set(ShardParams.SHARDS,rb.subShards[i]);
-            	  params.set(FacetParams.IS_SUB_SHARDS, true);
-            	  params.set(FacetParams.FACET_CROSS_OFFSET, 0);
-            	  int maxlimit=MdrillGroupBy.MAX_CROSS_ROWS;
-            	  params.set(FacetParams.FACET_CROSS_LIMIT, maxlimit);
-                }
-              String shardHandler = req.getParams().get(ShardParams.SHARDS_QT);
-              if (shardHandler == null) {
-                params.remove(CommonParams.QT);
-              } else {
-                params.set(CommonParams.QT, shardHandler);
-              }
-              comm.submit(sreq, shard, params,depth);
-            }
-        
-          }
-
-
-          while (rb.outgoing.size() == 0) {
-            ShardResponse srsp = comm.takeCompletedOrError();
-            if (srsp == null) break;  // no more requests to wait for
-
-            if (srsp.getException() != null) {
-              comm.cancelAll();
-              if (srsp.getException() instanceof SolrException) {
-                throw (SolrException)srsp.getException();
-              } else {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
-              }
-            }
-
-            rb.finished.add(srsp.getShardRequest());
-
-            // let the components see the responses to the request
-            for(SearchComponent c : components) {
-              c.handleResponses(rb, srsp.getShardRequest());
-            }
-          }
-        }
-
-        for(SearchComponent c : components) {
-            c.finishStage(rb);
-         }
-
-        // we are done when the next stage is MAX_VALUE
-      } while (nextStage != Integer.MAX_VALUE);
+	 	return ;
     }
+    
+    String mergeServers=paramsr.get(FacetParams.MERGER_SERVERS);
+ 	if (shards != null) {
+ 		List<String> lst = StrUtils.splitSmart(shards, ",", true);
+ 		List<String> mslist = lst;
+ 		if (mergeServers != null) {
+ 			mslist = StrUtils.splitSmart(mergeServers, ",", true);
+ 		}
+ 		MergerSchedule.schedule(paramsr, lst, mslist, rb);
+ 	}
+    
+    
+
+    //merger server的逻辑
+    int depth=req.getParams().getInt("__higo_ms_depth__", 0);
+    HttpCommComponent comm = new HttpCommComponent(depth);
+
+    ShardRequest sreq = new ShardRequest();
+    sreq.params = new ModifiableSolrParams(rb.req.getParams());
+
+    for (SearchComponent c : components) {
+		c.modifyRequest(rb, c, sreq);
+		c.distributedProcess(rb);
+    }
+
+    sreq.actualShards = rb.shards;
+    sreq.responses = new ArrayList<ShardResponse>();
+
+    for (int i=0;i<sreq.actualShards.length;i++) {
+    	String shard=sreq.actualShards[i];
+        ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
+        params.remove(ShardParams.SHARDS);      // not a top-level request
+  		params.remove("indent");
+  		params.remove(CommonParams.HEADER_ECHO_PARAMS);
+  		params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
+        if(rb.issubshard)
+        {
+       	  params.set(ShardParams.SHARDS,rb.subShards[i]);
+    	  params.set(FacetParams.IS_SUB_SHARDS, true);
+    	  params.set(FacetParams.FACET_CROSS_OFFSET, 0);
+    	  int maxlimit=MdrillGroupBy.MAX_CROSS_ROWS;
+    	  params.set(FacetParams.FACET_CROSS_LIMIT, maxlimit);
+        }
+        params.remove(CommonParams.QT);
+        comm.submit(sreq, shard, params,depth);
+    }
+  
+
+		while (true) {
+			ShardResponse srsp = comm.takeCompletedOrError();
+			if (srsp == null)
+			{
+				break; // no more requests to wait for
+			}
+			if (srsp.getException() != null) {
+				comm.cancelAll();
+				if (srsp.getException() instanceof SolrException) {
+					throw (SolrException) srsp.getException();
+				} else {
+					throw new SolrException(
+							SolrException.ErrorCode.SERVER_ERROR,
+							srsp.getException());
+				}
+			}
+
+			for (SearchComponent c : components) {
+				c.handleResponses(rb, srsp.getShardRequest());
+			}
+		}
+	        
+
+      for(SearchComponent c : components) {
+          c.finishStage(rb);
+       }
+
+  
   }
 
-  //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
   public String getDescription() {
@@ -239,7 +224,8 @@ class HttpCommComponent {
   }
 
   public static class SimpleSolrResponse extends SolrResponse {
-    long elapsedTime;
+	private static final long serialVersionUID = 1L;
+	long elapsedTime;
     NamedList<Object> nl;
     
     @Override
@@ -284,9 +270,7 @@ class HttpCommComponent {
 	}
 
   void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params,final int depth) {
-	  
-//	  ____higo_ms_depth__
-	  
+	    
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       public ShardResponse call() throws Exception {
         ShardResponse srsp = new ShardResponse();
@@ -334,32 +318,7 @@ class HttpCommComponent {
     pending.add( completionService.submit(task) );
   }
 
-  /** returns a ShardResponse of the last response correlated with a ShardRequest */
-  ShardResponse take() {
-    while (pending.size() > 0) {
-      try {
-        Future<ShardResponse> future = completionService.take();
-        pending.remove(future);
-        ShardResponse rsp = future.get();
-        rsp.getShardRequest().responses.add(rsp);
-        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
-          return rsp;
-        }
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception",e);
-      }
-    }
-    return null;
-  }
 
-
-  /** returns a ShardResponse of the last response correlated with a ShardRequest,
-   * or immediately returns a ShardResponse if there was an error detected
-   */
   ShardResponse takeCompletedOrError() {
     while (pending.size() > 0) {
       try {

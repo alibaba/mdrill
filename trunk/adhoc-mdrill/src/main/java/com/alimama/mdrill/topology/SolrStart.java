@@ -1,31 +1,41 @@
 package com.alimama.mdrill.topology;
 
-import java.io.IOException;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import backtype.storm.task.OutputCollector;
 
+import com.alimama.mdrill.topology.utils.SolrStartJettyExcetionCollection;
+import com.alimama.mdrill.utils.UniqConfig;
 import com.alipay.bluewhale.core.task.StopCheck;
 import com.alipay.bluewhale.core.task.heartbeat.TaskHeartbeatRunable;
 
-public class SolrStart implements Runnable, StopCheck, SolrStartInterface {
+public class SolrStart implements StopCheck, SolrStartInterface {
 	private static Logger LOG = Logger.getLogger(SolrStart.class);
 	private SolrStartJetty jetty;
 	private SolrStartTable[] tables;
-
-	public SolrStart(OutputCollector collector, Configuration conf,
+	private BoltParams params;
+	
+	
+//	public ExecutorService EXECUTE = Executors.newFixedThreadPool(UniqConfig.maxHbTablesParal());
+	
+	public SolrStart(BoltParams params,OutputCollector collector, Configuration conf,
 			String solrhomeBase, String[] tableNames, String diskList,
 			Integer portbase, int taskIndex, String topologyName,
 			Integer taskid, Integer partions) throws Exception {
-		jetty = new SolrStartJetty(collector, conf, solrhomeBase + "/"
+		this.params=params;
+		jetty = new SolrStartJetty(this.params,collector, conf, solrhomeBase + "/"
 				+ tableNames[0], diskList, portbase, taskIndex, topologyName,
 				taskid, partions);
 		tables = new SolrStartTable[tableNames.length];
 		for (int i = 0; i < tableNames.length; i++) {
 			LOG.info("create table " + tableNames[i]);
-			tables[i] = new SolrStartTable(collector, conf, solrhomeBase + "/"
+			tables[i] = new SolrStartTable(this.params,collector, conf, solrhomeBase + "/"
 					+ tableNames[i], diskList, taskIndex, tableNames[i],
 					taskid, jetty);
 		}
@@ -88,12 +98,23 @@ public class SolrStart implements Runnable, StopCheck, SolrStartInterface {
 		return false;
 	}
 
+//	SolrStartJettyExcetionCollection exception=new SolrStartJettyExcetionCollection();
 	@Override
 	public void heartbeat() throws Exception {
-//		MemInfo.gc();
-		jetty.heartbeat();
-		for (SolrStartTable table : tables) {
+//		this.exception.checkException();
+		this.jetty.heartbeat();
+		for (final SolrStartTable table : tables) {
 			table.heartbeat();
+//
+//			EXECUTE.submit(new Runnable() {
+//				@Override
+//				public void run() {
+//					try {
+//					} catch (Throwable e) {
+//						SolrStart.this.exception.setException(e);
+//					}
+//				}
+//			});
 		}
 	}
 
@@ -118,12 +139,6 @@ public class SolrStart implements Runnable, StopCheck, SolrStartInterface {
 		return false;
 	}
 
-	@Override
-	public void run() {
-		jetty.run();
-		for (SolrStartTable table : tables) {
-			table.run();
-		}
-	}
+	
 
 }

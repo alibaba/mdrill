@@ -102,10 +102,12 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	public void setMergeServer(boolean isMergeServer) {
 		this.isMergeServer = isMergeServer;
 	}
+	BoltParams params;
 
-	public SolrStartTable(OutputCollector collector, Configuration conf,
+	public SolrStartTable(	BoltParams params,OutputCollector collector, Configuration conf,
 			String solrhome, String diskList, int taskIndex, String tblName,
 			Integer taskid, SolrStartJetty solrservice) throws Exception {
+		this.params=params;
 		this.collector = collector;
 		this.conf = conf;
 		this.fs = FileSystem.get(this.conf);
@@ -194,12 +196,12 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	private void syncPartion(String key, Path hdfspartion) throws IOException {
 		Path localPartionWork = new Path(localIndexPath, key);
 		String partionDisk = IndexUtils.getPath(this.diskDirList, taskIndex,key.hashCode(), this.lfs);
-		Path localPartionStorePath = new Path(new Path(partionDisk, "higo"),tablename + "/" + taskid + "_" + this.taskIndex + "/" + key);
+		Path localPartionStorePath = new Path(new Path(partionDisk, "higo"),tablename + "/" + this.params.compname + "_" + this.taskIndex + "/" + key);
 
 		boolean iscopy = false;
 		if (!this.isMergeServer) {
 			Path hdfsPartionShardPath = new Path(hdfspartion,IndexUtils.getHdfsForder(taskIndex));
-			iscopy=IndexUtils.copyToLocal(fs, lfs, hdfsPartionShardPath,localPartionStorePath,new Path(partionDisk, "higotmp/"+tablename + "/" + taskid + "_" + this.taskIndex ));
+			iscopy=IndexUtils.copyToLocal(fs, lfs, hdfsPartionShardPath,localPartionStorePath,new Path(partionDisk, "higotmp/"+tablename + "/" + this.params.compname + "_" + this.taskIndex ),true);
 			if(!iscopy)
 			{
 				copy2indexFailTimes.incrementAndGet();
@@ -494,7 +496,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			Long hbtime = statcollect.getLastTime();
 			
 			HashMap<String, ShardCount> daystat=this.partstat.getExtaCount();
-			SolrInfo info = new SolrInfo(this.isRealTime,localSolrPath.toString(),
+			SolrInfo info = new SolrInfo(this.params.replication,this.params.replicationindex,this.taskIndex,this.isRealTime,localSolrPath.toString(),
 					hdfsIndexpath.toString(), hdfsforder, bindport, 
 					statcollect.getStat(), this.partstat.getPartioncount(),daystat, statcollect.getSetupTime(),
 					hbtime, this.isMergeServer);

@@ -27,7 +27,18 @@ public class AssignmentByRandom {
 		return rtn;
 	}
 
-	
+	private Map<Integer, NodePort> randomAssign(HashSet<NodePort> resource,HashMap<Integer,HashSet<Integer>> jobids)
+	{
+		Map<Integer, NodePort> rtn = new HashMap<Integer, NodePort>();
+		for(Entry<Integer, HashSet<Integer>> e:jobids.entrySet())
+		{
+			rtn.putAll(randomAssign(resource, e.getValue()));
+
+		}
+		return rtn;
+
+	}
+
 	
 	private Map<Integer, NodePort> randomAssign(HashSet<NodePort> resource,HashSet<Integer> jobids)
 	{

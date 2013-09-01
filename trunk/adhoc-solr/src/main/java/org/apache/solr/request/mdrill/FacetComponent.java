@@ -90,8 +90,6 @@ public class  FacetComponent extends SearchComponent
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.doFacets) return;
 
-    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
-        sreq.purpose |= ShardRequest.PURPOSE_GET_FACETS;
 
         FacetInfo fi = rb._facetInfo;
         if (fi == null) {
@@ -108,9 +106,7 @@ public class  FacetComponent extends SearchComponent
         int maxlimit=MdrillGroupBy.MAX_CROSS_ROWS;
         sreq.params.set(FacetParams.FACET_CROSS_OFFSET,  0);
     	sreq.params.set(FacetParams.FACET_CROSS_LIMIT,  maxlimit);
-    } else {
-      sreq.params.set(FacetParams.FACET, "false");
-    }
+  
   }
   
   
@@ -120,11 +116,8 @@ public class  FacetComponent extends SearchComponent
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (!rb.doFacets) return;
 
-    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FACETS)!=0) {
-      countFacets(rb, sreq);
-    } else if ((sreq.purpose & ShardRequest.PURPOSE_REFINE_FACETS)!=0) {
-      refineFacets(rb, sreq);
-    }
+    countFacets(rb, sreq);
+
   }
 
 
@@ -139,20 +132,7 @@ public class  FacetComponent extends SearchComponent
 
       if(facet_counts!=null)
       {
-      // handle facet queries
-	      NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
-	      if (facet_queries != null) {
-	        for (int i=0; i<facet_queries.size(); i++) {
-	          String returnedKey = facet_queries.getName(i);
-	          long count = ((Number)facet_queries.getVal(i)).longValue();
-	          QueryFacet qf = fi.queryFacets.get(returnedKey);
-	          qf.count += count;
-	        }
-	      }
-	
-	      // step through each facet.field, adding results from this shard
 	      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
-	    
 	      if (facet_fields != null) {
 	        for (DistribFieldFacet dff : fi.facets.values()) {
 	          dff.add((NamedList)facet_fields.get(dff.getKey()),dff);
@@ -169,46 +149,19 @@ public class  FacetComponent extends SearchComponent
   }
 
 
-  private void refineFacets(ResponseBuilder rb, ShardRequest sreq) {
-		long t1=System.currentTimeMillis();
-
-    FacetInfo fi = rb._facetInfo;
-
-    long addtime=0;
-    for (ShardResponse srsp: sreq.responses) {
-      // int shardNum = rb.getShardNum(srsp.shard);
-      NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
-      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
-
-      if (facet_fields == null) continue; // this can happen when there's an exception      
-
-      for (int i=0; i<facet_fields.size(); i++) {
-        String key = facet_fields.getName(i);
-        DistribFieldFacet dff = fi.facets.get(key);
-        if (dff == null) continue;
-
-        NamedList shardCounts = (NamedList)facet_fields.getVal(i);
-        addtime+=dff.add(shardCounts, dff);
-      }
-    }
-    
-    long t2=System.currentTimeMillis();
-	LOG.info("##refineFacets## time taken "+(t2-t1)+",responses.size="+sreq.responses.size()+",addtime="+addtime);
-
-  }
-
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (!rb.doFacets || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
+	    if (!rb.doFacets) return;
+
 	long t1=System.currentTimeMillis();
 
     FacetInfo fi = rb._facetInfo;
     NamedList facet_counts = new SimpleOrderedMap();
     NamedList facet_queries = new SimpleOrderedMap();
     facet_counts.add("facet_queries",facet_queries);
-    for (QueryFacet qf : fi.queryFacets.values()) {
-      facet_queries.add(qf.getKey(), qf.count);
-    }
+//    for (QueryFacet qf : fi.queryFacets.values()) {
+//      facet_queries.add(qf.getKey(), qf.count);
+//    }
 
     NamedList facet_fields = new SimpleOrderedMap();
     facet_counts.add("facet_fields", facet_fields);
@@ -239,7 +192,8 @@ public class  FacetComponent extends SearchComponent
 
     rb._facetInfo = null;  // could be big, so release asap
     
-    
+//    rb.rsp.add( "facet_counts", f.getFacetCounts() );
+
     long t2=System.currentTimeMillis();
 	LOG.info("##finishStage## time taken "+(t2-t1));
   }

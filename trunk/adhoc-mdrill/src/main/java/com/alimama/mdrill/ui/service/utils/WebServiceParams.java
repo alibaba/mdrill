@@ -38,6 +38,7 @@ import com.alimama.mdrill.json.JSONArray;
 import com.alimama.mdrill.json.JSONException;
 import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetPartions;
+import com.alimama.mdrill.ui.service.MdrillService;
 import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.HadoopBaseUtils;
 import com.alimama.mdrill.utils.IndexUtils;
@@ -379,7 +380,7 @@ public class WebServiceParams {
 	{
 			Date now = new Date();
 			String upFile = "grep_"+now.getTime();
-			String upFolder = "/group/taobao/external/p4p/p4padhoc/tmp/selectin/safedir/"+upFile;
+			String upFolder = MdrillService.getBasePath()+"/tmp/selectin/safedir/"+upFile;
 			String fqStr = "{!inhdfs f="+key+"}"+upFolder;
 		
 			try{
@@ -409,7 +410,7 @@ public class WebServiceParams {
 	{
 			Date now = new Date();
 			String upFile = "grep_"+now.getTime();
-			String upFolder = "/group/taobao/external/p4p/p4padhoc/tmp/selectin/safedir/"+upFile;
+			String upFolder = MdrillService.getBasePath()+"/tmp/selectin/safedir/"+upFile;
 			String fqStr = "inhdfs_udf("+key+",'"+upFolder+"')<>'-'";
 			
 			try{

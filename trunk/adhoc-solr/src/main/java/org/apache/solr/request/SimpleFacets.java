@@ -200,10 +200,10 @@ public class SimpleFacets {
 
     facetResponse = new SimpleOrderedMap();
     try {
-      facetResponse.add("facet_queries", getFacetQueryCounts());
+      facetResponse.add("facet_queries", new SimpleOrderedMap());//getFacetQueryCounts()
       facetResponse.add("facet_fields", getFacetFieldCounts());
-      facetResponse.add("facet_dates", getFacetDateCounts());
-      facetResponse.add("facet_ranges", getFacetRangeCounts());
+      facetResponse.add("facet_dates",  new SimpleOrderedMap());//getFacetDateCounts()
+      facetResponse.add("facet_ranges",new SimpleOrderedMap() );//getFacetRangeCounts()
 
     } catch (Throwable e) {
     	LOG.error("getFacetCounts",e);
@@ -300,26 +300,18 @@ public class SimpleFacets {
     NamedList res = new SimpleOrderedMap();
     String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
     if (null != facetFs) {
-        boolean iscross = params.getBool(FacetParams.FACET_CROSS,false);
-        
-        if(iscross)
-        {
-            boolean isdetail = params.getBool(FacetParams.FACET_CROSS_DETAIL,false);
-            if(isdetail)
-            {
-            	MdrillDetail crossObj=new MdrillDetail(searcher, params,this.req);
-	            res.add("solrCorssFields_s", crossObj.getBySchemaReader(facetFs,this.base));
-            }else{
 
-	        	MdrillGroupBy crossObj=new MdrillGroupBy(searcher, params,this.req);
-	            res.add("solrCorssFields_s", crossObj.getBySchemaReader(facetFs,this.base));
-            }
+        boolean isdetail = params.getBool(FacetParams.FACET_CROSS_DETAIL,false);
+        if(isdetail)
+        {
+        	MdrillDetail crossObj=new MdrillDetail(searcher, params,this.req);
+            res.add("solrCorssFields_s", crossObj.getBySchemaReader(facetFs,this.base));
         }else{
-	      for (String f : facetFs) {
-	    	  NamedList w=getTermCountsUniq(f,this.base,false,false);
-	    	res.add(key,w );
-	      }
+
+        	MdrillGroupBy crossObj=new MdrillGroupBy(searcher, params,this.req);
+            res.add("solrCorssFields_s", crossObj.getBySchemaReader(facetFs,this.base));
         }
+    
     }
     
     return res;

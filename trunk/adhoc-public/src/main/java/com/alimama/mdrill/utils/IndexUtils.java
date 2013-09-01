@@ -108,13 +108,17 @@ public class IndexUtils {
     	fs = FileSystem.get(conf);
 		lfs = FileSystem.getLocal(conf);
 		
-		IndexUtils.copyToLocal(fs, lfs, new Path(args[0]),new Path(args[1]),new Path(args[2]));
+		IndexUtils.copyToLocal(fs, lfs, new Path(args[0]),new Path(args[1]),new Path(args[2]),true);
 
 	}
     
+    public static boolean copyToLocal(FileSystem fs, FileSystem lfs, Path src,
+			Path target, Path tmpparent) throws IOException {
+    	return copyToLocal(fs, lfs, src, target, tmpparent,false);
+    }
     private static AtomicInteger tmpIndex=new AtomicInteger(0);
 	public static boolean copyToLocal(FileSystem fs, FileSystem lfs, Path src,
-			Path target, Path tmpparent) throws IOException {
+			Path target, Path tmpparent,boolean checkzip) throws IOException {
 		int index=tmpIndex.incrementAndGet();
 		if(index>=128)
 		{
@@ -126,7 +130,23 @@ public class IndexUtils {
 		LOG.info("higolog copyToLocal begin " + src.toString() + ","+ target.toString()+","+tmp.toString());
 		try {
 			truncate(lfs, tmp);
-			fs.copyToLocalFile(src, tmp);
+			boolean isziped=false;
+			if(checkzip&&fs.getFileStatus(src).isFile())
+			{
+				try{
+				ZipUtils.unZip(fs, src.toString(), lfs, tmp.toString());
+				isziped=true;
+				}catch(Throwable e)
+				{
+					LOG.error("higolog copyToLocal err " + src.toString() + ","+ target.toString()+","+tmp.toString(),e);
+
+					isziped=false;
+				}
+			}
+			if(!isziped)
+			{
+				fs.copyToLocalFile(src, tmp);
+			}
 			if (!lfs.exists(tmp)) {
 				LOG.info("higolog copyToLocal non exists");
 				return false;

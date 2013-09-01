@@ -65,7 +65,7 @@ public class TableList {
 		    				sc=0l;
 		    			}
 		    			sc+=cnt;
-		    			dayCount.put(e.getKey(), sc);
+		    			dayCount.put(e.getKey()+"@"+info.replicationindex, sc);
 		    			
 		    			
 		    			Long amt=dayAmt.get(e.getKey());
@@ -77,7 +77,7 @@ public class TableList {
 		    			{
 		    				amt+=1;
 		    			}
-		    			dayAmt.put(e.getKey(), amt);
+		    			dayAmt.put(e.getKey()+"@"+info.replicationindex, amt);
 
 		    		}
 		    	}
@@ -85,7 +85,7 @@ public class TableList {
 		    	StringBuffer buff=new StringBuffer();
 		    	buff.append("<tr style=\"background:#FFFFCC; font:bold\">");
 		    	buff.append("<td>"+info.isMergeServer+"</td>");
-		    	buff.append("<td>"+info.isRealTime+"</td>");
+		    	buff.append("<td>"+info.taskIndex+"@"+info.replicationindex+"@"+info.replication+"</td>");
 		    	buff.append("<td>"+info.hostname+"</td>");
 		    	buff.append("<td>"+info.localip + ":"+info.port+"</td>");
 		    	buff.append("<td>"+info.workport+"</td>");
@@ -107,23 +107,24 @@ public class TableList {
 		    	buff.append("<td colspan=10>"+"solr探测时间:"+yyyymmmdddhb+"&nbsp;&nbsp;&nbsp;&nbsp;"+"最后一次心跳时间:"+yyyymmmddd+"&nbsp;&nbsp;&nbsp;&nbsp;"+"启动时间:"+yyyymmmdddstart+"</td>");
 		    	buff.append("</tr>");
 		    	
-		    	if(info.recorecount.size()>0)
-		    	{
-		    		buff.append("<tr>");
-			    	buff.append("<td>分区心跳：</td>");
-			    	buff.append("<td colspan=9>"+info.recorecount.toString()+"</td>");
-			    	buff.append("</tr>");
-		    	}
-		    	if(info.daycount.size()>0)
-		    	{
-		    		buff.append("<tr>");
-			    	buff.append("<td>额外监控：</td>");
-			    	buff.append("<td colspan=9>"+info.daycount.toString()+"</td>");
-			    	buff.append("</tr>");
-		    	}
+
 		    	
-		    	if(!info.isMergeServer&&!info.isRealTime)
+		    	if(!info.isMergeServer)
 		    	{
+			    	if(info.recorecount.size()>0)
+			    	{
+			    		buff.append("<tr>");
+				    	buff.append("<td>分区心跳：</td>");
+				    	buff.append("<td colspan=9>"+info.recorecount.toString()+"</td>");
+				    	buff.append("</tr>");
+			    	}
+			    	if(info.daycount.size()>0)
+			    	{
+			    		buff.append("<tr>");
+				    	buff.append("<td>额外监控：</td>");
+				    	buff.append("<td colspan=9>"+info.daycount.toString()+"</td>");
+				    	buff.append("</tr>");
+			    	}
 		    		
 		    		buff.append("<tr>");
 			    	buff.append("<td>本地硬盘路径：</td>");
@@ -145,7 +146,7 @@ public class TableList {
     	StringBuffer buff=new StringBuffer();
     	buff.append("<tr>");
     	buff.append("<td>merger server</td>");
-    	buff.append("<td>实时数据</td>");
+    	buff.append("<td>replication</td>");
     	buff.append("<td>域名</td>");
     	buff.append("<td>solr地址</td>");
     	buff.append("<td>蓝鲸端口</td>");
@@ -167,7 +168,7 @@ public class TableList {
 		Collections.sort(tmp);
 
 		listrtntotal.addAll(tmp);
-		listrtntotal.add("最近7天的记录数："+"<br>");
+		listrtntotal.add("起始分区每天记录数："+"<br>");
 		tmp=new ArrayList<String>();
 		for(Entry<String,Long> e:dayCount.entrySet())
 		{
@@ -176,7 +177,7 @@ public class TableList {
 		Collections.sort(tmp);
 
 		listrtntotal.addAll(tmp);
-		listrtntotal.add("最近7天每天有效shard数："+"<br>");
+		listrtntotal.add("起始分区每天有效shard数："+"<br>");
 		tmp=new ArrayList<String>();
 		for(Entry<String,Long> e:dayAmt.entrySet())
 		{

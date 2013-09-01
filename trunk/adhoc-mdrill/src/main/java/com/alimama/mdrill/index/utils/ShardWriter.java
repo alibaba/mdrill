@@ -53,10 +53,15 @@ public class ShardWriter {
 	        new KeepOnlyLastCommitDeletionPolicy(),
 	        MaxFieldLength.UNLIMITED);
 	writer.setMergeFactor(256);
-	writer.setTermIndexInterval(16);
+	writer.setTermIndexInterval(128);
 	writer.setUseCompoundFile(false);
 
 
+    }
+    
+    public void setUseCompoundFile()
+    {
+    	writer.setUseCompoundFile(true);
     }
     
     public void addEmptyDoc() throws CorruptIndexException, IOException

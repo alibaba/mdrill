@@ -2,6 +2,7 @@ package com.alimama.mdrill.partion;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,36 +96,57 @@ public class GetShards {
     	return infolist;
 	}
 	
-    public static String[] get(String tableName,boolean isMs,int maxlen) throws Exception
+	public static class ShardsList{
+		public ArrayList<String> list=new ArrayList<String>();
+		public int random=(int) (Math.random()*1000);
+		
+		public String randomGet()
+		{
+			int index=random%list.size();
+			random++;
+			return list.get(index);
+		}
+	}
+	
+    public static ShardsList[] get(String tableName,boolean isMs) throws Exception
  {
     	SolrInfoList infolist=getSolrInfoList(tableName);
     	
-		List<String> solrlist = new ArrayList<String>();
+    	long nowtime=System.currentTimeMillis();
+    	HashMap<Integer,ShardsList> replication=new HashMap<Integer, ShardsList>();
 		for (SolrInfo info : infolist.getlist()) {
 			if (info != null && info.isMergeServer == isMs)// &&info.stat==ShardsState.SERVICE
 			{
 				if (isMs && !info.stat.equals(ShardsState.SERVICE)) {
 					continue;
 				}
-				solrlist.add(new String(info.localip + ":" + info.port));
+				
+				if((info.times+1000l*600)<nowtime)
+				{
+					continue;
+				}
+				
+				ShardsList solrlist=replication.get(info.taskIndex);
+				if(solrlist==null)
+				{
+					solrlist=new ShardsList();
+					replication.put(info.taskIndex, solrlist);
+				}
+				solrlist.list.add(new String(info.localip + ":" + info.port));
 			}
 		}
-
-		int alllen = solrlist.size();
-		if (maxlen >= alllen) {
-			String[] rtn = new String[alllen];
-			return solrlist.toArray(rtn);
+		
+		
+		ShardsList[] rtn=new ShardsList[replication.size()];
+		
+		int index=0;
+		for(ShardsList s:replication.values())
+		{
+			rtn[index++]=s;
 		}
+		
+		return rtn;
 
-		List<String> rtn2 = new ArrayList<String>();
-		for (int i = 0; i < maxlen; i++) {
-			String s = solrlist.remove((int) (Math.random() * (alllen - 1)));
-			rtn2.add(s);
-			alllen--;
-		}
-
-		String[] rtnarr = new String[rtn2.size()];
-		return rtn2.toArray(rtnarr);
 
 	}
     

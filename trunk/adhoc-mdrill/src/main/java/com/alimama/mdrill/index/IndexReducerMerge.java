@@ -14,6 +14,7 @@ import com.alimama.mdrill.index.utils.DocumentConverter;
 import com.alimama.mdrill.index.utils.HeartBeater;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
 import com.alimama.mdrill.index.utils.ShardWriter;
+import com.alimama.mdrill.utils.ZipUtils;
 
 public class IndexReducerMerge extends
 		Reducer<Text, Text, Text, Text> {
@@ -21,6 +22,7 @@ public class IndexReducerMerge extends
 	private ShardWriter shardWriter = null;
 	private String indexHdfsPath = null;
 	private String tmpath = null;
+	private String tmpathzip = null;
 	public DocumentConverter documentConverter;
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
@@ -45,8 +47,11 @@ public class IndexReducerMerge extends
 			shardWriter.close();
 			Configuration conf = context.getConfiguration();
 			FileSystem fs = FileSystem.get(conf);
+			ZipUtils.zip(fs, tmpath, fs, tmpathzip);
+			
 			if (!fs.exists(new Path(indexHdfsPath))) {
-				fs.rename(new Path(tmpath), new Path(indexHdfsPath));
+				
+				fs.rename(new Path(tmpathzip), new Path(indexHdfsPath));
 			}
 
 		} catch (Exception e) {
@@ -63,9 +68,11 @@ public class IndexReducerMerge extends
 		FileSystem fs = FileSystem.get(conf);
 
 		String outputdir = conf.get("mapred.output.dir");
+		String uuid=java.util.UUID.randomUUID().toString();
 		indexHdfsPath = new Path(outputdir, part_xxxxx).toString();
-		tmpath = new Path(outputdir + "/_tmpindex", part_xxxxx + "_"
-				+ java.util.UUID.randomUUID().toString()).toString();
+		tmpath = new Path(outputdir + "/_tmpindex", part_xxxxx + "_"+uuid).toString();
+		tmpathzip = new Path(outputdir + "/_tmpindex", part_xxxxx + "_zip_"+ uuid).toString();
+		
 		ShardWriter shardWriter = new ShardWriter(fs, tmpath, conf);
 		return shardWriter;
 	}

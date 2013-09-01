@@ -19,7 +19,9 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.*;
 
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrInfoMBean;
@@ -55,8 +57,12 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
    * @return the next stage for this component
    */
   public int distributedProcess(ResponseBuilder rb) throws IOException {
+		   
+	  
     return ResponseBuilder.STAGE_DONE;
   }
+  
+  
 
   /** Called after another component adds a request */
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {

@@ -67,7 +67,7 @@ public class JettySolrRunner
     this.context = context;
     server = new Server(  );    
    
-    QueuedThreadPool threads=new QueuedThreadPool(256);
+    QueuedThreadPool threads=new QueuedThreadPool(512);
     threads.setDaemon(true);
 //    org.mortbay.thread.concurrent.ThreadPool threads=new org.mortbay.thread.concurrent.ThreadPool();
 //    threads.setCorePoolSize(512);

@@ -29,6 +29,7 @@ import com.alimama.mdrill.json.JSONException;
 import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetPartions;
 import com.alimama.mdrill.partion.GetShards;
+import com.alimama.mdrill.partion.GetShards.ShardsList;
 import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.GetPartions.TablePartion;
 import com.alimama.mdrill.partion.GetShards.SolrInfoList;
@@ -40,6 +41,7 @@ import com.alimama.mdrill.utils.HadoopUtil;
 import com.alimama.mdrill.utils.UniqConfig;
 import com.alipay.bluewhale.core.cluster.ShardsState;
 import com.alipay.bluewhale.core.cluster.SolrInfo;
+import com.alipay.bluewhale.core.utils.StormUtils;
 
 import org.apache.log4j.Logger;
 
@@ -149,8 +151,15 @@ public class MdrillService {
 
 			SortParam sortType = WebServiceParams.sort(sort, order,fieldColumntypeMap);
 
-			String[] cores = GetShards.get(part.name, false, 10000);
-			String[] ms = GetShards.get(part.name, true, 10000);
+			ShardsList[] cores = GetShards.get(part.name, false);
+			
+			Map stormconf = Utils.readStormConfig();
+			if(cores.length!=StormUtils.parseInt(stormconf.get("higo.shards.count")))
+			{
+				throw new Exception("core.size="+cores.length);
+			}
+			
+			ShardsList[] ms = GetShards.get(part.name, true);
 
 			MdrillPartionsInterface drillpart=MdrillPartions.INSTANCE(part.parttype);
 			String[] partionsAll = drillpart.SqlPartions(queryStr);
@@ -160,7 +169,7 @@ public class MdrillService {
 			LOG.info("partionsAll:" + Arrays.toString(partionsAll));
 
 
-			GetPartions.Shards shard = GetPartions.getshard(part, partionsAll,cores, ms,  10000, 0);
+			GetPartions.Shards shard = GetPartions.getshard(part, partionsAll,cores, ms);
 			HigoJoinParams[] joins=WebServiceParams.parseJoins(leftjoin, shard);
 			ArrayList<String> fqList = WebServiceParams.fqList(queryStr, shard,	fieldColumntypeMap);
 
@@ -244,11 +253,11 @@ public class MdrillService {
 		}
 		if (basePath == null || basePath.isEmpty()) {
 			basePath = System.getProperty("higo.table.path",
-					"/group/taobao/external/p4p/p4padhoc/tablelist");
+					"/group/tbdp-etao-adhoc/p4padhoc/tablelist");
 		}
 		
 		if (basePath == null || basePath.isEmpty()) {
-			basePath = "/group/taobao/external/p4p/p4padhoc/tablelist";
+			basePath = "/group/tbdp-etao-adhoc/p4padhoc/tablelist";
 		}
 		
 		return basePath;
@@ -465,7 +474,7 @@ public class MdrillService {
 			    			}
 			    			long cnt=e.getValue().cnt;
 
-			    			if(cnt>1000)
+			    			if(cnt>0)
 			    			{
 			    				amt+=1;
 			    			}

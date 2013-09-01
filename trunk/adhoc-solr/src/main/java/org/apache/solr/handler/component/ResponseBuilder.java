@@ -113,7 +113,6 @@ public class ResponseBuilder
   public String[] shards;
   public RequestLockType lockType=RequestLockType.none;//0,none,1,multy,2,singlehosts,3,shards
   public boolean issubshard=false;
-  public Integer lockCnt=10241;
   public String[] subShards;
   public int shards_rows = -1;
   public int shards_start = -1;
@@ -129,15 +128,7 @@ public class ResponseBuilder
   }
 
   public void addRequest(SearchComponent me, ShardRequest sreq) {
-    outgoing.add(sreq);
-    if ((sreq.purpose & ShardRequest.PURPOSE_PRIVATE)==0) {
-      // if this isn't a private request, let other components modify it.
-      for (SearchComponent component : components) {
-        if (component != me) {
-          component.modifyRequest(this, me, sreq);
-        }
-      }
-    }
+//    outgoing.add(sreq);
   }
 
   public GlobalCollectionStat globalCollectionStat;

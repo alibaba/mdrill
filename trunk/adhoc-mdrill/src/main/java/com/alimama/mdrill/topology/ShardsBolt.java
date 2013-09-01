@@ -33,9 +33,10 @@ public class ShardsBolt implements IRichBolt{
     private Integer partions;
     private String topologyName;
     private boolean isRealTime=false;
-
-    public ShardsBolt( boolean isRealTime,String hadoopConfPath,String solrhome,String tablename,String storePath,Integer portbase,Integer shards,Integer partions,String topologyName)
+    BoltParams params;
+    public ShardsBolt(BoltParams params,boolean isRealTime,String hadoopConfPath,String solrhome,String tablename,String storePath,Integer portbase,Integer shards,Integer partions,String topologyName)
     {
+    this.params=params;
 	this.hadoopConfPath=hadoopConfPath;
 	this.solrhome=solrhome;
 	this.storePath=storePath;
@@ -63,7 +64,7 @@ public class ShardsBolt implements IRichBolt{
 	    }
 	    Integer taskIndex=context.getThisTaskIndex();
 	    
-	    this.solr=new SolrStart(collector, conf, solrhome, tablename.split(","), storePath, this.portbase, taskIndex, this.topologyName, context.getThisTaskId(), this.partions);
+	    this.solr=new SolrStart(this.params,collector, conf, solrhome, tablename.split(","), storePath, this.portbase, taskIndex, this.topologyName, context.getThisTaskId(), this.partions);
 	    this.solr.setConfigDir(this.hadoopConfPath);
 	    this.solr.setRealTime(this.isRealTime);
 	    this.solr.setMergeServer(!this.isRealTime&&taskIndex>=this.shards);

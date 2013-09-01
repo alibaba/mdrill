@@ -179,7 +179,12 @@ public class MdrillMain {
 		Integer shards = StormUtils.parseInt(stormconf.get("higo.shards.count"));
 		String hdfsSolrDir = (String) stormconf.get("higo.table.path");
 		Configuration conf = getConf(stormconf);
-		String[] jobValues = new String[]{split,submatch};
+		Integer parallel = StormUtils.parseInt(stormconf.get("higo.index.parallel"));
+		if(stormconf.containsKey("higo.index.parallel."+tablename))
+		{
+			parallel=StormUtils.parseInt(String.valueOf(stormconf.get("higo.index.parallel."+tablename)));
+		}
+		String[] jobValues = new String[]{split,submatch,String.valueOf(parallel)};
 		String type = (String) stormconf.get("higo.partion.type");
 		String tabletype = (String) stormconf.get("higo.partion.type."+tablename);
 		if(tabletype!=null&&!tabletype.isEmpty())
@@ -219,6 +224,8 @@ public class MdrillMain {
 				.parseInt(stormconf.get("higo.shards.count"));
 		
 		Integer fixassign = StormUtils.parseInt(stormconf.containsKey("higo.fixed.shards")?stormconf.get("higo.fixed.shards"):0);
+		Integer replication = StormUtils.parseInt(stormconf.containsKey("higo.shards.replication")?stormconf.get("higo.shards.replication"):1);
+		
 		Integer partions = StormUtils.parseInt(stormconf
 				.get("higo.cache.partions"));
 		Integer portbase = StormUtils.parseInt(stormconf
@@ -232,48 +239,47 @@ public class MdrillMain {
 		String localWorkDirList = (String) stormconf.get("higo.workdir.list");
 		Integer msCount = StormUtils.parseInt(stormconf
 				.get("higo.mergeServer.count"));
-		Integer realtimecount = StormUtils.parseInt(stormconf
-				.get("higo.realtime.count"));
 		Config conf = new Config();
 		conf.setNumWorkers(shards + msCount);
 		conf.setNumAckers(1);
 		conf.setMaxSpoutPending(100);
-		conf.put(CustomAssignment.TOPOLOGY_CUSTOM_ASSIGNMENT,
-				MdrillTaskAssignment.class.getName());
-		
+		conf.put(CustomAssignment.TOPOLOGY_CUSTOM_ASSIGNMENT,MdrillTaskAssignment.class.getName());
+		conf.put(MdrillTaskAssignment.SHARD_REPLICATION, replication);
 		conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS,fixassign);
 		for(int i=1;i<=fixassign;i++)
 		{
-		conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS+"."+i,(String) stormconf.get("higo.fixed.shards"+"."+i));
+			conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS+"."+i,(String) stormconf.get("higo.fixed.shards"+"."+i));
 		}
-		conf.put(MdrillTaskAssignment.MS_PORTS,
-				(String) stormconf.get("higo.merge.ports"));
-		conf.put(MdrillTaskAssignment.REALTIME_PORTS,
-				(String) stormconf.get("higo.realtime.ports"));
+		conf.put(MdrillTaskAssignment.MS_PORTS,	(String) stormconf.get("higo.merge.ports"));
+		conf.put(MdrillTaskAssignment.REALTIME_PORTS,(String) stormconf.get("higo.realtime.ports"));
 		conf.put(MdrillTaskAssignment.MS_NAME, "merge");
 		conf.put(MdrillTaskAssignment.SHARD_NAME, "shard");
 		conf.put(MdrillTaskAssignment.REALTIME_NAME, "realtime");
 
-		ShardsBolt solr = new ShardsBolt(false, hadoopConfDir, hdfsSolrDir,
-				tableName, localWorkDirList, portbase, shards, partions,
-				topologyName);
-		ShardsBolt ms = new ShardsBolt(false, hadoopConfDir, hdfsSolrDir,
-				tableName, localWorkDirList, portbase + shards + 100, 0,
-				partions, topologyName);
-		ShardsBolt realtime = new ShardsBolt(true, hadoopConfDir, hdfsSolrDir,
-				tableName, localWorkDirList, portbase + shards + 200, 0,
+		BoltParams paramsMs=new BoltParams();
+		paramsMs.compname="merge_0";
+		paramsMs.replication=1;
+		paramsMs.replicationindex=0;
+		ShardsBolt ms = new ShardsBolt(paramsMs,false, hadoopConfDir, hdfsSolrDir,
+				tableName, localWorkDirList, portbase + shards*replication + 100, 0,
 				partions, topologyName);
 
 		TopologyBuilder builder = new TopologyBuilder();
 		builder.setSpout("heartbeat", new HeartBeatSpout(), 1);
-		builder.setBolt("shard", solr, shards).allGrouping("heartbeat");
-		builder.setBolt("merge", ms, msCount).allGrouping("heartbeat");
-		if (realtimecount > 0) {
-			builder.setBolt("realtime", realtime, msCount).allGrouping(
-					"heartbeat");
+		for(int i=0;i<replication;i++)
+		{
+			BoltParams paramsShard=new BoltParams();
+			paramsShard.replication=replication;
+			paramsShard.replicationindex=i;
+			paramsShard.compname="shard_"+i;
+
+			ShardsBolt solr = new ShardsBolt(paramsShard,false, hadoopConfDir, hdfsSolrDir,
+					tableName, localWorkDirList, portbase+shards*i, shards, partions,
+					topologyName);
+			builder.setBolt("shard@"+i, solr, shards).allGrouping("heartbeat");
 		}
-		StormSubmitter.submitTopology(topologyName, conf,
-				builder.createTopology());
+		builder.setBolt("merge", ms, msCount).allGrouping("heartbeat");
+		StormSubmitter.submitTopology(topologyName, conf,builder.createTopology());
 		System.out.println("start complete ");
 		System.exit(0);
 	}

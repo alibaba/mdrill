@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -20,6 +21,7 @@ import backtype.storm.utils.Utils;
 import com.alimama.mdrill.index.utils.DocumentList;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
 import com.alimama.mdrill.utils.HadoopUtil;
+import com.alipay.bluewhale.core.utils.StormUtils;
 
 
 
@@ -49,7 +51,7 @@ public class MakeIndex {
 		                                           1, args[5]//split
 		                                                   ,false,
 		                                                   args[6]//custFields
-		                                                        ,null
+		                                                        ,null,10
 		                                                               
 		 );
 
@@ -94,10 +96,10 @@ public class MakeIndex {
 			String split,
 			boolean usedthedate,
 			String custFields,
-			updateStatus update
+			updateStatus update,Integer parallel 
 			) throws Exception
 	{
-		return make(fs, solrHome, jconf, filetype, inputBase, inputs, inputmatch, output, smallindex, shards, split, usedthedate, custFields, update,"");
+		return make(fs, solrHome, jconf, filetype, inputBase, inputs, inputmatch, output, smallindex, shards, split, usedthedate, custFields, update,"",parallel);
 	}
    
 	public static int make(
@@ -115,7 +117,7 @@ public class MakeIndex {
 			String split,
 			boolean usedthedate,
 			String custFields,
-			updateStatus update,String uniqCheckField
+			updateStatus update,String uniqCheckField,Integer parallel 
 			) throws Exception
 	{
 		Job job = new Job(new Configuration(jconf));
@@ -145,7 +147,7 @@ public class MakeIndex {
 		
 		System.out.println("output:"+output+"@"+jobnameOutput);
 		System.out.println("tmp:"+smallindex.toString());
-		job.setJobName("higo_stage_1@"+jobnameOutput);
+		job.setJobName("mdrill_stage_1@"+jobnameOutput);
 		job.setJarByClass(JobIndexerPartion.class);
 
 		fs.delete(new Path(output), true);
@@ -182,7 +184,7 @@ public class MakeIndex {
 		job.setOutputValueClass(Text.class);
 		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 		FileOutputFormat.setOutputPath(job, smallindex);
-		job.setNumReduceTasks(shards * 40);
+		job.setNumReduceTasks(shards * parallel);
 		if(update!=null)
 		{
 	        job.submit();
@@ -203,7 +205,7 @@ public class MakeIndex {
 
 		Job job2 = new Job(new Configuration(jconf));
 		JobIndexPublic.setJars(job2.getConfiguration());
-		job2.setJobName("higo_stage_2@"+jobnameOutput);
+		job2.setJobName("mdrill_stage_2@"+jobnameOutput);
 		Configuration conf2 = job2.getConfiguration();
 		JobIndexPublic.setDistributecache(new Path(solrHome,"solr/conf"), fs,conf2);
 		conf2.set("higo.index.fields", fields);
@@ -231,9 +233,19 @@ public class MakeIndex {
 	        update.finish();
 		}else{
 			result= job2.waitForCompletion(true) ? 0 : -1;
-//			if (result == 0) {
-////				fs.mkdirs(new Path(output, "_SUCCESS"));
-//			}
+
+		}
+		
+		fs.delete(smallindex, true);
+		fs.delete(new Path(output,"./_tmpindex"), true);
+		
+		FileStatus[] list=fs.globStatus(new Path(output,"./part-r-*"));
+		if(list!=null)
+		{
+			for(FileStatus f:list)
+			{
+				fs.delete(f.getPath(),true);
+			}
 		}
 
 		return result;

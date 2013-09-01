@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -66,9 +65,11 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     public void setMergeServer(boolean isMergeServer) {
         this.isMergeServer = isMergeServer;
     }
-    
-    public SolrStartJetty(OutputCollector collector,Configuration conf, String solrhome, String diskList, Integer portbase,int taskIndex, String tblName, Integer taskid,Integer partions) throws IOException {
-		this.collector=collector;
+	BoltParams params;
+
+    public SolrStartJetty(BoltParams params,OutputCollector collector,Configuration conf, String solrhome, String diskList, Integer portbase,int taskIndex, String tblName, Integer taskid,Integer partions) throws IOException {
+    	this.params=params;
+    	this.collector=collector;
 		this.conf = conf;
 		this.fs = FileSystem.get(this.conf);
 		this.lfs = FileSystem.getLocal(this.conf);
@@ -124,7 +125,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 
     private Path getLocalPath(String type) throws IOException
     {
-    	Path localpath = new Path(new Path(this.singleStorePath, "higo"), tablename + "/" + taskid+"_"+this.taskIndex);
+    	Path localpath = new Path(new Path(this.singleStorePath, "higo"), tablename + "/" + this.params.compname+"_"+this.taskIndex);
     	return  new Path(localpath, type);
     }
     
@@ -407,7 +408,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		    String hdfsforder = (this.isMergeServer) ? "mergerServer" : IndexUtils.getHdfsForder(taskIndex);
 		    Integer bindport = this.getBindPort();
 		    Long hbtime = statcollect.getLastTime();
-		    SolrInfo info = new SolrInfo(this.isRealTime,localSolrPath.toString(),
+		    SolrInfo info = new SolrInfo(this.params.replication,this.params.replicationindex,this.taskIndex,this.isRealTime,localSolrPath.toString(),
 			    "solrservice".toString(), hdfsforder, bindport,
 			    statcollect.getStat(), new HashMap<String, ShardCount>(), new HashMap<String, ShardCount>(), this.statcollect.getSetupTime(),
 			     hbtime, this.isMergeServer);

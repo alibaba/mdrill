@@ -306,7 +306,7 @@ public class TableJoin {
 						return false;
 						
 					}
-				},strjoins);
+				},strjoins,40);
 			}catch(Exception e){
 				TableJoin.LOG.error("make index",e);
 				try {
