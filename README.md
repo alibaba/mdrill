@@ -34,7 +34,7 @@
 <ul>
 <li><a href="https://github.com/muyannian">母延年(子落)</a>、<a href="http://user.qzone.qq.com/2253209">秦剑(含光)</a>、<a href="https://github.com/bwzheng2010">郑博文(士远)</a>、陈鹏(伯时)、木晗、逸客、张壮、凌凝</li>
 </ul>
-<h1>jstorm Core contributors</h1>
+<h1>jstorm Core contributors <a href="https://github.com/alibaba/jstorm" >官方地址:https://github.com/alibaba/jstorm</a></h1>
 <ul>
 <li><a href="https://github.com/longdafeng">封仲淹(纪君祥)</a>、<a href="https://github.com/tumen">李鑫(丙吉)</a>、<a href="https://github.com/muyannian">母延年(子落)</a>、<a href="https://github.com/zhouxinxust">周鑫(陈均)</a></li>
 
