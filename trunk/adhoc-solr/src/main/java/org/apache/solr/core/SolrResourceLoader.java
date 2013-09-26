@@ -596,16 +596,92 @@ public class SolrResourceLoader implements ResourceLoader
   
   
   private static AtomicLong cacheFlushKey=new AtomicLong(System.currentTimeMillis());
-  public static void SetCacheFlushKey(long key)
+  
+  public static class PartionKey{
+	public String partion;
+
+	public String tablename;
+	public PartionKey( String tablename,String partion) {
+		super();
+		this.partion = partion;
+		this.tablename = tablename;
+	}
+	  @Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((partion == null) ? 0 : partion.hashCode());
+		result = prime * result
+				+ ((tablename == null) ? 0 : tablename.hashCode());
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		PartionKey other = (PartionKey) obj;
+		if (partion == null) {
+			if (other.partion != null)
+				return false;
+		} else if (!partion.equals(other.partion))
+			return false;
+		if (tablename == null) {
+			if (other.tablename != null)
+				return false;
+		} else if (!tablename.equals(other.tablename))
+			return false;
+		return true;
+	}
+	
+	@Override
+	public String toString() {
+		return "PartionKey [partion=" + partion + ", tablename=" + tablename
+				+ "]";
+	}
+  }
+  private static java.util.concurrent.ConcurrentHashMap<PartionKey,Long> cacheFlushKeyMap=new ConcurrentHashMap<SolrResourceLoader.PartionKey, Long>();
+  
+ 
+
+  public static void SetCacheFlushKey(PartionKey p,long key)
   {
-	  log.info("higolog SetCacheFlushKey "+key);
+	  log.info("higolog SetCacheFlushKey "+String.valueOf(p)+" "+key);
 	  SolrResourceLoader.cacheFlushKey.set(key);
+	  if(p!=null)
+	  {
+		  cacheFlushKeyMap.put(p, key);
+		  if(cacheFlushKeyMap.size()>1024)
+		  {
+			  cacheFlushKeyMap.clear();
+		  }
+	  }
 	  
   }
   
-  
-  public static long getCacheFlushKey()
+  public static void DropCacheFlushKey(PartionKey p)
   {
+	  log.info("higolog DropCacheFlushKey "+String.valueOf(p));
+	  if(p!=null)
+	  {
+		  cacheFlushKeyMap.remove(p);
+	  }
+	  
+  }
+  
+  public static long getCacheFlushKey(PartionKey p)
+  {
+	  if(p!=null)
+	  {
+		  Long rtn=cacheFlushKeyMap.get(p);
+		  if(rtn!=null)
+		  {
+			  return rtn;
+		  }
+	  }
 	  return SolrResourceLoader.cacheFlushKey.get();
   }
   

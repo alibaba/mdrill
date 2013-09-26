@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.LinkFSDirectory;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrResourceLoader.PartionKey;
 
 import backtype.storm.task.OutputCollector;
 
@@ -280,7 +281,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			Vertify localValue = localVertify.remove(partion);
 			if (localValue == null	|| !localValue.getVertify().equals(hdfsValue.getVertify())) {
 				this.syncPartion(partion, hdfsValue.getPath());
-				SolrResourceLoader.SetCacheFlushKey(System.currentTimeMillis());
+				SolrResourceLoader.SetCacheFlushKey(new PartionKey(this.tablename, partion),System.currentTimeMillis());
 			}
 		}
 		this.partstat.syncClearStat();
@@ -296,7 +297,9 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 				continue;
 			}
 			this.dropPartion(e.getValue().getPath());
-			SolrResourceLoader.SetCacheFlushKey(System.currentTimeMillis());
+			PartionKey p=new PartionKey(this.tablename, e.getKey());
+			SolrResourceLoader.SetCacheFlushKey(p,System.currentTimeMillis());
+			SolrResourceLoader.DropCacheFlushKey(p);
 		}
 		LOG.info("higolog loadIndex finish:" + this.tablename + ",ischange"	+ ischange );
 		return false;
@@ -477,7 +480,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 
 	private void startService() throws Exception {
 		LOG.info("higolog startService");
-		SolrResourceLoader.SetCacheFlushKey(System.currentTimeMillis());
+		SolrResourceLoader.SetCacheFlushKey(null,System.currentTimeMillis());
 		statcollect.setStat(ShardsState.SERVICE);
 		this.checkSolr();
 		this.zkHeatbeat();

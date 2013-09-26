@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrServerException;
 
 import com.alimama.mdrill.json.JSONException;
@@ -21,6 +22,7 @@ import com.alimama.mdrill.topology.SolrStartJetty;
 import com.alipay.bluewhale.core.cluster.SolrInfo;
 import com.alipay.bluewhale.core.cluster.SolrInfo.ShardCount;
 public class ThedateListener extends PartionListener{
+
 	private HashMap<String, String> dayPartions=new HashMap<String, String>();
 	private HashMap<String, ShardCount> daycount = new HashMap<String, ShardCount>();
 	private AtomicInteger lastDayIndex = new AtomicInteger(0);
@@ -263,8 +265,8 @@ public class ThedateListener extends PartionListener{
 	
 	public HashMap<String, ShardCount> getBiggestDaycount() {
 		HashMap<String, ShardCount> daystat=new HashMap<String, SolrInfo.ShardCount>();
-		daystat.putAll(this.daycount);
-		daystat.putAll(this.biggest);
+		daystat.putAll(this.topMap(this.daycount,true,5));
+		daystat.putAll(this.topMap(this.biggest,true,5));
 		return this.topMap(daystat, true, 5);
 	}
 	public HashMap<String, ShardCount> getPartioncount() {

@@ -14,8 +14,14 @@ public class TryLock {
 
 	Directory cacheDir;
 
+	private String subdir="mdrill_uni_lock";
 	public TryLock(Directory cacheDir) {
 		this.cacheDir = cacheDir;
+	}
+	
+	public TryLock(Directory cacheDir,String subdir) {
+		this.cacheDir = cacheDir;
+		this.subdir=subdir;
 	}
 
 	TryLockFile lockf=null;
@@ -32,18 +38,16 @@ public class TryLock {
 	}
 
 	public void tryLock() {
-
 		try {
 			if (cacheDir != null) {
 				if (cacheDir instanceof FSDirectory) {
 					FSDirectory localdir = (FSDirectory) cacheDir;
-					this.lockf=new TryLockFile((new File(localdir.getDirectory(), "mdrill_uni_lock")).getAbsolutePath());
+					this.lockf=new TryLockFile((new File(localdir.getDirectory(), subdir)).getAbsolutePath());
 					this.lockf.trylock();
 				}
 
 			}
 		}
-
 		catch (Throwable e) {
 		}
 

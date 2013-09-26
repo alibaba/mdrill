@@ -12,7 +12,7 @@
 				<include>adhoc-core/conf/*</include>
 				<include>adhoc-core/logs</include>
 				<include>adhoc-core/log4j/*</include>
-				<include>adhoc-web/src/main/webapp/*</include>
+				<include>adhoc-core/webapp/**</include>
 			</includes>
 			<excludes>
 				<exclude>**/src/**</exclude>

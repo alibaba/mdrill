@@ -2,17 +2,18 @@ package org.apache.solr.request.compare;
 
 
 
-import org.apache.solr.request.mdrill.MdrillPorcessUtils.GroupList;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils.RefRow;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils.RefRowStat;
+import org.apache.solr.request.mdrill.GroupListCache;
+import org.apache.solr.request.mdrill.GroupListCache.GroupList;
+import org.apache.solr.request.mdrill.MdrillUtils.RefRow;
+import org.apache.solr.request.mdrill.MdrillUtils.RefRowStat;
 
 
 
 public class ShardGroupByTermNum implements Comparable<ShardGroupByTermNum>{
-	public GroupList key;
+	public GroupListCache.GroupList key;
 	public RefRow statVal;
 
-	public ShardGroupByTermNum(GroupList key, RefRow value) {
+	public ShardGroupByTermNum(GroupListCache.GroupList key, RefRow value) {
 		this.key = key;
 		this.statVal = value;
 	}

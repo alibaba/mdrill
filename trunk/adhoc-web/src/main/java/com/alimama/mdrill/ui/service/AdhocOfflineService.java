@@ -167,6 +167,10 @@ public class AdhocOfflineService {
 		if (projectName.equals("r_rpt_tanx_adzone_total")) {
 			hpart="ds";
 		}
+		if (projectName.equals("r_rpt_nz_adhoc_member")) {
+			hpart="ds";
+		}
+		
 		
 		queryStr = WebServiceParams.query(queryStr);
 	
@@ -180,7 +184,7 @@ public class AdhocOfflineService {
 		
 		
 		HashMap<String, String> filetypeMap = MdrillService.readFieldsFromSchemaXml(part.name);
-		ArrayList<String> fqList = WebServiceParams.fqListHive(hpart,queryStr, shard,
+		ArrayList<String> fqList = WebServiceParams.fqListHive(false,hpart,queryStr, shard,
 				isPartionByPt, filetypeMap,null,null,null);
 		StringBuffer sqlWhere =AdhocWebServiceParams.makeWhere(fqList);
 	
@@ -228,7 +232,7 @@ public class AdhocOfflineService {
 			for(int i=0;i<joins.length;i++)
 			{
 				HigoAdhocJoinParams jp=joins[i];
-				buffer.append(" join ("+jp.frQuer+") jr"+i+" on jl1."+colMap.get(jp.leftkey)+"==jr"+i+"."+jp.rightkey+" ");
+				buffer.append(" join ("+jp.frQuer+") jr"+i+" on (jl1."+colMap.get(jp.leftkey)+" is not null and trim(jl1."+colMap.get(jp.leftkey)+")==trim(jr"+i+"."+jp.rightkey+")) ");
 			}
 			
 			hql=buffer.toString();
@@ -262,7 +266,7 @@ public class AdhocOfflineService {
 		
 		
 		
-		 ArrayList<String> fq2list=WebServiceParams.fqListHive(hpart,fq2, shard,
+		 ArrayList<String> fq2list=WebServiceParams.fqListHive(true,hpart,fq2, shard,
 					isPartionByPt, filetypeMap,colMap,colMapforStatFilter,"fq2");
 		 if(fq2list.size()>0)
 		 {

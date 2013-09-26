@@ -30,6 +30,7 @@ import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.handler.component.*;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.*;
@@ -996,14 +997,16 @@ public final class SolrCore implements SolrInfoMBean {
 			corename="";
 		}
 		
-		String partionKey=corename+"@"+partion+"@"+SolrResourceLoader.getCacheFlushKey();
+		PartionKey p=new PartionKey(corename, partion);
+		
+		String partionKey=corename+"@"+partion+"@"+SolrResourceLoader.getCacheFlushKey(p);
 		File f = new File(getDataDir(), partion);
-		return getSearcherByPath(partionKey, f.getAbsolutePath(), mdirs, isclearCache, ishb);
+		return getSearcherByPath(p,partionKey, f.getAbsolutePath(), mdirs, isclearCache, ishb);
 				
 		
 	}
 	
-	public synchronized RefCounted<SolrIndexSearcher> getSearcherByPath(String partionKey,String path,boolean mdirs,boolean isclearCache,boolean ishb) {
+	public synchronized RefCounted<SolrIndexSearcher> getSearcherByPath(PartionKey p,String partionKey,String path,boolean mdirs,boolean isclearCache,boolean ishb) {
 		try {
 			this.clearPartion();
 		} catch (IOException e1) {
@@ -1021,7 +1024,7 @@ public final class SolrCore implements SolrInfoMBean {
 			if(isclearCache&&rtn != null)
 			{
 				this.DropSearch(rtn);
-				SolrResourceLoader.SetCacheFlushKey(System.currentTimeMillis());
+				SolrResourceLoader.SetCacheFlushKey(p,System.currentTimeMillis());
 				rtn=null;
 				searchCache.remove(partionKey);
 				searchCacheForHb.remove(partionKey);
@@ -1058,6 +1061,7 @@ public final class SolrCore implements SolrInfoMBean {
 				Directory fieldcacheDir = FSDirectory.open(cachedir);
 
 				SolrIndexSearcher newSearcher = new SolrIndexSearcher(this,	schema, "partion_" + partionKey, reader, true);
+				newSearcher.setPartionCacheKey(p);
 				newSearcher.setFieldcacheDir(fieldcacheDir);
 				newSearcher.setPartionKey(partionKey);
 				rtn = newHolderPartion(newSearcher);

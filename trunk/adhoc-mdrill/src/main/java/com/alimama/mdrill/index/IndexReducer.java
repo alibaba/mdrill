@@ -94,6 +94,7 @@ public class IndexReducer extends  Reducer<Text, DocumentList, Text, Text> {
 	}
 
     private Text lastkey = null;
+    private int debuglines=0;
 
 	protected void reduce(Text key, Iterable<DocumentList> values,
 			Context context) throws java.io.IOException, InterruptedException {
@@ -108,6 +109,11 @@ public class IndexReducer extends  Reducer<Text, DocumentList, Text, Text> {
 			if(dumps>1)
 			{
 				context.getCounter("higo", "dumpcount").increment(1);;
+				if(debuglines<100)
+	    		{
+	    			debuglines++;
+	        		System.out.println("dumpcount: " + key.toString()   + "");
+	    		}
 			}
 			return ;
 		}

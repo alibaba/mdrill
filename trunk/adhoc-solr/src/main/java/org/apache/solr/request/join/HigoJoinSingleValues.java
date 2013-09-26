@@ -101,16 +101,14 @@ public class HigoJoinSingleValues implements HigoJoinInterface{
 	}
 	
 	
-	IntArr singleint=IntArr.parse(0);
-	public IntArr getRight(int leftDocid,int termNum)
+	public Integer getRight(int leftDocid,int termNum)
 	{
 		int rtn=joinRevert[leftDocid];
 		if(rtn<0)
 		{
 			return null;
 		}
-		singleint.list[0]=rtn;
-		return singleint;
+		return rtn;
 	}
 
 	

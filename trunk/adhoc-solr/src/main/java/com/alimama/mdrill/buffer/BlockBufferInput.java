@@ -4,21 +4,19 @@ import java.io.IOException;
 
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.cache.Cache;
 import org.apache.solr.request.uninverted.GrobalCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alimama.mdrill.buffer.BlockBufferMalloc.block;
 import com.alimama.mdrill.buffer.BlockBufferMalloc.blockData;
-import com.alimama.mdrill.utils.UniqConfig;
 
 
 
 
 /**
  * 本类是为了tis,frq文件准备，考虑到海狗的特殊性，经常使用group by,需要经常使用tis,frq等文件，故对tis,frq等文件进行按照block方式缓存在内存中，采用lru的方式进行管理
- * 海狗要经常的变量几亿甚至几十亿的记录，针对扫描我们也做了不少的优化
+ * 海狗要经常的扫描几亿甚至几十亿的记录，针对扫描我们也做了不少的优化
 1.	针对lucene倒排索引的特性，扫描记录意味着扫描tii,tis与frq三个文件
 Tii本身由lucene加载到内存,放到数组中，没什么可优化的
 tis与frq则分别存储了每个field的值以及该值对应了那些文档，在扫描记录的时候要频繁的切换这俩文件，频繁的切换意味着并非顺序读，实际上为随即读,我们知道因为磁盘本身的物理特性随即读的性能远远小于顺序读的性能，这个地方要进行转换

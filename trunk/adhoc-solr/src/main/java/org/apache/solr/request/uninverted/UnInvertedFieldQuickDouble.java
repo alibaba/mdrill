@@ -1,11 +1,9 @@
 package org.apache.solr.request.uninverted;
 
 import java.io.IOException;
-import java.util.HashSet;
 
-import org.apache.solr.request.BigReUsedBuffer;
 import org.apache.solr.request.BigReUsedBuffer.BlockArray;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils;
+import org.apache.solr.request.mdrill.MdrillUtils;
 import org.apache.solr.request.uninverted.UnInvertedFieldUtils.BlockArrayReadInt;
 
 import org.apache.solr.schema.FieldType;
@@ -96,7 +94,7 @@ public class UnInvertedFieldQuickDouble {
 			}
 			String termText = this.uni.getTermText(te, termNum);
 			if (termText != null) {
-				return MdrillPorcessUtils.ParseDouble(ft.indexedToReadable(termText));
+				return MdrillUtils.ParseDouble(ft.indexedToReadable(termText));
 			}
 			return 0d;
 		}

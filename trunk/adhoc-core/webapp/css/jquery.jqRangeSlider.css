@@ -1,0 +1,29 @@
+.ui-jqrangeslider { position: relative; }
+
+.ui-jqrangeslider .ui-jqrangeslider-arrow-left { position: absolute; width: 18px; cursor: pointer; vertical-align: middle; }
+.ui-jqrangeslider .ui-jqrangeslider-arrow-icon-left { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-arrow-right { position: absolute; width: 18px; cursor: pointer; }
+.ui-jqrangeslider .ui-jqrangeslider-arrow-icon-right { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-left { position: absolute; width: 12px; cursor: ew-resize; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-icon-left { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-right { position: absolute; width: 12px; cursor: ew-resize; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-icon-right { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-slider-horizontal { position: absolute; cursor: move; cursor: grab; cursor: -moz-grab; }
+.ui-jqrangeslider .ui-jqrangeslider-slider-horizontal-dragging { cursor: -moz-grabbing; cursor: grabbing; }
+.ui-jqrangeslider .ui-jqrangeslider-background-horizontal { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-background-horizontal-left { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-background-horizontal-right { position: absolute; }
+
+.ui-jqrangeslider .ui-jqrangeslider-arrow-bottom { position: absolute; height: 18px; cursor: pointer; }
+.ui-jqrangeslider .ui-jqrangeslider-arrow-icon-bottom { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-arrow-top { position: absolute; height: 18px; cursor: pointer; }
+.ui-jqrangeslider .ui-jqrangeslider-arrow-icon-top { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-bottom { position: absolute; height: 12px; cursor: ns-resize; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-icon-bottom { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-top { position: absolute; height: 12px; cursor: ns-resize; }
+.ui-jqrangeslider .ui-jqrangeslider-handle-icon-top { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-slider-vertical { position: absolute; cursor: move; cursor: grab; cursor: -moz-grab; }
+.ui-jqrangeslider .ui-jqrangeslider-slider-vertical-dragging { cursor: -moz-grabbing; cursor: grabbing; }
+.ui-jqrangeslider .ui-jqrangeslider-background-vertical { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-background-vertical-bottom { position: absolute; }
+.ui-jqrangeslider .ui-jqrangeslider-background-vertical-top { position: absolute; }

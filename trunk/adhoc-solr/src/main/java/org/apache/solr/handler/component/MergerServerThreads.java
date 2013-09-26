@@ -4,8 +4,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +21,9 @@ public class MergerServerThreads {
 	public static ExecutorService[] EXECUTE = new ExecutorService[UniqConfig.getMergerRequestMaxDepth()];
 	static {
 		for (int i = 0; i < EXECUTE.length; i++) {
-			EXECUTE[i] = Executors.newFixedThreadPool(UniqConfig.getMergerRequestThreads());
+			EXECUTE[i] = new ThreadPoolExecutor(UniqConfig.getMergerRequestThreads(), UniqConfig.getMergerRequestThreads(),
+                    300L, TimeUnit.SECONDS,
+                    new LinkedBlockingQueue<Runnable>());
 			log.info("set ####### " + i);
 		}
 	}
@@ -31,7 +32,7 @@ public class MergerServerThreads {
 	          0,
 	          Integer.MAX_VALUE,
 	          300, TimeUnit.SECONDS, // terminate idle threads after 5 sec
-	          new SynchronousQueue<Runnable>()  // directly hand off tasks
+	          new LinkedBlockingQueue<Runnable>()  // directly hand off tasks
 	  );
 	
 	  public static class SingleThread{

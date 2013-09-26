@@ -6,18 +6,22 @@ import org.mortbay.jetty.webapp.WebAppContext;
 public class MdrillUi { 
 	public static void main(String[] args) throws Exception {
 		Integer port = Integer.parseInt(args[0]);
-		String warpath = args[1];
-		String tmpath = args[2];
+//		String warpath = args[1];
+//		String tmpath = args[2];
 		
-		System.setProperty("java.io.tmpdir", tmpath);
-		
-		if(args.length>3)
-		{
-			System.setProperty("higo.table.path", args[3]);
-		}
+//		System.setProperty("java.io.tmpdir", tmpath);
+//		
+//		if(args.length>3)
+//		{
+//			System.setProperty("higo.table.path", args[3]);
+//		}
 		
 	      System.setProperty("org.mortbay.jetty.Request.maxFormContentSize", "12000000");
 		
+	      String stormhome = System.getProperty("storm.home");
+			if (stormhome == null) {
+				stormhome=".";
+			}
 
 		Server server = new Server();
 
@@ -34,12 +38,13 @@ public class MdrillUi {
 		server.setConnectors(new SelectChannelConnector[] { conn });
 		server.setStopAtShutdown(true);
 
-		WebAppContext root = new WebAppContext();
-		root.setContextPath("/");
-		root.setWar(warpath);
-		WebAppContext context = new WebAppContext();
-		context.setContextPath("/higo");
-		context.setWar(warpath);
+		System.out.println("stormhome:"+stormhome);
+		WebAppContext root = new WebAppContext(stormhome+"/webapp","/");
+//		root.setContextPath("/");
+//		root.setWar(warpath);
+		WebAppContext context = new WebAppContext(stormhome+"/webapp","/higo");
+//		context.setContextPath("/higo");
+//		context.setWar(warpath);
 		server.addHandler(context);
 		server.addHandler(root);
 		server.start();

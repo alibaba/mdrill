@@ -87,8 +87,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 public abstract class IndexReader implements Cloneable,Closeable {
 
 	public static class InvertParams{
-		public SolrIndexSearcher _searcher;
-		public SolrParams _params;
+		public SolrIndexSearcher searcher;
+		public SolrParams params;
 		public SolrQueryRequest req;
 		public String[] fields;
 		public DocSet base;

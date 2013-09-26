@@ -5,7 +5,7 @@ import java.util.Comparator;
 
 import org.apache.log4j.Logger;
 import org.apache.solr.request.join.HigoJoinSort;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils.RefRowStat;
+import org.apache.solr.request.mdrill.MdrillUtils.RefRowStat;
 
 import com.alimama.mdrill.distinct.DistinctCount;
 

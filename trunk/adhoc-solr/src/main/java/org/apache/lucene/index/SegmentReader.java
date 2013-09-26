@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -43,7 +43,6 @@ import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.request.mdrill.MdrillDetail;
 import org.apache.solr.request.mdrill.MdrillGroupBy;
-import org.apache.solr.request.uninverted.UnInvertedField;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -471,7 +470,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   
   public boolean isSupportQuick() {
     ensureOpen();
-    return core.getTermsReader().supportquick;
+    return core.getTermsReader().supportquick.get();
   }
 
   @Override
@@ -486,7 +485,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  return this.core.getTermsReader().getQuickTis();
   }
   
-  public Long getpos(String field)
+  public Long getQuickPos(String field)
   {
 	  ensureOpen();
 	  StringBuffer buff=new StringBuffer();
@@ -494,19 +493,19 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
 	  try{
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
-	  buff.append("fileNum#"+String.valueOf(fileNum));
-	  if(fileNum!=null&&core!=null&&core.getTermsReader()!=null)
+	  buff.append("#fileNum#"+String.valueOf(fileNum));
+	  if(fileNum!=null&&fileNum>=0&&core!=null&&core.getTermsReader()!=null)
 	  {
-		  HashMap<Integer,Long> filepos=core.getTermsReader().fieldPos;
+		  ConcurrentHashMap<Integer, Long> filepos=core.getTermsReader().fieldPos;
 		  if(filepos!=null)
 		  {
-			  long rtn= filepos.get(fileNum);
-			  buff.append("pos#"+rtn);
+			  Long rtn= filepos.get(fileNum);
+			  buff.append("#pos#"+String.valueOf(rtn));
 			  log.info(buff.toString());
 			  return rtn;
 		  }
 	  }
-	  buff.append("pos#null");
+	  buff.append("#pos#null");
 
 	  log.info(buff.toString());
 	  }catch(Throwable e)
@@ -517,38 +516,35 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  return null;
   }
   
-  public Integer getCount(String field)
-  {
-	  ensureOpen();
-	  StringBuffer buff=new StringBuffer();
-	  buff.append("##getCount##"+field);
+	public Integer getQuickCount(String field) {
+		ensureOpen();
+		StringBuffer buff = new StringBuffer();
+		buff.append("##getCount##" + field);
 
-	  try{
-	  Integer fileNum=this.fieldInfos().fieldNumber(field);
-	  buff.append("fileNum#"+String.valueOf(fileNum));
+		try {
+			Integer fileNum = this.fieldInfos().fieldNumber(field);
+			buff.append("#fileNum#" + String.valueOf(fileNum));
 
-	  if(fileNum!=null&&core!=null&&core.getTermsReader()!=null)
-	  {
-		  HashMap<Integer, Integer> fileCount=core.getTermsReader().fieldCount;
-		  if(fileCount!=null)
-		  {
-			  int rtn= fileCount.get(fileNum);
-			  buff.append("count#"+rtn);
-			  return rtn;
-		  }
-	  }
-	  
-	  buff.append("count#null");
-	  log.info(buff.toString());
-  }catch(Throwable e)
-  {
-	  log.error(buff.toString(),e);
+			if (fileNum != null &&fileNum>=0&& core != null
+					&& core.getTermsReader() != null) {
+				ConcurrentHashMap<Integer, Integer> fileCount = core.getTermsReader().fieldCount;
+				if (fileCount != null) {
+					Integer rtn = fileCount.get(fileNum);
+					buff.append("#count#" + String.valueOf(rtn));
+					log.info(buff.toString());
+					return rtn;
+				}
+			}
 
-  }
-	  
+			buff.append("#count#null");
+			log.info(buff.toString());
+		} catch (Throwable e) {
+			log.error(buff.toString(), e);
 
-	  return null;
-  }
+		}
+
+		return null;
+	}
   
   public InvertResult invertScan(IndexSchema schema, InvertParams params) throws Exception{
 	    ensureOpen();
@@ -556,11 +552,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  rtn.setParams(schema,params);
 	  if(params.isdetail)
 	  {
-		  MdrillDetail detail=new MdrillDetail(params._searcher,this, params._params, params.req); 
-		  rtn.setNamelist(detail.getDetail(params.fields, params.base));
+		  MdrillDetail detail=new MdrillDetail(params.searcher,this, params.params, params.req); 
+		  rtn.setNamelist(detail.get(params.fields, params.base));
 	  }else{
-		  MdrillGroupBy groupby=new MdrillGroupBy(params._searcher,this, params._params, params.req);
-		  rtn.setNamelist(groupby.getCross(params.fields, params.base));
+		  MdrillGroupBy groupby=new MdrillGroupBy(params.searcher,this, params.params, params.req);
+		  rtn.setNamelist(groupby.get(params.fields, params.base));
 	  }
 	  
 	  return rtn;

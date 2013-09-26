@@ -36,6 +36,89 @@ public class AdhocWebServiceParams {
 	}
 	
 	
+	public static HashMap<String,ArrayList<String>> parseFieldToNames(String fl, String groupby,  String params,String leftjoin) throws JSONException, SQLException
+	{
+
+		HashMap<String,ArrayList<String>> fieldToName=new HashMap<String, ArrayList<String>>();
+		ArrayList<String> groupFields = WebServiceParams.groupFields(groupby);
+		ArrayList<String> showFields = WebServiceParams.showHiveFields(fl);
+		HigoAdhocJoinParams[] joins=AdhocWebServiceParams.parseJoinsHive(leftjoin, null);
+		String daycols=AdhocWebServiceParams.parseDayCols(groupFields,showFields);
+		ArrayList<String> fieldlist=new ArrayList<String>();
+		if(joins.length<=0)
+		{
+			for (String field : groupFields) {
+				fieldlist.add(field);
+			}
+			for (String field : showFields) {
+				if(!groupFields.contains(field))
+				{
+					fieldlist.add(field);
+				}
+			}
+
+		}else
+		{
+			for (String field : groupFields) {
+				fieldlist.add(field);
+			}
+			for (String field : showFields) {
+				
+				StateField showfield=WebServiceParams.parseStat(field);
+				
+				if(!groupFields.contains(showfield.realField))
+				{
+					if(!showfield.isstat)
+					{
+						fieldlist.add(field);
+					}
+				}
+			}
+			
+			for(int i=0;i<joins.length;i++)
+			{
+				HigoAdhocJoinParams jp=joins[i];
+				for (String field : jp.fl) {
+					fieldlist.add(jp.tablename+"."+field);
+
+				}
+			}
+			for (String field : showFields) {
+				
+				StateField showfield=WebServiceParams.parseStat(field);
+				
+				if(!groupFields.contains(showfield.realField))
+				{
+					if(showfield.isstat)
+					{
+						fieldlist.add(field);
+					}
+				}
+			}
+		}
+		
+		ArrayList<String> fieldNamelist=new ArrayList<String>();
+
+		String[] pcols = params == null ? new String[0] : new String(daycols
+				+ params.replaceAll("维度指标：", "").replaceAll("。.*$", ""))
+				.split(",");
+		for (String s : pcols) {
+			if (!AdhocOfflineService.isStatFields(s)) {
+				fieldNamelist.add(s);
+			}
+		}
+		for (String s : pcols) {
+			if (AdhocOfflineService.isStatFields(s)) {
+				fieldNamelist.add(s);
+			} 
+		}
+		
+		fieldToName.put("field", fieldlist);
+		fieldToName.put("namelist", fieldNamelist);
+		return fieldToName;
+	}
+	
+	
 	public static void parseColsNoJoins(StringBuffer cols,ArrayList<String> groupFields,ArrayList<String> showFields,HashMap<String,String> colMapforStatFilter,AtomicInteger nameindex)
 	{
 		String join = "";
@@ -145,6 +228,23 @@ public class AdhocWebServiceParams {
 			cols.append(" as "+alias);
 			join = ",";
 		}
+		for (String field : showFields) {
+			
+			StateField showfield=WebServiceParams.parseStat(field);
+			
+			if(!groupFields.contains(showfield.realField))
+			{
+				if(!showfield.isstat)
+				{
+					cols.append(join);
+
+					cols.append("jl1.");
+					cols.append(colMap.get(showfield.realField));
+					join = ",";
+
+				}
+			}
+		}
 		
 		for(int i=0;i<joins.length;i++)
 		{
@@ -157,9 +257,6 @@ public class AdhocWebServiceParams {
 				cols.append(" as "+alias);
 				join = ",";
 			}
-			
-			
-			
 		}
 		for (String field : showFields) {
 			
@@ -167,9 +264,10 @@ public class AdhocWebServiceParams {
 			
 			if(!groupFields.contains(showfield.realField))
 			{
-				cols.append(join);
 				if(showfield.isstat)
 				{
+					cols.append(join);
+
 					cols.append(showfield.type);
 					cols.append("(");
 					cols.append("jl1.");
@@ -179,11 +277,9 @@ public class AdhocWebServiceParams {
 					String alias="tmp_"+nameindex.incrementAndGet();
 					cols.append(" as "+alias);
 					colMapforStatFilter.put(field, alias);
-				}else{
-					cols.append("jl1.");
-					cols.append(colMap.get(showfield.realField));
+					join = ",";
+
 				}
-				join = ",";
 			}
 		}
 		
@@ -240,7 +336,10 @@ public class AdhocWebServiceParams {
 				p.txtPath=map.get("txtStorePath");
 			}
 			p.hdfsPath=obj.getString("path")+"/part-00000";
-			p.fq=WebServiceParams.fqListHive("dt",obj.getString("fq"), shard,false,null,null,null,null);
+			if(shard!=null)
+			{
+				p.fq=WebServiceParams.fqListHive(false,"dt",obj.getString("fq"), shard,false,null,null,null,null);
+			}
 			p.fl=obj.getString("fl").split(",");
 			p.leftkey=obj.getString("leftkey");
 			p.rightkey=obj.getString("rightkey");

@@ -11,7 +11,7 @@ import org.apache.solr.core.SolrCore;
 import com.alimama.mdrill.utils.UniqConfig;
 
 public class GrobalCache {
-	  private static long maxRamCachesize = UniqConfig.getFieldValueMemSize();
+	  private static long MAX_MEM_CACHE_SIZE = UniqConfig.getFieldValueMemSize();
 	  
 	  public static interface ILruMemSizeCache{
 		  public long memSize();
@@ -76,7 +76,7 @@ public class GrobalCache {
 				long newmemsize = value.memSize();
 				boolean isprint=newmemsize>1024*1024;
 
-				if ((newmemsize + this.totalUsedMemsize) >= maxRamCachesize) {
+				if ((newmemsize + this.totalUsedMemsize) >= MAX_MEM_CACHE_SIZE) {
 					long removesize = 0l;
 					ArrayList<ILruMemSizeKey> toremove = new ArrayList<ILruMemSizeKey>();
 					for (Entry<ILruMemSizeKey, ILruMemSizeCache> e : this.entrySet()) {
@@ -106,7 +106,7 @@ public class GrobalCache {
 				}
 				if(isprint)
 				{
-					SolrCore.log.info("####fieldvaluecache####"+(this.totalUsedMemsize/1024/1024)+"@"+(maxRamCachesize/1024/1024)+"mb,size="+this.size()+",mem="+(newmemsize/1024/1024)+"mb,key "+key+"");
+					SolrCore.log.info("####fieldvaluecache####"+(this.totalUsedMemsize/1024/1024)+"@"+(MAX_MEM_CACHE_SIZE/1024/1024)+"mb,size="+this.size()+",mem="+(newmemsize/1024/1024)+"mb,key "+key+"");
 				}
 				this.totalUsedMemsize+=newmemsize;
 				return super.put(key, value);

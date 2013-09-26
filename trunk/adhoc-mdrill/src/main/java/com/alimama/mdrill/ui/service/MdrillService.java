@@ -83,6 +83,18 @@ public class MdrillService {
 			return thrStop.get();
 		}
 		
+		public void stop()
+		{
+			this.setIsstop(true);
+		    while(!this.isstop())
+		    {
+		    	try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+		    }
+		}
+		
 
 		@Override
 		public void run() {
@@ -154,9 +166,23 @@ public class MdrillService {
 			ShardsList[] cores = GetShards.get(part.name, false);
 			
 			Map stormconf = Utils.readStormConfig();
-			if(cores.length!=StormUtils.parseInt(stormconf.get("higo.shards.count")))
+			for(int i=0;i<10;i++)
 			{
-				throw new Exception("core.size="+cores.length);
+				if(cores.length!=StormUtils.parseInt(stormconf.get("higo.shards.count")))
+				{
+					if(i>5)
+					{
+						throw new Exception("core.size="+cores.length);
+					}
+					SolrInfoList infolist=GetShards.getSolrInfoList(part.name);
+			    	infolist.run();
+					cores = GetShards.get(part.name, false);
+					LOG.info("core.size="+cores.length);
+					
+					Thread.sleep(1000);
+				}else{
+					break;
+				}
 			}
 			
 			ShardsList[] ms = GetShards.get(part.name, true);
@@ -177,7 +203,12 @@ public class MdrillService {
 					groupbyFields, showFields, commonStatMap,
 					distStatFieldMap,joins);
 			long t2=System.currentTimeMillis();
-			LOG.info("timetaken:"+(t2-t1)+",logParams2:"+logParams2);
+			long timetaken=t2-t1;
+			LOG.info("timetaken:"+(timetaken)+",logParams2:"+logParams2);
+			if(timetaken>1000l*100)
+			{
+				LOG.info("longrequest:"+(timetaken)+",logParams2:"+logParams2+"@"+rtn);
+			}
 			 hb.setIsstop(true);
 			    while(!hb.isstop())
 			    {
@@ -342,6 +373,8 @@ public class MdrillService {
 						minstart, maxEend, distStatFieldMap, commonStatMap, sortType,joins,null);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
 				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+				
+				jsonObj.put("__timedebug", qr.getTimetaken().toString());
 				LinkedHashMap<String,Count> groupValueCache=WebServiceParams.setGroupByResult(jsonObj, qr, groupbyFields, showFields,joins,null);
 				
 				if(jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10)&&groupValueCache.size()<=UniqConfig.defaultCrossMaxLimit()&&jsonObj.getString("code").equals("1"))
@@ -352,6 +385,7 @@ public class MdrillService {
 							0, Math.min(groupValueCache.size()*10,UniqConfig.defaultCrossMaxLimit()), distStatFieldMap, commonStatMap, sortType,joins,groupValueCache);
 					LOG.info("queryinfo_pre:"+shard.urlMain + "/select/?" + query.toString());
 					QueryResponse qr2 = server.query(query, SolrRequest.METHOD.POST);
+					jsonObj.put("__timedebug_qr2", qr2.getTimetaken().toString());
 					WebServiceParams.setGroupByResult(jsonObj, qr2, groupbyFields, showFields,joins,groupValueCache);
 					}catch(Exception e2)
 					{
@@ -417,6 +451,8 @@ public class MdrillService {
 						commonStatMap, sortType,joins,null);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
 				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+				jsonObj.put("__timedebug", qr.getTimetaken().toString());
+
 				WebServiceParams.setGroupByResult(jsonObj, qr, groupbyFields,showFields,joins,null);
 			} else {
 				WebServiceParams.setDetailByQuery(
@@ -424,6 +460,8 @@ public class MdrillService {
 						start, rows, sortType,joins);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
 				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+				jsonObj.put("__timedebug", qr.getTimetaken().toString());
+
 				WebServiceParams.setDetailResult(jsonObj, qr, showFields,joins);
 			}
 
@@ -493,7 +531,7 @@ public class MdrillService {
 			ArrayList<String> matchlist=new ArrayList<String>(); 
 			for(Entry<String,Long> e:dayAmt.entrySet())
 			{
-				if(e.getValue()>=maxamt)
+				//if(e.getValue()>=maxamt)
 				{
 					matchlist.add(e.getKey());
 				}

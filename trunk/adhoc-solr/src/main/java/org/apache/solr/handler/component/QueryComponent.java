@@ -46,13 +46,9 @@ public class QueryComponent extends SearchComponent
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
-//    SolrQueryResponse rsp = rb.rsp;
 
-//    String fl = params.get(CommonParams.FL);
     int fieldFlags = 0;
-//    if (fl != null) {
-//      fieldFlags |= SolrPluginUtils.setReturnFields(fl, rsp);
-//    }
+
     rb.setFieldFlags( fieldFlags );
 
     String defType = params.get(QueryParsing.DEFTYPE,QParserPlugin.DEFAULT_QTYPE);

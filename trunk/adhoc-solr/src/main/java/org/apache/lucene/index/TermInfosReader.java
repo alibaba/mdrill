@@ -19,7 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -27,7 +28,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.solr.request.uninverted.UnInvertedField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,9 +101,9 @@ final class TermInfosReader implements Closeable {
   IndexInput tisInput=null;
   IndexInput tiiInput=null;
   public IndexInput tiiInputquick=null;
-  boolean isQuickMode=false;
-  public HashMap<Integer,Long> fieldPos=new HashMap<Integer,Long>();
-  public HashMap<Integer,Integer> fieldCount=new HashMap<Integer,Integer>();
+  AtomicBoolean isQuickMode=new AtomicBoolean(false);
+  public ConcurrentHashMap<Integer,Long> fieldPos=new ConcurrentHashMap<Integer,Long>();
+  public ConcurrentHashMap<Integer,Integer> fieldCount=new ConcurrentHashMap<Integer,Integer>();
 
   public IndexInput quicktisInput=null;
   
@@ -112,10 +112,13 @@ final class TermInfosReader implements Closeable {
 	  return this.quicktisInput;
   }
   
-  public boolean supportquick=false;
+  public AtomicBoolean supportquick=new AtomicBoolean(false);
   TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize, int indexDivisor)
        throws CorruptIndexException, IOException {
     boolean success = false;
+    fieldPos=new ConcurrentHashMap<Integer,Long>();
+    fieldCount=new ConcurrentHashMap<Integer,Integer>();
+    supportquick.set(false);
 
     if (indexDivisor < 1 && indexDivisor != -1) {
       throw new IllegalArgumentException("indexDivisor must be -1 (don't load terms index) or greater than 0: got " + indexDivisor);
@@ -135,7 +138,6 @@ final class TermInfosReader implements Closeable {
 	  tisfilesize=sizebuff.readLong();
 	  if(directory.fileExists(quickTis))
 	  {
-		  supportquick=true;
 		  if(directory instanceof FSDirectory)
 	      {
 	    	  FSDirectory dddir=(FSDirectory)directory;
@@ -157,6 +159,7 @@ final class TermInfosReader implements Closeable {
 			  fieldCount.put(sizebuff.readInt(), sizebuff.readInt());
 		  }
 //		  log.info("##fieldCount##"+fieldCount.toString());
+		  supportquick.set(true);
 
 		  
 	  }
@@ -182,7 +185,7 @@ final class TermInfosReader implements Closeable {
       if(directory.fileExists(indexFileNamequick))
       {
     	  tiiInputquick=directory.openInput(indexFileNamequick, readBufferSize); 
-    	  this.isQuickMode=true;
+    	  this.isQuickMode.set(true);
       }
 
       
@@ -204,7 +207,7 @@ final class TermInfosReader implements Closeable {
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
          SegmentTermEnum indexEnum=null ;
         try {
-        	if(this.isQuickMode)
+        	if(this.isQuickMode.get())
         	{
 	            index = new TermInfosReaderIndexQuick(tiiInput,tiiInputquick,fieldInfos,tiifilesize, indexDivisor, dir.fileLength(indexFileName), totalIndexInterval);
         	}else{
@@ -246,11 +249,14 @@ final class TermInfosReader implements Closeable {
   }
 
   public final void close() throws IOException {
+	  fieldCount=new ConcurrentHashMap<Integer,Integer>();
+	  fieldPos=new ConcurrentHashMap<Integer,Long>();
+	  supportquick.set(false);
 	  if(this.quicktisInput!=null)
 	  {
 		  quicktisInput.close();
 	  }
-	  if(this.isQuickMode)
+	  if(this.isQuickMode.get())
 	  {
 		  if (tiiInput != null)
 		    {

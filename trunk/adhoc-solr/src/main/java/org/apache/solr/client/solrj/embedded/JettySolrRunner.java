@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -157,8 +160,12 @@ public class JettySolrRunner
 
 	}
 	
+	public static SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMddHHmmss");
+
 	public Long checkSolrRecord(String context, String newestPartion,String day)
 			throws MalformedURLException, SolrServerException {
+		
+
 		SolrServerException error = new SolrServerException("checkSolrRecord");
 		for (int i = 0; i < 3; i++) {
 			try {
@@ -179,12 +186,15 @@ public class JettySolrRunner
 				if (newestPartion != null && !newestPartion.isEmpty()) {
 					query.setParam(CommonParams.PARTION, newestPartion);
 				}
+
 				
 				if(day!=null&&!day.isEmpty())
 				{
 					query.addFilterQuery("thedate:"+day);
 				}
 				query.setParam(CommonParams.HIGOHB,true);
+				query.setParam("mlogtime", fmt.format(new Date()));
+
 				query.setParam("rows", "0");
 				query.setQuery("*:*");
 				QueryResponse qr3 = server.query(query);

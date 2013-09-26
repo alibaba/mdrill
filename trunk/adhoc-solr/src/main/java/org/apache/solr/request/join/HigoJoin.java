@@ -48,10 +48,9 @@ public class HigoJoin  {
 					FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
 					if(ftleft.isMultiValued()||ftright.isMultiValued())
 					{
-						uif = new HigoJoinMultyValues(reader,partion,schema,readerright,fieldLeft, fieldRigth);
+						throw new IOException("multi value");
 					}else{
 						uif = new HigoJoinSingleValues(reader,partion,schema,readerright,fieldLeft, fieldRigth);
-
 					}
 					cache.put(fvkey, uif);
 				}
@@ -89,7 +88,7 @@ public class HigoJoin  {
 					FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
 					if(ftleft.isMultiValued()||ftright.isMultiValued())
 					{
-						uif = new HigoJoinMultyValues(readerleft, readerright,fieldLeft, fieldRigth);
+						throw new IOException("multi value");
 					}else{
 						uif = new HigoJoinSingleValues(readerleft, readerright,fieldLeft, fieldRigth);
 

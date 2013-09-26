@@ -38,6 +38,7 @@ import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,7 +56,8 @@ public class ResponseBuilder
   public boolean doFacets;
   public boolean doStats;
   public boolean doTerms;
-  
+  public Map<String,String> timetaken=new LinkedHashMap<String,String>();
+
 
   private boolean needDocList = false;
   private boolean needDocSet = false;

@@ -114,8 +114,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
  	}
     
     
-
-    //merger server的逻辑
     int depth=req.getParams().getInt("__higo_ms_depth__", 0);
     HttpCommComponent comm = new HttpCommComponent(depth);
 
@@ -149,7 +147,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
         comm.submit(sreq, shard, params,depth);
     }
   
-
 		while (true) {
 			ShardResponse srsp = comm.takeCompletedOrError();
 			if (srsp == null)
@@ -213,12 +210,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 
 
 class HttpCommComponent {
- 
-  
   CompletionService<ShardResponse> completionService =null;
-  
   Set<Future<ShardResponse>> pending = new HashSet<Future<ShardResponse>>();
-
   HttpCommComponent(int depth) {
 	  this.completionService= MergerServerThreads.create(depth);
   }
@@ -249,12 +242,6 @@ class HttpCommComponent {
 			params.set(CommonParams.PARTION, shardparams[1]);
 		}
 
-		if (shardparams.length > 2) {
-			params.set("hadoop.merger.hashindex", shardparams[2]);
-		} else {
-			params.remove("hadoop.merger.hashindex");
-		}
-
 		params.remove(CommonParams.WT); // use default (currently javabin)
 		params.remove(CommonParams.VERSION);
 	}
@@ -270,7 +257,7 @@ class HttpCommComponent {
 	}
 
   void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params,final int depth) {
-	    
+	    final long begintime=System.currentTimeMillis();
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       public ShardResponse call() throws Exception {
         ShardResponse srsp = new ShardResponse();
@@ -292,16 +279,29 @@ class HttpCommComponent {
 	         ssr.nl = server.request(req);
 	         cli.getHttpConnectionManager().closeIdleConnections(0);
 	         
+	         Map<String,String> timetaken=(Map<String,String>) ssr.nl.get("mdrill_shard_time");
+	         if(timetaken==null)
+	         {
+	        	 timetaken=new LinkedHashMap<String,String>();
+		         ssr.nl.add("mdrill_shard_time", timetaken);
+
+	         }
+	        
 	         long t2=System.currentTimeMillis();
-	         SearchHandler.log.info("##HttpClient## timetaken="+(t2-startTime));
+	         long timetake=t2-startTime;
+	         long waittime=startTime-begintime;
+	         
+	         timetaken.put(String.valueOf(depth)+"@"+shard, String.valueOf(timetake)+"@"+waittime);
+	         
+	         SearchHandler.log.info("##HttpClient## timetaken="+(timetake)+"@"+waittime+",shard:"+shard);
         	
         }catch (RuntimeException th) {
-        	SearchHandler.log.error(params.toString(),th);
+        	SearchHandler.log.error(shard+"@"+params.toString(),th);
             srsp.setException(new Exception(shard, th));
             srsp.setResponseCode(-1);
         }
         catch (Throwable th) {
-        SearchHandler.log.error(params.toString(),th);
+        SearchHandler.log.error(shard+"@"+params.toString(),th);
           srsp.setException(new Exception(shard, th));
           if (th instanceof SolrException) {
             srsp.setResponseCode(((SolrException)th).code());
@@ -325,11 +325,11 @@ class HttpCommComponent {
         Future<ShardResponse> future = completionService.take();
         pending.remove(future);
         ShardResponse rsp = future.get();
-        if (rsp.getException() != null) return rsp; // if exception, return immediately
-        // add response to the response list... we do this after the take() and
-        // not after the completion of "call" so we know when the last response
-        // for a request was received.  Otherwise we might return the same
-        // request more than once.
+        if (rsp.getException() != null)
+    	{
+    		return rsp; // if exception, return immediately
+    	}
+
         rsp.getShardRequest().responses.add(rsp);
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
@@ -337,8 +337,6 @@ class HttpCommComponent {
       } catch (InterruptedException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception",e);
       }
     }

@@ -441,8 +441,9 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
         if (tablename.isEmpty()) {
         	context = "/solr";
         }
-        LOG.info("higolog checkSolr " + context+","+newestPartion);
-        return this.jetty.checkSolrRecord(context,newestPartion,day);
+        long rtn= this.jetty.checkSolrRecord(context,newestPartion,day);
+        LOG.info("higolog checkSolr " + context+","+newestPartion+","+day+",result="+rtn);
+        return rtn;
     }
     }
 

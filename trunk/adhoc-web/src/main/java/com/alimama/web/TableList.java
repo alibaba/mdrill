@@ -1,13 +1,20 @@
 package com.alimama.web;
 
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
+import backtype.storm.utils.Utils;
+
+import com.alimama.mdrill.json.JSONArray;
+import com.alimama.mdrill.json.JSONException;
+import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetShards;
 import com.alipay.bluewhale.core.cluster.ShardsState;
 import com.alipay.bluewhale.core.cluster.SolrInfo;
@@ -16,6 +23,8 @@ import com.alipay.bluewhale.core.cluster.SolrInfo.ShardCount;
 
 
 public class TableList {
+	
+
 	public static String[] getTablelist() throws Exception
 	{
 		StormClusterState stat=GetShards.getCluster();
@@ -73,7 +82,7 @@ public class TableList {
 		    			{
 		    				amt=0l;
 		    			}
-		    			if(cnt>1000)
+		    			if(cnt>1)
 		    			{
 		    				amt+=1;
 		    			}

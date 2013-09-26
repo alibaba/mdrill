@@ -65,7 +65,7 @@ public class BlockBufferMalloc {
 			super();
 			this.key = key;
 			this.index = pos;
-			this.flushkey=SolrResourceLoader.getCacheFlushKey();
+			this.flushkey=SolrResourceLoader.getCacheFlushKey(null);
 		}
 		
 

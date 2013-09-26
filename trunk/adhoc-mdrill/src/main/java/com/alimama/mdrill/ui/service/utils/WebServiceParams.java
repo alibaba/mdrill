@@ -309,11 +309,13 @@ public class WebServiceParams {
 		server.setRequestWriter(new BinaryRequestWriter());
 		return server;
 	}
-	
+	public static SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMddHHmmss");
+
 	public static SolrQuery makeSolrQuery(GetPartions.Shards shard)
 	{
 		SolrQuery query = new SolrQuery();
 		query.setParam("shards", shard.urlShards);
+		query.setParam("mlogtime", fmt.format(new Date()));
 		query.setParam(FacetParams.MERGER_MAX_SHARDS, String.valueOf(UniqConfig.getMaxMergerShard()));
 		query.setParam(FacetParams.MERGER_SERVERS, shard.urlMSs);
 		return query;
@@ -563,12 +565,23 @@ public static OperateType parseOperateType(int operate)
 		{
 			isdate=true;
 		}
+		
+		
+		boolean isnull=false;
+		if(value2.toLowerCase().trim().equals("null"))
+		{
+			isnull=true;
+		}
 		switch(operate){
 		case 1:
 		{
 			if(isdate)
 			{
 				return key+":"+TdateFormat.transformSolrMetacharactor(TdateFormat.ensureTdateForSearch(value2));
+			}
+			if(isnull)
+			{
+				return "-"+key+":['' TO *]";
 			}
 			return key+":"+TdateFormat.transformSolrMetacharactor(value2);
 		}
@@ -593,6 +606,10 @@ public static OperateType parseOperateType(int operate)
 			if(isdate)
 			{
 				return "-"+key+":"+TdateFormat.transformSolrMetacharactor(TdateFormat.ensureTdateForSearch(value2));
+			}
+			if(isnull)
+			{
+				return key+":['' TO *]";
 			}
 			return "-"+key+":"+TdateFormat.transformSolrMetacharactor(value2);
 		}
@@ -712,7 +729,7 @@ public static OperateType parseOperateType(int operate)
 	
 	
 	
-	private static String parseFqOperateHive(String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
+	private static String parseFqOperateHive(boolean isNumber,String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
 	{
 		
 		
@@ -733,7 +750,6 @@ public static OperateType parseOperateType(int operate)
 		}
 		
 		
-		boolean isNumber=false;
 		if(ft.equals("tlong")||ft.equals("tdouble")||ft.equals("tint")||ft.equals("tfloat"))
 		{
 			isNumber=true;
@@ -1040,7 +1056,7 @@ public static OperateType parseOperateType(int operate)
 	}
 	
 	
-	public static ArrayList<String> fqListHive(String part,String queryStr,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname) throws JSONException
+	public static ArrayList<String> fqListHive(boolean isNumber,String part,String queryStr,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname) throws JSONException
 	{
 		ArrayList<String> fqList = new ArrayList<String>();
 		if(queryStr==null||queryStr.isEmpty()||queryStr.equals("*:*")){
@@ -1060,7 +1076,7 @@ public static OperateType parseOperateType(int operate)
 				{
 					filterType=obj.getString("filter");
 				}
-				ArrayList<String> sublist=fqListHive(part,obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap,colMap,colMap2,tblname);
+				ArrayList<String> sublist=fqListHive(isNumber,part,obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap,colMap,colMap2,tblname);
 				if(sublist.size()==1)
 				{
 					fqList.add(sublist.get(0));
@@ -1108,7 +1124,7 @@ public static OperateType parseOperateType(int operate)
         				valueList = valueList.replaceAll("\'", "\\\'");
         			}
         			
-        			String fq=parseFqOperateHive(part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,colMap2,tblname);
+        			String fq=parseFqOperateHive( isNumber,part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,colMap2,tblname);
         			if(fq!=null)
         			{
         				fqList.add(fq);

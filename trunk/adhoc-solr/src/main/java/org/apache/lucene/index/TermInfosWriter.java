@@ -29,7 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils;
+import org.apache.solr.request.mdrill.MdrillUtils;
 import org.apache.solr.request.uninverted.TermIndex;
 import org.apache.solr.request.uninverted.UnInvertedFieldUtils;
 import org.apache.solr.request.uninverted.UnInvertedFieldUtils.Datatype;
@@ -232,7 +232,6 @@ public final class TermInfosWriter implements Closeable {
       if(this.lastquickfieldNumber!=fieldNumber)
       {
     	  	fieldCount.put(this.lastquickfieldNumber, this.termNum);
-//	  		System.out.println("addtis@"+fieldNumber+"@"+String.valueOf(fieldPos.get(fieldNumber))+"@"+this.outputQuickTis.getFilePointer());
 	  		fieldPos.put(fieldNumber, this.outputQuickTis.getFilePointer());
 
 	        this.ft=this.schemainfo.getField(term.field).getType();
@@ -243,11 +242,6 @@ public final class TermInfosWriter implements Closeable {
       }
       
       if ((this.termNum & TermIndex.intervalMask)==0){
-//    	  if(this.termNum<=256)
-//    	  {
-//	  		System.out.println("addtermNum@"+fieldNumber+"@"+this.termNum+"@"+term.text()+"@"+this.outputQuickTis.getFilePointer());
-//    	  }
-
 			this.outputQuickTis.writeString(term.text());
       }
       
@@ -255,7 +249,7 @@ public final class TermInfosWriter implements Closeable {
 			long val=Long.parseLong(ft.indexedToReadable(term.text()));
 			this.outputQuickTis.writeVVVLong(val);
 		}else if (dataType == Datatype.d_double) {
-			Double val=MdrillPorcessUtils.ParseDouble(ft.indexedToReadable(term.text()));
+			Double val=MdrillUtils.ParseDouble(ft.indexedToReadable(term.text()));
 			this.outputQuickTis.writeVVVLong(Double.doubleToLongBits(val));
 		}else{
 			CRC32 crc32 = new CRC32();

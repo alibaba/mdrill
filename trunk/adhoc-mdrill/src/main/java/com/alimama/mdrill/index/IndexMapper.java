@@ -123,15 +123,24 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
     
     private boolean validate(String[] values,String record,Context context)
     {
-    	if(values.length<2)
+    	if(usedthedate)
     	{
-    		if(debuglines<100)
-    		{
-    			debuglines++;
-        		System.out.println("miss columns values2: " + record.replaceAll(split, "#")   + "");
-    		}
-    		context.getCounter("higo", "skiprecords").increment(1);
-    		return false;
+	    	if(values.length<2)
+	    	{
+	    		if(debuglines<100)
+	    		{
+	    			debuglines++;
+	        		System.out.println("miss columns values2: " + record.replaceAll(split, "#")   + "");
+	    		}
+	    		context.getCounter("higo", "skiprecords").increment(1);
+	    		return false;
+	    	}
+    	}else{
+        	if(parseDefault(record)==null)
+        	{
+	    		return false;
+        	}
+
     	}
     	return true;
     }
@@ -203,7 +212,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
     	if(this.isuniqcheck&&res.containsKey(this.uniqfield))
     	{
     		String notempty=res.get(this.uniqfield);
-    		if(notempty.length()>0)
+    		if(notempty.length()>0&&!notempty.equals("_"))
     		{
     	    context.write(new Text("uniq_"+notempty), new DocumentList());
     		}

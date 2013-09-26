@@ -86,7 +86,13 @@ public class QueryResponse extends SolrResponseBase
     this.solrServer = solrServer;
   }
 
-  @Override
+  
+  Map<String,String> timetaken=new LinkedHashMap<String,String>();
+  public Map<String,String> getTimetaken() {
+	return timetaken;
+}
+
+@Override
   public void setResponse( NamedList<Object> res )
   {
     super.setResponse( res );
@@ -108,6 +114,11 @@ public class QueryResponse extends SolrResponseBase
         // extractFacetInfo inspects _results, so defer calling it
         // in case it hasn't been populated yet.
       }
+      
+      else if( "mdrill_shard_time".equals( n ) ) {
+    	  timetaken = (Map<String,String>) res.getVal( i );
+        }
+      
       else if( "debug".equals( n ) ) {
         _debugInfo = (NamedList<Object>) res.getVal( i );
         extractDebugInfo( _debugInfo );

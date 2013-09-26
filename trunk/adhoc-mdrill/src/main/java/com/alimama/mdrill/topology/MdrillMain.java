@@ -96,6 +96,11 @@ public class MdrillMain {
 			{
 				type="tdouble";
 			}
+			
+			if(type.indexOf("date")>0||type.indexOf("tdate")>0||type.indexOf("time")>0)
+			{
+				type="tdate";
+			}
 			if(type.indexOf("char")>0||type.indexOf("string")>0)
 			{
 				type="string";

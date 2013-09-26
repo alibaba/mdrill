@@ -30,6 +30,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.lucene.util.OpenBitSet;
@@ -95,6 +96,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
 	private String partionKey = "default";
+	private PartionKey partionCacheKey;
+	public PartionKey getPartionCacheKey() {
+		return partionCacheKey;
+	}
+
+	public void setPartionCacheKey(PartionKey partionCacheKey) {
+		this.partionCacheKey = partionCacheKey;
+	}
 
 	public String getPartionKey() {
 		return partionKey;

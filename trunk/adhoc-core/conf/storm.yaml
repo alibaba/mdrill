@@ -15,17 +15,17 @@
  hadoop.java.opts: "-Xmx1024m"
  
 ####蓝鲸各种心跳间隔配置####
- nimbus.task.timeout.secs: 240
- task.heartbeat.frequency.secs: 12
- nimbus.supervisor.timeout.secs: 360
+ nimbus.task.timeout.secs: 30
+ task.heartbeat.frequency.secs: 6
+ nimbus.supervisor.timeout.secs: 120
  supervisor.heartbeat.frequency.secs: 10
  nimbus.monitor.freq.secs: 20
- supervisor.worker.timeout.secs: 240
- supervisor.monitor.frequency.secs: 12
- worker.heartbeat.frequency.secs: 4
- storm.zookeeper.session.timeout: 60000
- storm.zookeeper.retry.interval: 6000
- storm.zookeeper.retry.times: 10
+ supervisor.worker.timeout.secs: 200
+ supervisor.monitor.frequency.secs: 20
+ worker.heartbeat.frequency.secs: 10
+# storm.zookeeper.session.timeout: 60000
+# storm.zookeeper.retry.interval: 6000
+# storm.zookeeper.retry.times: 10
  
 ####mdrill配置####
  higo.workdir.list: "/disk1/taobao/mdrill,/disk2/taobao/mdrill,/disk3/taobao/mdrill,/disk4/taobao/mdrill,/disk5/taobao/mdrill,/disk6/taobao/mdrill,/disk7/taobao/mdrill,/disk8/taobao/mdrill,/disk9/taobao/mdrill,/disk10/taobao/mdrill"
@@ -113,8 +113,18 @@
  higo.partion.type.rpt_seller_all_m_single: "single"
  higo.partion.type.rpt_seller_all_m_dir: "dir@thedate"
 
-####以下为adhoc项目专用，跟mdrill无关，可忽略####
+####以下为adhoc项目专用，跟mdrill无关，不启动UI的话可忽略####
+ higo.ui.conf.dir: "/home/taobao/bluewhale/ui16/alimama/adhoc-core/webapp"
  higo.download.offline.conn: "jdbc:mysql://tiansuan1.kgb.cm4:3306/adhoc_download?useUnicode=true&characterEncoding=utf8"
  higo.download.offline.username: "adhoc"
  higo.download.offline.passwd: "adhoc"
  higo.download.offline.store: "/group/tbdp-etao-adhoc/p4padhoc/download/offline"
+ mysql.url: "jdbc:mysql://tiansuan1.kgb.cm4:3306/query_analyser?useUnicode=true&characterEncoding=UTF-8"
+ mysql.username: "adhoc"
+ mysql.password: "adhoc"
+
+ dev.name.list:
+   - "木晗"
+   - "子落"
+   - "张壮"
+   - "行列"

@@ -2,9 +2,7 @@ package org.apache.solr.request.join;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -20,13 +18,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils.GroupList;
-import org.apache.solr.request.mdrill.MdrillPorcessUtils.UnvertFields;
+import org.apache.solr.request.mdrill.GroupListCache;
+
+import org.apache.solr.request.mdrill.MdrillUtils.UnvertFields;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
@@ -85,73 +81,55 @@ public class HigoJoinUtils {
 	{
 		String path=pathToLocal(req, tablename);
 		LOG.info("###joinpath###"+path);
-		
-		return  req.getCore().getSearcherByPath("join@"+SolrResourceLoader.getCacheFlushKey()+"@"+String.valueOf(path), path, false, false, false);
-
+		return req.getCore().getSearcherByPath(null,"join@"+SolrResourceLoader.getCacheFlushKey(null)+"@"+String.valueOf(path), path, false, false, false);
 	}
-	
-	
-	
 	
 	public static interface MakeGroups
 	{
-		public  ArrayList<GroupList> toGroupsByJoin(int doc,GroupList group,UnvertFields ufs,HigoJoinInvert[] joinInvert) throws IOException;
-		
+		public  boolean toGroupsByJoin(int doc,GroupListCache.GroupList group,UnvertFields ufs,HigoJoinInvert[] joinInvert) throws IOException;
 	}
 	
 	public static class MakeGroupsDefault implements MakeGroups
 	{
-		ArrayList<GroupList> val=new ArrayList<MdrillPorcessUtils.GroupList>(1);
 		@Override
-		public ArrayList<GroupList> toGroupsByJoin(int doc, GroupList group,
+		public boolean toGroupsByJoin(int doc, GroupListCache.GroupList group,
 				UnvertFields ufs, HigoJoinInvert[] joinInvert)throws IOException {
 			group.reset();
 			for (int i:ufs.listIndex) {
 				group.list[i]=ufs.cols[i].uif.termNum(doc);
 			}
-			 val.set(0, group);
-			 return val;
+			return true;
 		}
 	}
 	
 	public static class MakeGroupsJoin implements MakeGroups
 	{
-		LinkedBlockingQueue<GroupList> groupListCache;
-		public MakeGroupsJoin(LinkedBlockingQueue<GroupList> groupListCache) {
+		LinkedBlockingQueue<GroupListCache.GroupList> groupListCache;
+		public MakeGroupsJoin(LinkedBlockingQueue<GroupListCache.GroupList> groupListCache) {
 			this.groupListCache = groupListCache;
 		}
 		@Override
-		public ArrayList<GroupList> toGroupsByJoin(int doc, GroupList group,
+		public boolean toGroupsByJoin(int doc, GroupListCache.GroupList group,
 				UnvertFields ufs, HigoJoinInvert[] joinInvert) throws IOException {
 			group.reset();
 			for (int i:ufs.listIndex) {
 				group.list[i]=ufs.cols[i].uif.termNum(doc);
 			}
-			ArrayList<GroupList> tmp=new ArrayList<MdrillPorcessUtils.GroupList>(1);
-			ArrayList<GroupList> newgroup=new ArrayList<MdrillPorcessUtils.GroupList>(1);
-			newgroup.add(group.copy(this.groupListCache));
 
 			int joinoffset=ufs.length;
 			for(HigoJoinInvert inv:joinInvert)
 			{
-				for(GroupList base:newgroup)
+
+				boolean rtn=inv.fieldNum(doc,joinoffset,group,groupListCache);
+				if(!rtn)
 				{
-					GroupList[] list=inv.fieldNum(doc,joinoffset,base,groupListCache);
-					if(list!=null)
-					{
-						for(GroupList g:list)
-						{
-							tmp.add(g);
-						}
-					}
+					return false;
 				}
-				newgroup=tmp;
-				tmp=new ArrayList<MdrillPorcessUtils.GroupList>();
 				joinoffset+=inv.fieldCount();
 			}
 			
-			return newgroup;
-		
+			return true;
+			
 		}
 		
 		
@@ -259,61 +237,26 @@ public class HigoJoinUtils {
 		}
 	}
 	
-//	public static synchronized void exec(SolrQueryRequest req,String tablename,HigoJoinInvert open) throws IOException, ParseException
-//	{
-//		int hashcode=tablename.hashCode();
-//		hashcode=hashcode<0?hashcode*-1:hashcode;
-//		int len= HigoJoinUtils.localStoreBase.length;
-//		String choosepase= HigoJoinUtils.localStoreBase[hashcode%len];
-//		File lockbase=new File(choosepase,"higojoin_lock_lockOpen");
-//		
-//		File lockPath=new File(lockbase,tablename);
-//		FileLock flout = null;
-//		RandomAccessFile out = null;
-//		FileChannel fcout = null;
-//		try {
-//		
-//			
-//			if(!lockbase.exists())
-//			{
-//				lockbase.mkdirs();
-//			}
-//		
-//			
-//			
-//			if (!lockPath.exists()) {
-//				lockPath.createNewFile();
-//			}
-//
-//			out = new RandomAccessFile(lockPath, "rw");
-//			fcout = out.getChannel();
-//			flout = fcout.lock();
-//			LOG.info("log exec "+lockPath.getAbsolutePath());
-//			open.lockopen(req);
-//			
-//		}finally{
-//			
-//			try {
-//				if (flout != null) {
-//					flout.release();
-//				}
-//				if (fcout != null) {
-//					fcout.close();
-//				}
-//				if (out != null) {
-//					out.close();
-//				}
-//				out = null;
-//			} catch (Exception e) {
-//			}
-//			lockPath.delete();
-//
-//		}
-//		
-//		
-//	}
+	public static String pathForLock(SolrQueryRequest req,String tablename) throws IOException
+	{
+		int hashcode=tablename.hashCode();
+		hashcode=hashcode<0?hashcode*-1:hashcode;
+		int len= HigoJoinUtils.localStoreBase.length;
+		String choosepase= HigoJoinUtils.localStoreBase[hashcode%len];
+		
+		File lockbase=new File(choosepase,"higojoin_lock_pathForLock");
+		
+		if(!lockbase.exists())
+		{
+			lockbase.mkdirs();
+		}
+		
+		return lockbase.getAbsolutePath();
 	
-	private static synchronized String pathToLocal(SolrQueryRequest req,String tablename) throws IOException
+	}
+
+	
+	private static String pathToLocal(SolrQueryRequest req,String tablename) throws IOException
 	{
 		int hashcode=tablename.hashCode();
 		hashcode=hashcode<0?hashcode*-1:hashcode;
@@ -331,7 +274,6 @@ public class HigoJoinUtils {
 		File completePath=new File(workPath,"complete");
 		
 		maybeclear(basedir,lockbase);
-
 		
 		TryLockFile lock=new TryLockFile(lockPath.getAbsolutePath());
 		try {
@@ -385,7 +327,6 @@ public class HigoJoinUtils {
 		}finally{
 			lock.unlock();
 			lockPath.delete();
-
 		}
 		
 		return workPath.getAbsolutePath();

@@ -1,8 +1,6 @@
 package org.apache.solr.request.uninverted;
 
-import org.apache.solr.request.BigReUsedBuffer;
 import org.apache.solr.request.BigReUsedBuffer.BlockArray;
-import org.apache.solr.request.uninverted.UnInvertedFieldTermNumRead.*;
 import org.apache.solr.schema.DoubleField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.LongField;
@@ -210,16 +208,6 @@ public class UnInvertedFieldUtils {
 	    return pos;
 	  }
 	  
-	  
-	  public static TermNumReadInterface getReadInterface(boolean isMultiValued)
-	  {
-		  if(isMultiValued)
-		    {
-		       return new TermNumReadMulty();
-
-		    }else{
-		        return new TermNumReadSingle();
-		    }
-	  }
+	
 	  
 }
