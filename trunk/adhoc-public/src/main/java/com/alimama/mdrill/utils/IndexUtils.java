@@ -131,7 +131,7 @@ public class IndexUtils {
 		try {
 			truncate(lfs, tmp);
 			boolean isziped=false;
-			if(checkzip&&fs.getFileStatus(src).isFile())
+			if(checkzip&&!fs.getFileStatus(src).isDir())
 			{
 				try{
 				ZipUtils.unZip(fs, src.toString(), lfs, tmp.toString());
