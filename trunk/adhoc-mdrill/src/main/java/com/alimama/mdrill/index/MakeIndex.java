@@ -1,6 +1,7 @@
 package com.alimama.mdrill.index;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -8,6 +9,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -19,6 +21,7 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import backtype.storm.utils.Utils;
 
 import com.alimama.mdrill.index.utils.DocumentList;
+import com.alimama.mdrill.index.utils.DocumentMap;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
 import com.alimama.mdrill.utils.HadoopUtil;
 import com.alipay.bluewhale.core.utils.StormUtils;
@@ -59,20 +62,7 @@ public class MakeIndex {
 	
 	public static String parseSplit(String str)
 	{
-		if(str.equals("\\001"))
-		{
-			return "\001";
-		}
-		if(str.equals("default"))
-		{
-			return "\001";
-		}
-		if(str.equals("tab"))
-		{
-			return "\t";
-		}
-		
-		return str;
+		return SplitStrEncode.parseSplit(str);
 	}
 	
 	public static interface updateStatus{
@@ -100,6 +90,31 @@ public class MakeIndex {
 			) throws Exception
 	{
 		return make(fs, solrHome, jconf, filetype, inputBase, inputs, inputmatch, output, smallindex, shards, split, usedthedate, custFields, update,"",parallel);
+	}
+	
+	
+	public static HashSet<FileStatus> getInputList(
+			FileSystem fs,
+			String inputBase,
+			HashSet<String> inputs,
+			String inputmatch
+			) throws IOException
+	{
+		
+		HashSet<FileStatus> rtn=new HashSet<FileStatus>();
+		for (String input : inputs) {
+			Path p = new Path(inputBase, "*" + input + "*/"+inputmatch+"");
+			FileStatus[] list=fs.globStatus(p);
+			if(list==null)
+			{
+				continue;
+			}
+			for(FileStatus f:list)
+			{
+				rtn.add(f);
+			}
+		}
+		return rtn;
 	}
    
 	public static int make(
@@ -137,8 +152,14 @@ public class MakeIndex {
 			}
 		}
 		
-		
-		String jobnameOutput=new String(output);
+		Path baseP=new Path(output);
+		Path baseParent=new Path(output);
+		if(baseP.getParent()!=null&&baseP.getParent().getParent()!=null)
+		{
+			baseParent=baseP.getParent().getParent();
+		}
+
+		String jobnameOutput=new String(baseParent.toString()+"*"+baseP.getName());
 		int cutoutlen=50;
 		if(jobnameOutput.length()>cutoutlen)
 		{
@@ -178,9 +199,9 @@ public class MakeIndex {
 		conf.set("higo.index.fields", fields);
 		job.setMapperClass(IndexMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(DocumentList.class);
+		job.setMapOutputValueClass(DocumentMap.class);
 		job.setReducerClass(IndexReducer.class);
-		job.setOutputKeyClass(Text.class);
+		job.setOutputKeyClass(IntWritable.class);
 		job.setOutputValueClass(Text.class);
 		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 		FileOutputFormat.setOutputPath(job, smallindex);
@@ -212,10 +233,11 @@ public class MakeIndex {
 		job2.setJarByClass(JobIndexerPartion.class);
 		job2.setInputFormatClass(SequenceFileInputFormat.class);
 		SequenceFileInputFormat.addInputPath(job2, new Path(smallindex,"part-r-*"));
-		job2.setMapOutputKeyClass(Text.class);
+		job2.setMapOutputKeyClass(IntWritable.class);
 		job2.setMapOutputValueClass(Text.class);
+		job2.setPartitionerClass(IntPartion.class) ;
 		job2.setReducerClass(IndexReducerMerge.class);
-		job2.setOutputKeyClass(Text.class);
+		job2.setOutputKeyClass(IntWritable.class);
 		job2.setOutputValueClass(Text.class);
 		job2.setOutputFormatClass(SequenceFileOutputFormat.class);
 		job2.setNumReduceTasks(shards);

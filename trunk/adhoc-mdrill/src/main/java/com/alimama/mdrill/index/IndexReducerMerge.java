@@ -5,6 +5,7 @@ import java.util.Iterator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -17,7 +18,7 @@ import com.alimama.mdrill.index.utils.ShardWriter;
 import com.alimama.mdrill.utils.ZipUtils;
 
 public class IndexReducerMerge extends
-		Reducer<Text, Text, Text, Text> {
+		Reducer<IntWritable, Text, IntWritable, Text> {
 	private HeartBeater heartBeater = null;
 	private ShardWriter shardWriter = null;
 	private String indexHdfsPath = null;
@@ -77,7 +78,7 @@ public class IndexReducerMerge extends
 		return shardWriter;
 	}
 
-	protected void reduce(Text key, Iterable<Text> values,
+	protected void reduce(IntWritable key, Iterable<Text> values,
 			Context context) throws java.io.IOException, InterruptedException {
 		Configuration conf = context.getConfiguration();
 		FileSystem fs = FileSystem.get(conf);

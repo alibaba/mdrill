@@ -159,7 +159,7 @@ public class MdrillService {
 			HashSet<String> distStatFieldMap = new HashSet<String>();
 			WebServiceParams.setCrossStatMap(showFields,commonStatMap,distStatFieldMap);
 	
-			HashMap<String, String> fieldColumntypeMap = readFieldsFromSchemaXml(part.name);
+			LinkedHashMap<String, String> fieldColumntypeMap = readFieldsFromSchemaXml(part.name);
 
 			SortParam sortType = WebServiceParams.sort(sort, order,fieldColumntypeMap);
 
@@ -272,7 +272,7 @@ public class MdrillService {
 		MdrillService.basePath = basePath;
 	}
 
-	static HashMap<String, HashMap<String, String>> cache = new HashMap<String, HashMap<String, String>>();
+	static HashMap<String, LinkedHashMap<String, String>> cache = new HashMap<String, LinkedHashMap<String, String>>();
 
 	
 	public static String getBasePath()
@@ -293,18 +293,18 @@ public class MdrillService {
 		
 		return basePath;
 	}
-	public static synchronized HashMap<String, String> readFieldsFromSchemaXml(
+	public static synchronized LinkedHashMap<String, String> readFieldsFromSchemaXml(
 			String tablename) throws Exception {
 
 		if (tablename.equals("rpt_p4padhoc_auction")) {
 			tablename = "rpt_hitfake_auctionall_d";
 		}
 
-		HashMap<String, String> datatype = cache.get(tablename);
+		LinkedHashMap<String, String> datatype = cache.get(tablename);
 		if (datatype != null) {
 			return datatype;
 		}
-		datatype = new HashMap<String, String>();
+		datatype = new LinkedHashMap<String, String>();
 
 		Map stormconf = Utils.readStormConfig();
 		Configuration conf = getConf(stormconf);

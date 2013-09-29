@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,17 @@ public class TryLockFile {
 			}
 			out = new RandomAccessFile(file, "rw");
 			fcout = out.getChannel();
-			flout = fcout.lock();
+			
+			for(int i=0;i<10000;i++)
+			{
+				try
+				{
+					flout = fcout.lock();
+					break;
+				}catch(OverlappingFileLockException e){
+					Thread.sleep(300);
+				}
+			}
 		}catch(Throwable e)
 		{
 			log.error("trylock",e);

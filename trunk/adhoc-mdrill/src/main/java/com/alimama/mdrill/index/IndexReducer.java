@@ -5,20 +5,22 @@ import java.util.Iterator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.lucene.analysis.Analyzer;
 
 import com.alimama.mdrill.index.utils.DocumentConverter;
 import com.alimama.mdrill.index.utils.DocumentList;
+import com.alimama.mdrill.index.utils.DocumentMap;
 import com.alimama.mdrill.index.utils.HeartBeater;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
 import com.alimama.mdrill.index.utils.RamWriter;
 import com.alimama.mdrill.index.utils.ShardWriter;
 
 
-public class IndexReducer extends  Reducer<Text, DocumentList, Text, Text> {
+public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text> {
     private HeartBeater heartBeater = null;
     private ShardWriter shardWriter = null;
     private String tmpath = null;
@@ -64,7 +66,9 @@ public class IndexReducer extends  Reducer<Text, DocumentList, Text, Text> {
 				fs.rename(new Path(tmpath), new Path(indexHdfsPath));
 			}
 			if (shardWriter.getNumDocs() > 0 && lastkey != null) {
-				context.write(lastkey,new Text(indexHdfsPath));
+				TaskID taskId = context.getTaskAttemptID().getTaskID();
+				int partition = taskId.getId();
+				context.write(new IntWritable(partition),new Text(indexHdfsPath));
 			}
 			FileSystem lfs = FileSystem.getLocal(conf);
 			if(lfs.exists(new Path(localtmpath)))
@@ -96,14 +100,14 @@ public class IndexReducer extends  Reducer<Text, DocumentList, Text, Text> {
     private Text lastkey = null;
     private int debuglines=0;
 
-	protected void reduce(Text key, Iterable<DocumentList> values,
+	protected void reduce(Text key, Iterable<DocumentMap> values,
 			Context context) throws java.io.IOException, InterruptedException {
 		if(key.toString().startsWith("uniq_"))
 		{
 			int dumps=0;
-			Iterator<DocumentList> iterator = values.iterator();
+			Iterator<DocumentMap> iterator = values.iterator();
 			while (iterator.hasNext()) {
-				DocumentList doclist = iterator.next();
+				DocumentMap doclist = iterator.next();
 				dumps++;
 			}
 			if(dumps>1)
@@ -119,37 +123,37 @@ public class IndexReducer extends  Reducer<Text, DocumentList, Text, Text> {
 		}
 		
 		lastkey = key;
-		RamWriter ramMerger = null;
-		Iterator<DocumentList> iterator = values.iterator();
+		DocumentList doclistcache=new DocumentList();
+		RamWriter ramMerger = new RamWriter();
+		Iterator<DocumentMap> iterator = values.iterator();
 		while (iterator.hasNext()) {
 			if(doccount>maxDocCount)
 			{
 				break ;
 			}
-			ramMerger = this.maybeCreate(ramMerger);
-			DocumentList doclist = iterator.next();
-			RamWriter ram = doclist.toRamWriter(documentConverter, analyzer,context);
-			ramMerger.process(ram);
-			doclist.clean();
-			if (this.maybeFlush(ramMerger,context,false)) {
-				ramMerger = null;
+			doclistcache.add(iterator.next());
+			if(!doclistcache.isoversize())
+			{
+				continue;
 			}
+			RamWriter ram = doclistcache.toRamWriter(documentConverter, analyzer,context);
+			ramMerger.process(ram);
+			if (this.maybeFlush(ramMerger,context,false)) {
+				ramMerger =  new RamWriter();;
+			}
+			doclistcache=new DocumentList();
+
 		}
+		
+		RamWriter ram = doclistcache.toRamWriter(documentConverter, analyzer,context);
+		ramMerger.process(ram);
 		if (this.maybeFlush(ramMerger,context,true)) {
 			ramMerger = null;
 		}
 		
 	}
     
-    private RamWriter maybeCreate(RamWriter form) throws IOException
-    {
-    	if(form!=null)
-    	{
-    		return form;
-    	}
-    	
-    	return  new RamWriter();
-    }
+  
     
     private long minsize=1024l*1024*32;
     private static long maxDocCount=10000l*1000*10;

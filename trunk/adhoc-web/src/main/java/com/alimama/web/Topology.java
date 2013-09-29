@@ -12,7 +12,6 @@ import com.alipay.bluewhale.core.cluster.StormClusterState;
 import com.alipay.bluewhale.core.daemon.NodePort;
 import com.alipay.bluewhale.core.task.common.Assignment;
 import com.alimama.mdrill.partion.GetShards;
-import com.alimama.mdrill.topology.*;
 public class Topology {
 	
 	public static String[] active_storms() throws Exception
@@ -45,6 +44,7 @@ public class Topology {
 		List<Integer> taskids=stat.task_ids(stormId);
 		for(Integer tid:taskids)
 		{
+			try{
 			TaskInfoContainer con=new TaskInfoContainer();
 			con.setStarttime(taskStartTimeSecs.get(tid));
 			NodePort np=taskToNodeport.get(tid);
@@ -65,12 +65,18 @@ public class Topology {
 			buff.append("机器域名:"+con.getHostname()+"<br>");
 			buff.append("nodeport:"+con.getNp()+"<br>");
 			SimpleDateFormat fmt=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			String yyyymmmddd=fmt.format(new Date(1000l*con.getStarttime()));
-			buff.append("启动时间:"+yyyymmmddd+"<br>");
+			if(con.getStarttime()!=null)
+			{
+				String yyyymmmddd=fmt.format(new Date(1000l*con.getStarttime()));
+				buff.append("启动时间:"+yyyymmmddd+"<br>");
+			}
 			buff.append("心跳信息:"+con.getHb()+"<br>");
 			buff.append("task异常信息:"+con.getTaskerrors()+"<br>");
 			
 			rtn.add(buff.toString());
+			}catch(Throwable e){
+				
+			}
 		}
 		
 		Collections.sort(rtn);

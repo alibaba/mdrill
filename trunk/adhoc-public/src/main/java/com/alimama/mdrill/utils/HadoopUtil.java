@@ -1,6 +1,8 @@
 package com.alimama.mdrill.utils;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
@@ -48,6 +50,39 @@ public class HadoopUtil {
 				}
 			}
 			return size;
+		}
+		
+	
+		
+		public static void cleanHistoryFile(FileSystem fs,Path dataPath) throws IOException
+		{
+				long cleantimes=System.currentTimeMillis()-1000l*3600*24*7;
+				if(!fs.exists(dataPath))
+				{
+					return ;
+				}
+				FileStatus[] list=fs.listStatus(dataPath);
+				if(list==null)
+				{
+					return ;
+				}
+				
+				ArrayList<Path> toremove=new ArrayList<Path>();
+				for(FileStatus s:list)
+				{
+					
+					long lasttimes=Math.max(s.getAccessTime(), s.getModificationTime());
+					if(lasttimes<cleantimes)
+					{
+						toremove.add(s.getPath());
+					}
+				}
+				
+				for(Path p:toremove)
+				{
+					System.out.println("clean :"+p.toString());
+					fs.delete(p, true);
+				}
 		}
 	
 	public static Configuration getConf(Map stormconf) {

@@ -25,20 +25,13 @@ public class HigoJoinInvert {
 	private static Logger LOG = Logger.getLogger(HigoJoinInvert.class);
 
 	private String tableName;
-	private SolrIndexSearcher leftSearcher;
 
 	private LinkedBlockingQueue<GroupListCache.GroupList> groupListCache;
 
-	public HigoJoinInvert(String tableName, SolrIndexSearcher leftSearcher) {
-		super();
-		this.tableName = tableName;
-		this.leftSearcher = leftSearcher;
-	}
 	
 	public HigoJoinInvert(String tableName, SegmentReader reader,String partion,IndexSchema schema) {
 		super();
 		this.tableName = tableName;
-		this.leftSearcher = null;
 		this.partion=partion;
 		this.schema=schema;
 		this.leftreader=reader;
@@ -56,10 +49,7 @@ public class HigoJoinInvert {
 	private TermNumToString[] tmRigth;
 	public void open(SolrQueryRequest req) throws IOException, ParseException
 	{
-		TryLockFile lock=new TryLockFile(HigoJoinUtils.pathForLock(req, this.tableName));
-		this.search=HigoJoinUtils.getSearch(req, this.tableName);
-		try{
-			lock.trylock();
+			this.search=HigoJoinUtils.getSearch(req, this.tableName);
 			this.fields = req.getParams().getParams(HigoJoinUtils.getFields(this.tableName));
 			List<Query> fqlist=HigoJoinUtils.getFilterQuery(req, this.tableName);
 			LOG.info("##fqlist.size()##"+fqlist.size());
@@ -69,12 +59,8 @@ public class HigoJoinInvert {
 			String fieldRigth=req.getParams().get(HigoJoinUtils.getRightField(this.tableName));
 			this.ufsRight=new UnvertFields(fields, this.search.get());
 	
-			if(this.leftreader!=null)
-			{
-				this.join=HigoJoin.getJoin(this.leftreader,this.partion,this.schema, search.get(), fieldLeft, fieldRigth);
-			}else{
-				this.join=HigoJoin.getJoin(leftSearcher, search.get(), fieldLeft, fieldRigth);
-			}
+			this.join=HigoJoin.getJoin(this.leftreader,this.partion,this.schema, search.get(), fieldLeft, fieldRigth);
+
 			
 			this.tmRigth=new TermNumToString[this.ufsRight.length];
 			for(int i=0;i<this.ufsRight.length;i++)
@@ -82,9 +68,7 @@ public class HigoJoinInvert {
 				tmRigth[i]=new TermNumToString(this.ufsRight,i);
 			 }
 			groupListCache=GroupListCache.getGroupListQueue(ufsRight.length);
-		}finally{
-			lock.unlock();
-		}
+		
 	}
 	
 	public LinkedBlockingQueue<GroupListCache.GroupList> getGroupListCache() {

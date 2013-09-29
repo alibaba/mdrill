@@ -15,12 +15,13 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import com.alimama.mdrill.index.utils.DocumentList;
+import com.alimama.mdrill.index.utils.DocumentMap;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
 import com.alimama.mdrill.index.utils.TdateFormat;
 
 
 
-public class IndexMapper extends   Mapper<WritableComparable, Text, Text, DocumentList> {
+public class IndexMapper extends   Mapper<WritableComparable, Text, Text, DocumentMap> {
     private String[] fields = null;
     private Boolean[] isDate;
     private Boolean[] isString;
@@ -35,8 +36,6 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
     private String uniqfield="";
     private boolean isuniqcheck=false;
 
-	private ArrayList<HashMap<String, String>> doclist = new ArrayList<HashMap<String, String>>();
-    private static int PER = 100;
     @Override
     public void setup(Context context) throws IOException, InterruptedException {
 		super.setup(context);
@@ -62,9 +61,6 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
 		
 		if(custfields==null||custfields.isEmpty())
 		{
-			
-	 		
-	 		
 			String[] fieldslist = fieldStrs.split(",");
 			this.fields = new String[fieldslist.length];
 			this.isDate = new Boolean[fieldslist.length];
@@ -98,11 +94,6 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
 
     protected void cleanup(Context context) throws IOException,
 	    InterruptedException {
-    	if(doclist.size()>0)
-    	{
-		    context.write(new Text(String.valueOf(this.Index++)), new DocumentList(this.doclist));
-		    doclist.clear();
-    	}
     }
     
     private String parseDefault(String input)
@@ -203,18 +194,15 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
     		System.out.println("res: " + res.toString()   + " arrays,"+Arrays.toString(values));
 		}
     	
-    	this.doclist.add(res);
-    	if (this.doclist.size() >= PER) {
-    	    context.write(new Text(String.valueOf(this.Index++)), new DocumentList(this.doclist));
-    	    this.doclist.clear();
-    	}
+	    context.write(new Text(String.valueOf(this.Index++)), new DocumentMap(res));
+
     	
     	if(this.isuniqcheck&&res.containsKey(this.uniqfield))
     	{
     		String notempty=res.get(this.uniqfield);
     		if(notempty.length()>0&&!notempty.equals("_"))
     		{
-    	    context.write(new Text("uniq_"+notempty), new DocumentList());
+    	    context.write(new Text("uniq_"+notempty), new DocumentMap());
     		}
     	}
     	

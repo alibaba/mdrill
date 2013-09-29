@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -170,6 +171,10 @@ public class AdhocOfflineService {
 		if (projectName.equals("r_rpt_nz_adhoc_member")) {
 			hpart="ds";
 		}
+		if (projectName.equals("st_tanx_x_core_gateway")) {
+			hpart="ds";
+		}
+		
 		
 		
 		queryStr = WebServiceParams.query(queryStr);
@@ -183,7 +188,7 @@ public class AdhocOfflineService {
 		
 		
 		
-		HashMap<String, String> filetypeMap = MdrillService.readFieldsFromSchemaXml(part.name);
+		LinkedHashMap<String, String> filetypeMap = MdrillService.readFieldsFromSchemaXml(part.name);
 		ArrayList<String> fqList = WebServiceParams.fqListHive(false,hpart,queryStr, shard,
 				isPartionByPt, filetypeMap,null,null,null);
 		StringBuffer sqlWhere =AdhocWebServiceParams.makeWhere(fqList);

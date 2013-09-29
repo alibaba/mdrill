@@ -79,7 +79,18 @@ public class HigoJoinUtils {
 	
 	public static RefCounted<SolrIndexSearcher> getSearch(SolrQueryRequest req,String tablename) throws IOException
 	{
-		String path=pathToLocal(req, tablename);
+		String path=null;
+		TryLockFile lock=null;
+		try{
+			lock=new TryLockFile(HigoJoinUtils.pathForLock(req, tablename));
+			lock.trylock();
+			path=pathToLocal(req, tablename);
+		}finally{
+			if(lock!=null)
+			{
+				lock.unlock();
+			}
+		}
 		LOG.info("###joinpath###"+path);
 		return req.getCore().getSearcherByPath(null,"join@"+SolrResourceLoader.getCacheFlushKey(null)+"@"+String.valueOf(path), path, false, false, false);
 	}
@@ -140,7 +151,7 @@ public class HigoJoinUtils {
 	private static  long checkinterval=1000l*600;
 	private static  long cleanTimesinterval=1000l*3600*24;
 	private static int checkMaxDirCount=64;
-	private static void maybeclear(File basedir,File lockbase) throws IOException
+	private static void maybeclear(File basedir) throws IOException
 	{
 		String key=basedir.getAbsolutePath();
 		Long expirestimes=cleartimes.contains(key)?cleartimes.get(key)+checkinterval:checkinterval;
@@ -155,15 +166,6 @@ public class HigoJoinUtils {
 		cleartimes.put(key,nowtimes );
 
 		
-		File lockPath=new File(lockbase,"higo_clear_lock");
-		if(!lockbase.exists())
-		{
-			lockbase.mkdirs();
-		}
-		TryLockFile lck=new TryLockFile((lockPath).getAbsolutePath());
-
-		try{
-				lck.trylock();
 				Configuration conf=getConf();
 				FileSystem lfs = FileSystem.getLocal(conf);
 				Path basepath=new Path(key);
@@ -218,12 +220,7 @@ public class HigoJoinUtils {
 					lfs.delete(p.p, true);
 				}
 		
-		}finally
-		{
-			lck.unlock();
-			lockPath.delete();
-
-		}
+		
 		
 	}
 	
@@ -251,86 +248,65 @@ public class HigoJoinUtils {
 			lockbase.mkdirs();
 		}
 		
-		return lockbase.getAbsolutePath();
+		return new File(lockbase.getAbsolutePath(),String.valueOf(hashcode%100)).getAbsolutePath();
 	
 	}
 
 	
 	private static String pathToLocal(SolrQueryRequest req,String tablename) throws IOException
-	{
-		int hashcode=tablename.hashCode();
-		hashcode=hashcode<0?hashcode*-1:hashcode;
-		int len= HigoJoinUtils.localStoreBase.length;
-		String choosepase= HigoJoinUtils.localStoreBase[hashcode%len];
-		
-		File basedir=new File(choosepase,"higojoin_work");
-		File tmpbase=new File(choosepase,"higojoin_tmp");
-		File lockbase=new File(choosepase,"higojoin_lock");
-		
-		File workPath=new File(basedir,tablename);
-		File tmp=new File(tmpbase,tablename);
-		File lockPath=new File(lockbase,tablename);
-		
-		File completePath=new File(workPath,"complete");
-		
-		maybeclear(basedir,lockbase);
-		
-		TryLockFile lock=new TryLockFile(lockPath.getAbsolutePath());
-		try {
-			if(completePath.exists())
-			{
-				return workPath.getAbsolutePath();
-			}
-			
-			if(!lockbase.exists())
-			{
-				lockbase.mkdirs();
-			}
-			if(!tmpbase.exists())
-			{
-				tmpbase.mkdirs();
-			}
-			if(!basedir.exists())
-			{
-				basedir.mkdirs();
-			}
-			
-		
+ {
+		int hashcode = tablename.hashCode();
+		hashcode = hashcode < 0 ? hashcode * -1 : hashcode;
+		int len = HigoJoinUtils.localStoreBase.length;
+		String choosepase = HigoJoinUtils.localStoreBase[hashcode % len];
 
-			lock.trylock();
-		
-		
-			if(!completePath.exists())
-			{
-				Configuration conf=getConf();
-				FileSystem fs = FileSystem.get(conf);
-				FileSystem lfs = FileSystem.getLocal(conf);
-				String hdfsstorepath=req.getParams().get(getPath(tablename));
-				
-				String rtnpath=workPath.getAbsolutePath();
-				Path storepath=new Path(rtnpath,"store");
-				boolean iscopy=IndexUtils.copyToLocal(fs, lfs, new Path(hdfsstorepath),storepath,new Path(tmp.getAbsolutePath()),true);
-				
-				Path indexlinks=new Path(rtnpath,"indexLinks");
-				if(iscopy)
-				{
-					if(lfs.exists(indexlinks))
-					{
-						lfs.delete(indexlinks,true);
-					}
-					FSDataOutputStream outlinks = lfs.create(indexlinks);
-					outlinks.write((new String(storepath.toString()	+ "\r\n")).getBytes());
-					outlinks.close();
-					completePath.mkdirs();
-				}
-			}
-		}finally{
-			lock.unlock();
-			lockPath.delete();
+		File basedir = new File(choosepase, "higojoin_work");
+		File tmpbase = new File(choosepase, "higojoin_tmp");
+
+		File workPath = new File(basedir, tablename);
+		File tmp = new File(tmpbase, tablename);
+
+		File completePath = new File(workPath, "complete");
+
+		maybeclear(basedir);
+		if (completePath.exists()) {
+			return workPath.getAbsolutePath();
 		}
-		
+
+		if (!tmpbase.exists()) {
+			tmpbase.mkdirs();
+		}
+		if (!basedir.exists()) {
+			basedir.mkdirs();
+		}
+
+		if (!completePath.exists()) {
+			Configuration conf = getConf();
+			FileSystem fs = FileSystem.get(conf);
+			FileSystem lfs = FileSystem.getLocal(conf);
+			String hdfsstorepath = req.getParams().get(getPath(tablename));
+
+			String rtnpath = workPath.getAbsolutePath();
+			Path storepath = new Path(rtnpath, "store");
+			boolean iscopy = IndexUtils.copyToLocal(fs, lfs, new Path(
+					hdfsstorepath), storepath, new Path(tmp.getAbsolutePath()),
+					true);
+
+			Path indexlinks = new Path(rtnpath, "indexLinks");
+			if (iscopy) {
+				if (lfs.exists(indexlinks)) {
+					lfs.delete(indexlinks, true);
+				}
+				FSDataOutputStream outlinks = lfs.create(indexlinks);
+				outlinks.write((new String(storepath.toString() + "\r\n"))
+						.getBytes());
+				outlinks.close();
+				completePath.mkdirs();
+			}
+		}
+
 		return workPath.getAbsolutePath();
-		
+
 	}
 
 	public static List<Query> getFilterQuery(SolrQueryRequest req,

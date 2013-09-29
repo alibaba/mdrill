@@ -17,6 +17,11 @@ public class UniqConfig {
 	{
 		return 25;
 	}
+	
+	public static int getUnivertedFieldThreads()
+	{
+		return 4;
+	}
 	public static int getMergerRequestMaxDepth()
 	{
 		return 6;

@@ -58,47 +58,7 @@ public class HigoJoin  {
 		}
 		return uif;
 	}
-	public static HigoJoinInterface getJoin(SolrIndexSearcher readerleft,
-			SolrIndexSearcher readerright, String fieldLeft, String fieldRigth)
-			throws IOException {
-
-		Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
-		StringBuffer key = new StringBuffer();
-		key.append("join");
-		key.append(readerleft.getPartionKey());
-		key.append("@");
-		key.append(fieldLeft);
-		key.append("@");
-		key.append(LuceneUtils.crcKey(readerleft.getReader()));
-		key.append("@");
-		key.append(readerright.getPartionKey());
-		key.append("@");
-		key.append(fieldRigth);
-		key.append("@");
-		key.append(LuceneUtils.crcKey(readerright.getReader()));
-		String cachekey = key.toString();
-		GrobalCache.StringKey fvkey = new GrobalCache.StringKey(cachekey);
-		HigoJoinInterface uif = (HigoJoinInterface) cache.get(fvkey);
-		if (uif == null) {
-			synchronized (lock) {
-				uif = (HigoJoinInterface) cache.get(fvkey);
-				if (uif == null) {
-					
-					FieldType ftleft=readerleft.getSchema().getFieldType(fieldLeft);
-					FieldType ftright =readerright.getSchema().getFieldType(fieldRigth);
-					if(ftleft.isMultiValued()||ftright.isMultiValued())
-					{
-						throw new IOException("multi value");
-					}else{
-						uif = new HigoJoinSingleValues(readerleft, readerright,fieldLeft, fieldRigth);
-
-					}
-					cache.put(fvkey, uif);
-				}
-			}
-		}
-		return uif;
-	}
+	
 
 	private static int INT_SIZE = Integer.SIZE / 8;
 

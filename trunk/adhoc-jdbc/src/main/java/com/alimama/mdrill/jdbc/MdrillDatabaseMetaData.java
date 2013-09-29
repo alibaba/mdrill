@@ -276,7 +276,7 @@ public class MdrillDatabaseMetaData implements java.sql.DatabaseMetaData {
 	  }
 
 	  public String getDatabaseProductName() throws SQLException {
-	    return "Hive";
+	    return "mdrill";
 	  }
 
 	  public String getDatabaseProductVersion() throws SQLException {
