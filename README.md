@@ -11,8 +11,8 @@
  2013.8.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
  2013.8.17 version 0.18.2-beta speed up <a href="https://github.com/alibaba/mdrill/wiki/018_2">see detail</a>  (<a href="http://yunpan.cn/QXn4tRAzx8NIL" target="_blank">下载</a>) <br>
  2013.9.01 version 0.19-alpha HA by replication <a href="https://github.com/alibaba/mdrill/wiki/019_alpha">see detail</a>  (此版本需要一定时间的测试与调整，慎用) <br>
- 2013.9.26 version 0.19.1-beta HA by replication <a href="https://github.com/alibaba/mdrill/wiki/019_beta_1">see detail</a>  (推荐版本,<a href="http://yunpan.cn/QGprqdtDD7r2x" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
-
+ 2013.9.26 version 0.19.1-beta Bug Fix <a href="https://github.com/alibaba/mdrill/wiki/019_beta_1">see detail</a>  (<a href="http://yunpan.cn/QGprqdtDD7r2x" target="_blank">下载</a>) <br>
+ 2013.9.29 version 0.19.2-beta Bug Fix (推荐版本,<a href="http://yunpan.cn/QGC7TX2tupBcn" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
  
 
  
