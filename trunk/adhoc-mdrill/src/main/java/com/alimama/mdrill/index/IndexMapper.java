@@ -1,27 +1,26 @@
 package com.alimama.mdrill.index;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.zip.CRC32;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
-import com.alimama.mdrill.index.utils.DocumentList;
 import com.alimama.mdrill.index.utils.DocumentMap;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
+import com.alimama.mdrill.index.utils.PairWriteable;
 import com.alimama.mdrill.index.utils.TdateFormat;
 
 
 
-public class IndexMapper extends   Mapper<WritableComparable, Text, Text, DocumentMap> {
+public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteable, DocumentMap> {
     private String[] fields = null;
     private Boolean[] isDate;
     private Boolean[] isString;
@@ -39,6 +38,10 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
     @Override
     public void setup(Context context) throws IOException, InterruptedException {
 		super.setup(context);
+		
+		TaskID taskId = context.getTaskAttemptID().getTaskID();
+		this.Index = taskId.getId();
+		System.out.println("###########>>>>"+this.Index);
 		String fieldStrs = context.getConfiguration().get("higo.index.fields");
 		this.uniqfield= context.getConfiguration().get("uniq.check.field");
 		if(this.uniqfield!=null&&this.uniqfield.length()>0)
@@ -194,7 +197,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
     		System.out.println("res: " + res.toString()   + " arrays,"+Arrays.toString(values));
 		}
     	
-	    context.write(new Text(String.valueOf(this.Index++)), new DocumentMap(res));
+	    context.write(new PairWriteable(this.Index++), new DocumentMap(res));
 
     	
     	if(this.isuniqcheck&&res.containsKey(this.uniqfield))
@@ -202,7 +205,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, Text, Docume
     		String notempty=res.get(this.uniqfield);
     		if(notempty.length()>0&&!notempty.equals("_"))
     		{
-    	    context.write(new Text("uniq_"+notempty), new DocumentMap());
+    	    context.write(new PairWriteable(new Text("uniq_"+notempty)), new DocumentMap());
     		}
     	}
     	

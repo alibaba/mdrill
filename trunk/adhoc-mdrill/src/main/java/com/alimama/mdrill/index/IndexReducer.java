@@ -16,11 +16,12 @@ import com.alimama.mdrill.index.utils.DocumentList;
 import com.alimama.mdrill.index.utils.DocumentMap;
 import com.alimama.mdrill.index.utils.HeartBeater;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
+import com.alimama.mdrill.index.utils.PairWriteable;
 import com.alimama.mdrill.index.utils.RamWriter;
 import com.alimama.mdrill.index.utils.ShardWriter;
 
 
-public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text> {
+public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritable, Text> {
     private HeartBeater heartBeater = null;
     private ShardWriter shardWriter = null;
     private String tmpath = null;
@@ -29,7 +30,8 @@ public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text>
 
     private Analyzer analyzer;
     private DocumentConverter documentConverter = null;
-
+    DocumentList doclistcache=new DocumentList();
+    RamWriter ramMerger=null;
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
 		super.setup(context);
@@ -39,6 +41,8 @@ public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text>
 
 		heartBeater = new HeartBeater(context);
 		heartBeater.needHeartBeat();
+		this.doclistcache=new DocumentList();
+		this.ramMerger = new RamWriter();
 
 		String fieldStrs = conf.get("higo.index.fields");
 		String[] fieldslist = fieldStrs.split(",");
@@ -55,7 +59,12 @@ public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text>
 
     protected void cleanup(Context context) throws IOException,	InterruptedException {
 		try {
-			
+			RamWriter ram = doclistcache.toRamWriter(documentConverter, analyzer,context);
+			ramMerger.process(ram);
+			if (this.maybeFlush(ramMerger,context,true)) {
+				ramMerger = null;
+			}
+			doclistcache=new DocumentList();
 			shardWriter.optimize();
 			shardWriter.close();
 			Configuration conf = context.getConfiguration();
@@ -68,6 +77,7 @@ public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text>
 			if (shardWriter.getNumDocs() > 0 && lastkey != null) {
 				TaskID taskId = context.getTaskAttemptID().getTaskID();
 				int partition = taskId.getId();
+				System.out.println("###########>>>>"+partition);
 				context.write(new IntWritable(partition),new Text(indexHdfsPath));
 			}
 			FileSystem lfs = FileSystem.getLocal(conf);
@@ -97,12 +107,12 @@ public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text>
 		return shardWriter;
 	}
 
-    private Text lastkey = null;
+    private IntWritable lastkey = null;
     private int debuglines=0;
 
-	protected void reduce(Text key, Iterable<DocumentMap> values,
+	protected void reduce(PairWriteable key, Iterable<DocumentMap> values,
 			Context context) throws java.io.IOException, InterruptedException {
-		if(key.toString().startsWith("uniq_"))
+		if(!key.isNum())
 		{
 			int dumps=0;
 			Iterator<DocumentMap> iterator = values.iterator();
@@ -122,9 +132,9 @@ public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text>
 			return ;
 		}
 		
-		lastkey = key;
-		DocumentList doclistcache=new DocumentList();
-		RamWriter ramMerger = new RamWriter();
+		lastkey = new IntWritable(key.getIndex());
+		
+		
 		Iterator<DocumentMap> iterator = values.iterator();
 		while (iterator.hasNext()) {
 			if(doccount>maxDocCount)
@@ -142,15 +152,7 @@ public class IndexReducer extends  Reducer<Text, DocumentMap, IntWritable, Text>
 				ramMerger =  new RamWriter();;
 			}
 			doclistcache=new DocumentList();
-
 		}
-		
-		RamWriter ram = doclistcache.toRamWriter(documentConverter, analyzer,context);
-		ramMerger.process(ram);
-		if (this.maybeFlush(ramMerger,context,true)) {
-			ramMerger = null;
-		}
-		
 	}
     
   

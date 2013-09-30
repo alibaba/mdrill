@@ -119,7 +119,7 @@ public class JobIndexerPartion extends Configured implements Tool {
 		return partionvertify+"@"+dusize+"@"+pathlist.size()+"@"+parseDate(mintime)+"@"+parseDate(maxtime);
 	}
 	
-	SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd_HHmmssSSS");
+	SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
 	public String parseDate(long t)
 	{
 		try{
@@ -184,8 +184,10 @@ public class JobIndexerPartion extends Configured implements Tool {
 					continue;
 				}
 				String currentVertify = this.getCurrentVertify(runPartion.partion, days,submatch);
+				System.out.println("vertify:"+runPartion.partion+">>>"+runPartion.partionvertify+"<<<"+currentVertify);
 
 				if (!currentVertify.equals(runPartion.partionvertify)) {
+					System.out.println("##########changed#########");
 					continue;
 				}
 				

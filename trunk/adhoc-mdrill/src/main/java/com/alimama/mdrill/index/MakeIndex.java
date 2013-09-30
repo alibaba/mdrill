@@ -23,6 +23,7 @@ import backtype.storm.utils.Utils;
 import com.alimama.mdrill.index.utils.DocumentList;
 import com.alimama.mdrill.index.utils.DocumentMap;
 import com.alimama.mdrill.index.utils.JobIndexPublic;
+import com.alimama.mdrill.index.utils.PairWriteable;
 import com.alimama.mdrill.utils.HadoopUtil;
 import com.alipay.bluewhale.core.utils.StormUtils;
 
@@ -197,8 +198,10 @@ public class MakeIndex {
 		conf.set("io.sort.mb", "80");
 		conf.set("mapred.reduce.slowstart.completed.maps", "0.01");
 		conf.set("higo.index.fields", fields);
+		job.setPartitionerClass(PairPartion.class) ;
+
 		job.setMapperClass(IndexMapper.class);
-		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputKeyClass(PairWriteable.class);
 		job.setMapOutputValueClass(DocumentMap.class);
 		job.setReducerClass(IndexReducer.class);
 		job.setOutputKeyClass(IntWritable.class);
