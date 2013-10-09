@@ -7,13 +7,13 @@
 &nbsp;&nbsp;==&gt;对100亿数据进行count(*),耗时为2秒，单列sum耗时在25秒,按照日期分组求count和sum耗时47秒，按照用户id分组并且按照成交笔数排序去TopN 耗时 243秒。<br>
 
 <h1> 发行日志</h1>
- 2013.7.24 version 0.18-beta  初始化版本  <br>
- 2013.8.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
- 2013.8.17 version 0.18.2-beta speed up <a href="https://github.com/alibaba/mdrill/wiki/018_2">see detail</a>  (<a href="http://yunpan.cn/QXn4tRAzx8NIL" target="_blank">下载</a>) <br>
- 2013.9.01 version 0.19-alpha HA by replication <a href="https://github.com/alibaba/mdrill/wiki/019_alpha">see detail</a>  (此版本需要一定时间的测试与调整，慎用) <br>
- 2013.9.26 version 0.19.1-beta Bug Fix <a href="https://github.com/alibaba/mdrill/wiki/019_beta_1">see detail</a>  (<a href="http://yunpan.cn/QGprqdtDD7r2x" target="_blank">下载</a>) <br>
- 2013.9.29 version 0.19.2-beta Bug Fix (推荐版本,<a href="http://yunpan.cn/QGC7TX2tupBcn" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
- 
+ 2013.07.24 version 0.18-beta  初始化版本  <br>
+ 2013.08.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
+ 2013.08.17 version 0.18.2-beta speed up <a href="https://github.com/alibaba/mdrill/wiki/018_2">see detail</a>  (<a href="http://yunpan.cn/QXn4tRAzx8NIL" target="_blank">下载</a>) <br>
+ 2013.09.01 version 0.19-alpha HA by replication <a href="https://github.com/alibaba/mdrill/wiki/019_alpha">see detail</a>  (此版本需要一定时间的测试与调整，慎用) <br>
+ 2013.09.26 version 0.19.1-beta Bug Fix <a href="https://github.com/alibaba/mdrill/wiki/019_beta_1">see detail</a>  (<a href="http://yunpan.cn/QGprqdtDD7r2x" target="_blank">下载</a>) <br>
+ 2013.09.29 version 0.19.2-beta Bug Fix (<a href="http://yunpan.cn/QGC7TX2tupBcn" target="_blank">下载</a>) <br>
+ 2013.10.09 version 0.19.3-beta speed up (推荐版本,<a href="http://yunpan.cn/QbreqTZbusDtu" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
 
  
  <h1>版本源码路径</h1>
