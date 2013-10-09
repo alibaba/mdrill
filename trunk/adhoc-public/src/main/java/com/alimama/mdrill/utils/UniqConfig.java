@@ -27,6 +27,11 @@ public class UniqConfig {
 		return 6;
 	}
 	
+	public static int getTermCacheSizeIndex()
+	{
+		return 1024;
+	}
+	
 	public static int getTermCacheSize()
 	{
 		return 10240;

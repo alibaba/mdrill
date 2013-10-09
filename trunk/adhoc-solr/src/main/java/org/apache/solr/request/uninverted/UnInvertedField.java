@@ -74,7 +74,7 @@ public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.
 	
 	
 
-private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader reader,String key) throws IOException
+private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader reader,String key,boolean isReadDouble) throws IOException
 {
 	UnInvertedField.log.info("setSingleValue QuickNumberedTermEnum " + this.field + " field "	+ this.isMultiValued + "@" + key);
 	int maxDoc = reader.maxDoc();
@@ -82,11 +82,14 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 	this.index = INT_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.INT_CREATE, -1);
 	int[] docs = new int[1000];
 	int[] freqs = new int[1000];
-	if (this.dataType == Datatype.d_long|| this.dataType == Datatype.d_string) {
-		this.termValueLong =LONG_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.LONG_CREATE, (long)MINVALUE_FILL); 
-	}
-	if (this.dataType == Datatype.d_double) {
-		this.termValueDouble = DOUBLE_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.DOUBLE_CREATE, MINVALUE_FILL);
+	if(isReadDouble)
+	{
+		if (this.dataType == Datatype.d_long|| this.dataType == Datatype.d_string) {
+			this.termValueLong =LONG_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.LONG_CREATE, (long)MINVALUE_FILL); 
+		}
+		if (this.dataType == Datatype.d_double) {
+			this.termValueDouble = DOUBLE_BUFFER.calloc(maxDocOffset, BigReUsedBuffer.DOUBLE_CREATE, MINVALUE_FILL);
+		}
 	}
 	
 	 FieldInfo fi = reader.getFieldInfo().fieldInfo(this.field);
@@ -111,12 +114,15 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 			}
 		}
 		maxTermNum=Math.max(maxTermNum, termNum);
-		if (dataType == Datatype.d_long) {
-			this.termValueLong.set(termNum, te.getVVVlong()) ;
-		} else if (dataType == Datatype.d_double) {
-			this.termValueDouble.set(termNum, Double.longBitsToDouble(te.getVVVlong()));
-		} else if (dataType == Datatype.d_string) {// for dist
-			this.termValueLong.set(termNum, te.getVVVlong());
+		if(isReadDouble)
+		{
+			if (dataType == Datatype.d_long) {
+				this.termValueLong.set(termNum, te.getVVVlong()) ;
+			} else if (dataType == Datatype.d_double) {
+				this.termValueDouble.set(termNum, Double.longBitsToDouble(te.getVVVlong()));
+			} else if (dataType == Datatype.d_string) {// for dist
+				this.termValueLong.set(termNum, te.getVVVlong());
+			}
 		}
 	}
 
@@ -129,31 +135,35 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		int finalTerm=maxTermNum+2;
 		this.setFinalIndex(nullTerm,finalTerm);
 		
-		if (this.dataType == Datatype.d_long|| this.dataType == Datatype.d_string) {
-			BlockArray<Long> bigTermValue=this.termValueLong;
-			int size=bigTermValue.getSize();
-			this.termValueLong =LONG_BUFFER.calloc(finalTerm, BigReUsedBuffer.LONG_CREATE, (long)MINVALUE_FILL); 
-			for(int i=0;i<finalTerm&&i<size;i++)
-			{
-				Long v=bigTermValue.get(i);
-				this.termValueLong.set(i, v);
+		if(isReadDouble)
+		{
+			if (this.dataType == Datatype.d_long|| this.dataType == Datatype.d_string) {
+				BlockArray<Long> bigTermValue=this.termValueLong;
+				int size=bigTermValue.getSize();
+				this.termValueLong =LONG_BUFFER.calloc(finalTerm, BigReUsedBuffer.LONG_CREATE, (long)MINVALUE_FILL); 
+				for(int i=0;i<finalTerm&&i<size;i++)
+				{
+					Long v=bigTermValue.get(i);
+					this.termValueLong.set(i, v);
+				}
+				this.termValueLong.set(nullTerm, (long)MINVALUE_FILL);
+				LONG_BUFFER.free(bigTermValue);
+				bigTermValue=null;
 			}
-			this.termValueLong.set(nullTerm, (long)MINVALUE_FILL);
-			LONG_BUFFER.free(bigTermValue);
-			bigTermValue=null;
-		}
-		if (this.dataType == Datatype.d_double) {
-			BlockArray<Double> bigTermValue=this.termValueDouble;
-			int size=bigTermValue.getSize();
-			this.termValueDouble = DOUBLE_BUFFER.calloc(finalTerm, BigReUsedBuffer.DOUBLE_CREATE, MINVALUE_FILL);
-			for(int i=0;i<finalTerm&&i<size;i++)
-			{
-				Double v=bigTermValue.get(i);
-				this.termValueDouble.set(i, v);
+			if (this.dataType == Datatype.d_double) {
+				BlockArray<Double> bigTermValue=this.termValueDouble;
+				int size=bigTermValue.getSize();
+				this.termValueDouble = DOUBLE_BUFFER.calloc(finalTerm, BigReUsedBuffer.DOUBLE_CREATE, MINVALUE_FILL);
+				for(int i=0;i<finalTerm&&i<size;i++)
+				{
+					Double v=bigTermValue.get(i);
+					this.termValueDouble.set(i, v);
+				}
+				this.termValueDouble.set(nullTerm, MINVALUE_FILL);
+				DOUBLE_BUFFER.free(bigTermValue);
+				bigTermValue=null;
 			}
-			this.termValueDouble.set(nullTerm, MINVALUE_FILL);
-			DOUBLE_BUFFER.free(bigTermValue);
-			bigTermValue=null;
+			
 		}
 	}
 }
@@ -244,7 +254,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		}
 	}
 	
-	private void uninvert(String field,SegmentReader reader,IndexSchema schema) throws IOException {
+	private void uninvert(String field,SegmentReader reader,IndexSchema schema,boolean isreadDouble) throws IOException {
 		SolrCore.log.info("####UnInverted#### SegmentReader begin");
 		this.field = field;
 		if(this.checkEmpty())
@@ -282,8 +292,9 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 				
 				if(pos!=null&&cnt!=null)
 				{
-					TermIndex.QuickNumberedTermEnum te=ti.getEnumerator(reader,reader.getQuickTis(),pos,cnt);
-					this.setSingleValue(te,reader, key);
+					Long posval=reader.getQuickDoublePos(this.field);
+					TermIndex.QuickNumberedTermEnum te=ti.getEnumerator(reader,reader.getQuickTis(),pos,cnt,posval,isreadDouble);
+					this.setSingleValue(te,reader, key,isreadDouble);
 					numTermsInField = te.getTermNumber();
 					te.close();
 					isbyQuick=true;
@@ -420,6 +431,11 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 
 	public int getTermNum(NumberedTermEnum te, String text,FieldType ft) throws IOException
 	{
+		
+		if((text.startsWith("_")||text.startsWith("null"))&&!this.dataType.equals(Datatype.d_string))
+		{
+			return this.nullTermNum;
+		}
 		if(te.skipTo(ft.toInternal(text)))
 		{
 			return te.getTermNumber();
@@ -497,8 +513,8 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 			uninvert(field, searcher, reader);
 	}
 	
-	private UnInvertedField(String field, SegmentReader reader,IndexSchema schema) throws IOException {
-		uninvert(field, reader,schema);
+	private UnInvertedField(String field, SegmentReader reader,IndexSchema schema,boolean isreadDouble) throws IOException {
+		uninvert(field, reader,schema,isreadDouble);
 	}
   
 	public static UnInvertedField getUnInvertedField(final String field,
@@ -556,10 +572,12 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		UnInvertedField uni;
 		IOException e=null;
 	}
-	public static UnInvertedField getUnInvertedField(final String field,final SegmentReader reader,String partion,final IndexSchema schema) throws IOException
+
+
+	public static UnInvertedField getUnInvertedField(final String field,final SegmentReader reader,String partion,final IndexSchema schema,final boolean isreadDouble) throws IOException
 	{
 		final Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
-		final ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+partion + "@" + field + "@"	+reader.getStringCacheKey()+"@"+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
+		final ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+String.valueOf(isreadDouble)+"@"+partion + "@" + field + "@"	+reader.getStringCacheKey()+"@"+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
 		UnInvertedField uif = (UnInvertedField)cache.get(key);
 		if (uif == null) {
 			ExecutorCompletionService<UnivertPool> serv=new ExecutorCompletionService<UnivertPool>(pool);
@@ -571,7 +589,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 //						lock.tryLock();
 						rtnuif.uni =  (UnInvertedField)cache.get(key);
 						if (rtnuif.uni == null) {
-							rtnuif.uni = new UnInvertedField(field, reader,schema);
+							rtnuif.uni = new UnInvertedField(field, reader,schema,isreadDouble);
 							cache.put(key, rtnuif.uni);
 						}
 					}catch(IOException e){

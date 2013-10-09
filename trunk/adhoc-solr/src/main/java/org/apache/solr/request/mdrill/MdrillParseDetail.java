@@ -72,8 +72,8 @@ public class MdrillParseDetail {
 		public fetchContaioner(MdrillParseDetail parse,String[] fields, DocSet baseDocs,SegmentReader reader,SolrIndexSearcher searcher,SolrQueryRequest req) throws IOException, ParseException
 		{
 			this.parse=parse;
-			ufs=new UnvertFields(fields, reader,searcher.getPartionKey(),searcher.getSchema());
-			sortufs=new UnvertFields(new String[]{parse.sort_fl}, reader,searcher.getPartionKey(),searcher.getSchema());
+			ufs=new UnvertFields(fields, reader,searcher.getPartionKey(),searcher.getSchema(),false);
+			sortufs=new UnvertFields(new String[]{parse.sort_fl}, reader,searcher.getPartionKey(),searcher.getSchema(),true);
 			this.joinInvert=new HigoJoinInvert[parse.joinList.length];
 
 			HigoJoinSort[] joinSort=new HigoJoinSort[this.parse.joinList.length];

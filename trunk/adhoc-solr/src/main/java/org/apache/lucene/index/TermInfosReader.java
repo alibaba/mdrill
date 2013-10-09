@@ -38,7 +38,7 @@ import com.alimama.mdrill.buffer.BlockBufferInput;
  * Directory.  Pairs are accessed either by Term or by ordinal position the
  * set.  */
 
-final class TermInfosReader implements Closeable {
+public class TermInfosReader implements Closeable {
 	  public static Logger log = LoggerFactory.getLogger(TermInfosReader.class);
 
   private final Directory directory;
@@ -102,22 +102,68 @@ final class TermInfosReader implements Closeable {
   IndexInput tiiInput=null;
   public IndexInput tiiInputquick=null;
   AtomicBoolean isQuickMode=new AtomicBoolean(false);
-  public ConcurrentHashMap<Integer,Long> fieldPos=new ConcurrentHashMap<Integer,Long>();
-  public ConcurrentHashMap<Integer,Integer> fieldCount=new ConcurrentHashMap<Integer,Integer>();
-
-  public IndexInput quicktisInput=null;
   
-  public IndexInput getQuickTis()
+  public AtomicBoolean supportquick=new AtomicBoolean(false);
+
+  
+  public static class QuickInput
   {
+	  public AtomicBoolean isQuickTxtMode=new AtomicBoolean(false);
+	  public IndexInput quicktisInput=null;
+	  public IndexInput quicktisInputTxt=null;
+	  public IndexInput quicktisInputVal=null;
+	  public ConcurrentHashMap<Integer,Long> fieldPos=new ConcurrentHashMap<Integer,Long>();
+	  public ConcurrentHashMap<Integer,Long> fieldPosVal=new ConcurrentHashMap<Integer,Long>();
+
+	  public ConcurrentHashMap<Integer,Integer> fieldCount=new ConcurrentHashMap<Integer,Integer>();
+	  
+	  public void close() throws IOException
+	  {
+		  if(quicktisInput!=null)
+		  {
+			  quicktisInput.close();
+		  }
+		  if(quicktisInputTxt!=null)
+		  {
+			  quicktisInputTxt.close();
+		  }
+		  
+		  if(quicktisInputVal!=null)
+		  {
+			  quicktisInputVal.close();
+		  }
+		
+	  }
+	  
+	  public QuickInput singleThr(){
+		  QuickInput rtn=new QuickInput();
+		  rtn.isQuickTxtMode.set(this.isQuickTxtMode.get());
+		  rtn.quicktisInput= (this.quicktisInput==null?null:(IndexInput)quicktisInput.clone());
+		  rtn.quicktisInputTxt=this.quicktisInputTxt==null?null:(IndexInput)quicktisInputTxt.clone();
+		  rtn.quicktisInputVal=this.quicktisInputVal==null?null:(IndexInput)quicktisInputVal.clone();
+		  rtn.fieldPos=this.fieldPos;
+		  rtn.fieldCount=this.fieldCount;
+		  rtn.fieldPosVal=this.fieldPosVal;
+		  return rtn;
+	  }
+
+
+  }
+  QuickInput quicktisInput=null;
+  
+  public QuickInput getQuickTis()
+  {
+	  if(this.quicktisInput==null)
+	  {
+		  return null;
+	  }
 	  return this.quicktisInput;
   }
   
-  public AtomicBoolean supportquick=new AtomicBoolean(false);
   TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize, int indexDivisor)
        throws CorruptIndexException, IOException {
     boolean success = false;
-    fieldPos=new ConcurrentHashMap<Integer,Long>();
-    fieldCount=new ConcurrentHashMap<Integer,Integer>();
+    quicktisInput=null;
     supportquick.set(false);
 
     if (indexDivisor < 1 && indexDivisor != -1) {
@@ -132,38 +178,69 @@ final class TermInfosReader implements Closeable {
       long tisfilesize=-1;
       String tisFileSize=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION_SIZE);
       String quickTis=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION_QUICK);
+      String quickTisTxt=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION_QUICK_TXT);
+      String quickTisVal=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION_QUICK_VAL);
       if(directory.fileExists(tisFileSize))
       {
-	  IndexInput sizebuff=directory.openInput(tisFileSize, readBufferSize);
-	  tisfilesize=sizebuff.readLong();
-	  if(directory.fileExists(quickTis))
-	  {
-		  if(directory instanceof FSDirectory)
-	      {
-	    	  FSDirectory dddir=(FSDirectory)directory;
-	    	  String absPath=dddir.getDirectory().getAbsolutePath();
-	    	  quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),absPath+"@"+quickTis);
-	    }else{
-			  quicktisInput=directory.openInput(quickTis, readBufferSize);
-	      }
-		  int size=sizebuff.readInt();
-		  for(int i=0;i<size;i++)
+		  IndexInput sizebuff=directory.openInput(tisFileSize, readBufferSize);
+		  tisfilesize=sizebuff.readLong();
+		  if(directory.fileExists(quickTis))
 		  {
-			  fieldPos.put(sizebuff.readInt(), sizebuff.readLong());
-		  }
-		  
-//		  log.info("##fieldPos##"+fieldPos.toString());
-		  size=sizebuff.readInt();
-		  for(int i=0;i<size;i++)
-		  {
-			  fieldCount.put(sizebuff.readInt(), sizebuff.readInt());
-		  }
-//		  log.info("##fieldCount##"+fieldCount.toString());
-		  supportquick.set(true);
-
-		  
-	  }
-	  sizebuff.close();
+			  quicktisInput=new QuickInput();  
+			  if(directory.fileExists(quickTisTxt))
+			  {
+				  quicktisInput.isQuickTxtMode.set(true); 
+			  }
+			  
+			  
+			  
+			  if(directory instanceof FSDirectory)
+		      {
+		    	  FSDirectory dddir=(FSDirectory)directory;
+		    	  String absPath=dddir.getDirectory().getAbsolutePath();
+		    	  
+		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),absPath+"@"+quickTis);
+		    		
+				  if(quicktisInput.isQuickTxtMode.get())
+		    	  {
+					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),absPath+"@"+quickTisTxt);
+					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),absPath+"@"+quickTisVal);
+		    	  }
+		    }else{
+			    	quicktisInput.quicktisInput=directory.openInput(quickTis, readBufferSize);
+	
+				  if(quicktisInput.isQuickTxtMode.get())
+		    	  {
+					  quicktisInput.quicktisInputTxt=directory.openInput(quickTisTxt,readBufferSize);
+					  quicktisInput.quicktisInputVal=directory.openInput(quickTisVal,readBufferSize);
+	
+		    	  }
+			  
+		    }
+				  int size=sizebuff.readInt();
+				  for(int i=0;i<size;i++)
+				  {
+					  quicktisInput.fieldPos.put(sizebuff.readInt(), sizebuff.readLong());
+				  }
+				  
+				  size=sizebuff.readInt();
+				  for(int i=0;i<size;i++)
+				  {
+					  quicktisInput.fieldCount.put(sizebuff.readInt(), sizebuff.readInt());
+				  }
+				  
+				  if(quicktisInput.isQuickTxtMode.get())
+		    	  {
+					  size=sizebuff.readInt();
+					  for(int i=0;i<size;i++)
+					  {
+						  quicktisInput.fieldPosVal.put(sizebuff.readInt(), sizebuff.readLong());
+					  }
+		    	  }
+				  
+				  supportquick.set(true);
+			  }
+			  sizebuff.close();
       }
       
       String filename=IndexFileNames.segmentFileName(segment, IndexFileNames.TERMS_EXTENSION);
@@ -249,12 +326,11 @@ final class TermInfosReader implements Closeable {
   }
 
   public final void close() throws IOException {
-	  fieldCount=new ConcurrentHashMap<Integer,Integer>();
-	  fieldPos=new ConcurrentHashMap<Integer,Long>();
 	  supportquick.set(false);
 	  if(this.quicktisInput!=null)
 	  {
 		  quicktisInput.close();
+		  quicktisInput=null;
 	  }
 	  if(this.isQuickMode.get())
 	  {

@@ -1,8 +1,6 @@
 package org.apache.solr.request.uninverted;
 
 import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
@@ -89,7 +87,7 @@ public  class NumberedTermEnum extends TermEnum {
 	    // already here
 	    if (t != null && t.equals(target)) return true;
 
-	    int startIdx = Arrays.binarySearch(tindex.index,target.text());
+	    int startIdx = tindex.index.search(target.text());
 
 	    if (startIdx >= 0) {
 	      // we hit the term exactly... lucky us!
@@ -119,7 +117,7 @@ public  class NumberedTermEnum extends TermEnum {
 	    } else {
 	      // seek to the right block
 	      if (tenum != null) tenum.close();            
-	      tenum = reader.terms(target.createTerm(tindex.index[startIdx]));
+	      tenum = reader.terms(target.createTerm(tindex.index.get(startIdx)));
 	      pos = startIdx << tindex.intervalBits;
 	      setTerm();  // should be true since it's in the index
 	    }
@@ -137,7 +135,7 @@ public  class NumberedTermEnum extends TermEnum {
 	    int delta = termNumber - pos;
 	    if (delta < 0 || delta > tindex.interval || tenum==null) {
 	      int idx = termNumber >>> tindex.intervalBits;
-	      String base = tindex.index[idx];
+	      String base = tindex.index.get(idx);
 	      pos = idx << tindex.intervalBits;
 	      delta = termNumber - pos;
 	      if (tenum != null) {tenum.close();}

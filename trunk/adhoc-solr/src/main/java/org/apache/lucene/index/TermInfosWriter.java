@@ -53,6 +53,9 @@ public final class TermInfosWriter implements Closeable {
   private IndexOutput outputSize;
   private IndexOutput outputQuickTii=null;
   private IndexOutput outputQuickTis=null;
+  
+  private IndexOutput outputQuickTisTxt=null;
+  private IndexOutput outputQuickTisVal=null;
   private boolean isquickTis=false;
   private IndexSchema schemainfo=TermInfosWriter.schema;
   private TermInfo lastTi = new TermInfo();
@@ -83,7 +86,7 @@ public final class TermInfosWriter implements Closeable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(output,outputSize, other,outputQuickTii,outputQuickTis);
+        IOUtils.closeWhileHandlingException(output,outputSize, other,outputQuickTii,outputQuickTis,outputQuickTisTxt,outputQuickTisVal);
       }
     }
   }
@@ -103,6 +106,11 @@ public final class TermInfosWriter implements Closeable {
     if(this.schemainfo!=null)
     {
     	outputQuickTis=!isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_EXTENSION_QUICK):null;
+    	outputQuickTisTxt=!isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_EXTENSION_QUICK_TXT):null;
+    	outputQuickTisVal=!isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_EXTENSION_QUICK_VAL):null;
+    	
+    	
+
     	this.isquickTis=true;
     }
 
@@ -118,7 +126,7 @@ public final class TermInfosWriter implements Closeable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(output,outputSize,outputQuickTii,outputQuickTis);
+        IOUtils.closeWhileHandlingException(output,outputSize,outputQuickTii,outputQuickTis,outputQuickTisTxt,outputQuickTisVal);
       }
     }
   }
@@ -225,7 +233,9 @@ public final class TermInfosWriter implements Closeable {
   int termNum=0;
   HashMap<Integer,Long> fieldPos=new HashMap<Integer,Long>();
   HashMap<Integer,Integer> fieldCount=new HashMap<Integer,Integer>();
+  HashMap<Integer,Long> fieldPosVal=new HashMap<Integer,Long>();
   long lastfreqPointer=0;
+  long lasttxtPointer=0;
   void addtis(Term term,int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti) throws IOException
   {
 	  
@@ -233,33 +243,48 @@ public final class TermInfosWriter implements Closeable {
       {
     	  	fieldCount.put(this.lastquickfieldNumber, this.termNum);
 	  		fieldPos.put(fieldNumber, this.outputQuickTis.getFilePointer());
+	  		fieldPosVal.put(fieldNumber, this.outputQuickTisVal.getFilePointer());
 
 	        this.ft=this.schemainfo.getField(term.field).getType();
 	        this.dataType=UnInvertedFieldUtils.getDataType(ft);
 	        this.lastquickfieldNumber=fieldNumber;
 	        this.termNum=0;
 	        this.lastfreqPointer=0;
+	        this.lasttxtPointer=0;
       }
-      
-      if ((this.termNum & TermIndex.intervalMask)==0){
-			this.outputQuickTis.writeString(term.text());
-      }
-      
       if (dataType == Datatype.d_long){
 			long val=Long.parseLong(ft.indexedToReadable(term.text()));
-			this.outputQuickTis.writeVVVLong(val);
+			this.outputQuickTisVal.writeVVVLong(val);
 		}else if (dataType == Datatype.d_double) {
 			Double val=MdrillUtils.ParseDouble(ft.indexedToReadable(term.text()));
-			this.outputQuickTis.writeVVVLong(Double.doubleToLongBits(val));
+			this.outputQuickTisVal.writeVVVLong(Double.doubleToLongBits(val));
 		}else{
 			CRC32 crc32 = new CRC32();
 			crc32.update(new String(ft.indexedToReadable(term.text())).getBytes());
-			this.outputQuickTis.writeVVVLong(crc32.getValue());
+			this.outputQuickTisVal.writeVVVLong(crc32.getValue());
 		}
-
       
-      this.outputQuickTis.writeVInt(ti.docFreq);
-      this.outputQuickTis.writeVLong(ti.freqPointer - lastfreqPointer);
+      if ((this.termNum & TermIndex.intervalMask)==0){
+    	  long pos=this.outputQuickTisTxt.getFilePointer();
+		  this.outputQuickTis.writeVLong(pos - lasttxtPointer);
+		  lasttxtPointer=pos;
+		  this.outputQuickTisTxt.writeString(term.text());
+      }
+      
+      
+
+      long posquick=ti.freqPointer - lastfreqPointer;
+      if(ti.docFreq==1)
+      {
+    	  posquick=(posquick<<1) | 1;
+          this.outputQuickTis.writeVLong(posquick);
+      }else{
+    	  posquick=posquick<<1;
+          this.outputQuickTis.writeVLong(posquick);
+    	  this.outputQuickTis.writeVInt(ti.docFreq);
+      }
+      
+
       lastfreqPointer=ti.freqPointer;
       this.termNum++;
   }
@@ -323,6 +348,16 @@ public final class TermInfosWriter implements Closeable {
 	  {
 		  outputQuickTis.close();
 	  }
+	  if(outputQuickTisVal!=null)
+	  {
+		  outputQuickTisVal.close();
+	  }
+	  
+	  if(outputQuickTisTxt!=null)
+	  {
+		  outputQuickTisTxt.close();
+	  }
+	  
     try {
 
     	outputSize.writeLong(size);
@@ -339,6 +374,18 @@ public final class TermInfosWriter implements Closeable {
     		outputSize.writeInt(e.getKey());
     		outputSize.writeInt(e.getValue());
     	}
+    	outputSize.writeInt(fieldPosVal.size());
+    	for(Entry<Integer, Long> e:fieldPosVal.entrySet())
+    	{
+    		outputSize.writeInt(e.getKey());
+    		outputSize.writeLong(e.getValue());
+    	}
+	  	
+	  	
+	  	
+	
+   
+	  	
     } finally {
       try {
     	  outputSize.close();

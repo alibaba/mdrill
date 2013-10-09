@@ -151,7 +151,7 @@ public class MdrillUtils {
 		}
 
 		public UnvertFields(String[] fields, SegmentReader reader,
-				String partion, IndexSchema schema) throws IOException {
+				String partion, IndexSchema schema,boolean isreadDouble) throws IOException {
 			if (fields == null) {
 				fields = new String[0];
 			}
@@ -166,7 +166,7 @@ public class MdrillUtils {
 					UnvertFile uf = new UnvertFile();
 
 					uf.uif = UnInvertedField.getUnInvertedField(fields[i],
-							reader, partion, schema);
+							reader, partion, schema,isreadDouble);
 					uf.ti = uf.uif.getTi(reader);
 					uf.filetype = schema.getFieldType(fields[i]);
 					cols[i] = uf;

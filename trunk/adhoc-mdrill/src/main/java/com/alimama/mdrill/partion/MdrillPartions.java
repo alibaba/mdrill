@@ -5,7 +5,7 @@ import com.alimama.mdrill.partion.single.SinglePartions;
 import com.alimama.mdrill.partion.thedate.ThedatePartions;
 
 public class MdrillPartions {
-	public static String PARTION_VERSION="20130513";
+	public static String PARTION_VERSION="201301008";
 	public static MdrillPartionsInterface INSTANCE(String parttype)
 	{
 		MdrillPartionsInterface rtn=null;

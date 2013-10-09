@@ -480,7 +480,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
   
   
-  public IndexInput getQuickTis()
+  public TermInfosReader.QuickInput getQuickTis()
   {
 	  return this.core.getTermsReader().getQuickTis();
   }
@@ -496,7 +496,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  buff.append("#fileNum#"+String.valueOf(fileNum));
 	  if(fileNum!=null&&fileNum>=0&&core!=null&&core.getTermsReader()!=null)
 	  {
-		  ConcurrentHashMap<Integer, Long> filepos=core.getTermsReader().fieldPos;
+		  ConcurrentHashMap<Integer, Long> filepos=this.getQuickTis().fieldPos;
 		  if(filepos!=null)
 		  {
 			  Long rtn= filepos.get(fileNum);
@@ -516,6 +516,36 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  return null;
   }
   
+  public Long getQuickDoublePos(String field)
+  {
+	  ensureOpen();
+	  StringBuffer buff=new StringBuffer();
+	  buff.append("##getQuickDoublePos##"+field);
+
+	  try{
+	  Integer fileNum=this.fieldInfos().fieldNumber(field);
+	  buff.append("#fileNum#"+String.valueOf(fileNum));
+	  if(fileNum!=null&&fileNum>=0&&core!=null&&core.getTermsReader()!=null)
+	  {
+		  ConcurrentHashMap<Integer, Long> filepos=this.getQuickTis().fieldPosVal;
+		  if(filepos!=null)
+		  {
+			  Long rtn= filepos.get(fileNum);
+			  buff.append("#pos#"+String.valueOf(rtn));
+			  log.info(buff.toString());
+			  return rtn;
+		  }
+	  }
+	  buff.append("#pos#null");
+
+	  log.info(buff.toString());
+	  }catch(Throwable e)
+	  {
+		  log.error(buff.toString(),e);
+	  }
+
+	  return null;
+  }
 	public Integer getQuickCount(String field) {
 		ensureOpen();
 		StringBuffer buff = new StringBuffer();
@@ -527,7 +557,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
 			if (fileNum != null &&fileNum>=0&& core != null
 					&& core.getTermsReader() != null) {
-				ConcurrentHashMap<Integer, Integer> fileCount = core.getTermsReader().fieldCount;
+				ConcurrentHashMap<Integer, Integer> fileCount = this.getQuickTis().fieldCount;
 				if (fileCount != null) {
 					Integer rtn = fileCount.get(fileNum);
 					buff.append("#count#" + String.valueOf(rtn));

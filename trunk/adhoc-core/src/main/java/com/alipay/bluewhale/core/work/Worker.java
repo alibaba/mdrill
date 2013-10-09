@@ -125,15 +125,16 @@ public class Worker {
 
 		this.active = new AtomicBoolean(true);
 		this.zkActive = new AtomicBoolean();
-		// 创建与zk的链接
-		this.zkClusterstate =Cluster.mk_distributed_cluster_state(conf);
-		this.zkCluster = Cluster.mk_storm_cluster_state(zkClusterstate);
-		shareCluster=this.zkCluster;
-
+		
 		if (StormConfig.cluster_mode(conf).equals("distributed")) {
 			PathUtils.touch(StormConfig.worker_pid_path(conf, worker_id,
 					StormUtils.process_pid()));
 		}
+		
+		// 创建与zk的链接
+		this.zkClusterstate =Cluster.mk_distributed_cluster_state(conf);
+		this.zkCluster = Cluster.mk_storm_cluster_state(zkClusterstate);
+		shareCluster=this.zkCluster;
 
 		this.stormConf = StormConfig.read_supervisor_storm_conf(conf, topology_id);
 
