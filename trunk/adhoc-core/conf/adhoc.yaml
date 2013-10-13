@@ -1,0 +1,36 @@
+ metric.higo.conn.str: "jdbc:mdrill://127.0.0.1:1107"
+ metric.mysql.url: "jdbc:mysql://tiansuan1.kgb.cm4:3306/adhoc_metric"
+ metric.mysql.username: "adhoc"
+ metric.mysql.password: "adhoc"
+
+ adhoc.metric.hive.sql.cust: "select count(thedate),sum(impression),sum(finclick),sum(finprice),sum(alipay_direct_num),sum(alipay_direct_amt),sum(alipay_indirect_num),sum(alipay_indirect_amt) from rpt_p4padhoc_cust where dt='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.cust: "select count(thedate),sum(impression),sum(finclick),sum(finprice),sum(alipay_direct_num),sum(alipay_direct_amt),sum(alipay_indirect_num),sum(alipay_indirect_amt) from rpt_p4padhoc_cust where thedate='%s' limit 0,20"
+
+ adhoc.metric.hive.sql.auction: "select count(thedate),sum(impression),sum(finclick),sum(finprice),sum(e_alipay_direct_cnt),sum(e_alipay_direct_amt),sum(e_alipay_indirect_cnt),sum(e_alipay_indirect_amt) from rpt_p4padhoc_auction where dt='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.auction: "select count(thedate),sum(impression),sum(finclick),sum(finprice),sum(e_alipay_direct_cnt),sum(e_alipay_direct_amt),sum(e_alipay_indirect_cnt),sum(e_alipay_indirect_amt) from rpt_hitfake_auctionall_d where thedate='%s' limit 0,20"
+
+ adhoc.metric.hive.sql.product: "select count(thedate),sum(impression),sum(finclick),sum(finprice),sum(e_alipay_direct_cnt),sum(e_alipay_direct_amt),sum(e_alipay_indirect_cnt),sum(e_alipay_indirect_amt) from rpt_p4padhoc_product where dt='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.product: "select count(thedate),sum(impression),sum(finclick),sum(finprice),sum(e_alipay_direct_cnt),sum(e_alipay_direct_amt),sum(e_alipay_indirect_cnt),sum(e_alipay_indirect_amt) from rpt_p4padhoc_product where thedate='%s' limit 0,20"
+ 
+ adhoc.metric.hive.sql.cpsitem: "select count(thedate),sum(landing_pv),sum(shop_ipv),sum(cm_direct_commision_amt),sum(cm_direct_alipay_num),sum(cm_direct_alipay_amt),sum(cm_direct_settle_amt),sum(cm_direct_settle_num) from r_rpt_cps_luna_item where dt='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.cpsitem: "select count(thedate),sum(landing_pv),sum(shop_ipv),sum(cm_direct_commision_amt),sum(cm_direct_alipay_num),sum(cm_direct_alipay_amt),sum(cm_direct_settle_amt),sum(cm_direct_settle_num) from r_rpt_cps_luna_item where thedate='%s' limit 0,20"
+ 
+ adhoc.metric.hive.sql.cpspid: "select count(thedate),sum(pv),sum(s_click),sum(cm_settle_num),sum(alipay_direct_num),sum(alipay_direct_amt),sum(alipay_indirect_num),sum(alipay_indirect_amt) from r_rpt_cps_adhoc_pid where dt='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.cpspid: "select count(thedate),sum(pv),sum(s_click),sum(cm_settle_num),sum(alipay_direct_num),sum(alipay_direct_amt),sum(alipay_indirect_num),sum(alipay_indirect_amt) from r_rpt_cps_adhoc_pid where thedate='%s' limit 0,20"
+ 
+ adhoc.metric.hive.sql.r_rpt_cps_adhoc_payment: "select count(thedate),sum(alipay_amt),sum(commision_amt),sum(subsidy_sum),sum(unit_price),sum(auction_num),sum(trans_num),sum(trans_amt) from r_rpt_cps_adhoc_payment where dt='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.r_rpt_cps_adhoc_payment: "select count(thedate),sum(alipay_amt),sum(commision_amt),sum(subsidy_sum),sum(unit_price),sum(auction_num),sum(trans_num),sum(trans_amt) from r_rpt_cps_adhoc_payment where thedate='%s' limit 0,20"
+ 
+ adhoc.metric.hive.sql.r_rpt_tanx_adzone_total: "select count(thedate),sum(show_pv),sum(click),sum(x_fin_pv),sum(x_s_click),sum(ctr),sum(ecpm_dsp_x_fin_charge),sum(tuwen_dsp_x_fin_charge) from r_rpt_tanx_adzone_total where ds='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.r_rpt_tanx_adzone_total: "select count(thedate),sum(show_pv),sum(click),sum(x_fin_pv),sum(x_s_click),sum(ctr),sum(ecpm_dsp_x_fin_charge),sum(tuwen_dsp_x_fin_charge) from r_rpt_tanx_adzone_total where thedate='%s' limit 0,20"
+ 
+ adhoc.metric.hive.sql.b2bad: "select count(thedate),sum(cust_score),sum(king_unpay_amt),sum(king_pay_amt),sum(wp_total_score),sum(fb_member_cnt_1d_004),sum(p4p_kw_max_price),sum(cost_day_cnt) from rpt_b2bad_hoc_memb_sum_d where pt='%s000000' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.b2bad: "select count(thedate),sum(cust_score),sum(king_unpay_amt),sum(king_pay_amt),sum(wp_total_score),sum(fb_member_cnt_1d_004),sum(p4p_kw_max_price),sum(cost_day_cnt) from rpt_b2bad_hoc_memb_sum_d where thedate='%s' limit 0,20"
+ 
+ adhoc.metric.hive.sql.st_tanx_x_core_gateway: "select count(thedate),sum(ontanx_zero_pv),sum(x_fin_pv),sum(bid_s_bid_amt),sum(x_fin_charge),sum(nogg_x_tanxfin_profit),sum(x_show_c_pv),sum(log_x_ss_pv) from st_tanx_x_core_gateway where ds='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.st_tanx_x_core_gateway: "select count(thedate),sum(ontanx_zero_pv),sum(x_fin_pv),sum(bid_s_bid_amt),sum(x_fin_charge),sum(nogg_x_tanxfin_profit),sum(x_show_c_pv),sum(log_x_ss_pv) from st_tanx_x_core_gateway where thedate='%s' limit 0,20"
+ 
+ adhoc.metric.hive.sql.r_rpt_nz_adhoc_member: "select count(thedate),sum(gmv_fee),sum(alipay_cnt),sum(alipay_uv),sum(main_alipay_cnt),sum(main_alipay_uv),sum(bh_f_ad_pv),sum(click) from r_rpt_nz_adhoc_member where ds='%s' and thedate is not null limit 20"
+ adhoc.metric.mdrill.sql.r_rpt_nz_adhoc_member: "select count(thedate),sum(gmv_fee),sum(alipay_cnt),sum(alipay_uv),sum(main_alipay_cnt),sum(main_alipay_uv),sum(bh_f_ad_pv),sum(click) from r_rpt_nz_adhoc_member where thedate='%s' limit 0,20"
+ 
+ 

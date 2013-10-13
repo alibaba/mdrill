@@ -1,13 +1,11 @@
 package org.apache.solr.request.compare;
 
 
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.log4j.Logger;
-import org.apache.solr.common.util.NamedList;
-
 import com.alimama.mdrill.utils.UniqConfig;
-
-
 
 /**
  * 查询明细的基本数据结构
@@ -22,33 +20,27 @@ public class SelectDetailRow implements Comparable<SelectDetailRow>, GroupbyItem
 	}
 	
 	public int docid=0;//forCompare
-	private String key;//col1@col2@col3
-	public int value;//compare field value
-	public String colVal=null;//compare field value
-	private boolean isFinalResult=false;
-	
-	
-	public void setKey(String key) {
+	private ColumnKey key;//col1@col2@col3
+	public void setKey(ColumnKey key) {
 		this.key = key;
 	}
-	
-	public boolean isFinalResult() {
-		return isFinalResult;
-	}
 
-	public void setFinalResult(boolean isFinalResult) {
-		this.isFinalResult = isFinalResult;
-	}
+	public int value;//compare field value
+	public String colVal=null;//compare field value
 	
+
 	
-	public SelectDetailRow(String key,NamedList nst)
+	public SelectDetailRow(ArrayList<Object> nst)
 	{
-		this.key=key;
-		this.value=(Integer) nst.get("count");
-		this.docid= (Integer) nst.get("docid");
-		this.colVal=(String) nst.get("sortStr");
-		
-
+		this.key=new ColumnKey((ArrayList<Object>)nst.get(0));
+		this.docid= (Integer) nst.get(2);
+		this.colVal=(String) nst.get(3);
+		this.value=(Integer) nst.get(4);
+	}
+	
+	public void ToCrcSet(Map<Long,String> cache)
+	{
+		this.key.ToCrcSet(cache);
 	}
 	
 	public void shardsMerge(GroupbyItem o)
@@ -61,31 +53,21 @@ public class SelectDetailRow implements Comparable<SelectDetailRow>, GroupbyItem
 		return false;
 	}
 	
-	public NamedList toNamedList()
+	public ArrayList<Object> toNamedList()
 	{
-		NamedList rtn=new NamedList();
-		rtn.add("count", value);
-		if(isFinalResult)
-		{
-			NamedList stat=new NamedList();
-			stat.add("sum", 0d);
-			stat.add("max", 0d);
-			stat.add("min", 0d);
-			stat.add("dist", 0d);
-			rtn.add("higo_empty_s", stat);
-		}else{
-			rtn.add("rc", 2);
-			rtn.add("docid", this.docid);
-			if(colVal!=null)
-			{
-				rtn.add("sortStr", colVal);
-			}
-		}
+		
+		ArrayList<Object> rtn=new ArrayList<Object>();
+		rtn.add(0, this.key.toNamedList());//"key"
+		rtn.add(1, 2);//"rc"
+		rtn.add(2, this.docid);//"rc"
+		rtn.add(3, colVal==null?"":colVal);//"rc"
+		rtn.add(4,this.value);//"count"
+
 		return rtn;
 	}
 	
 
-	public String getKey() {
+	public ColumnKey getKey() {
 		return key;
 	}
 	
@@ -116,7 +98,6 @@ public class SelectDetailRow implements Comparable<SelectDetailRow>, GroupbyItem
 		rtn.docid=docid;
 		rtn.value=value;
 		rtn.key=null;
-		rtn.isFinalResult=false;
 		rtn.colVal=null;
 		
 		return rtn;

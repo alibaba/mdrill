@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -22,13 +21,19 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.compare.ColumnKey;
+import org.apache.solr.request.compare.GroupbyRow;
+import org.apache.solr.request.compare.RecordCount;
+import org.apache.solr.request.compare.RecordCountDetail;
+import org.apache.solr.request.compare.SelectDetailRow;
 import org.apache.solr.request.join.HigoJoinUtils;
 
 import backtype.storm.utils.Utils;
@@ -217,7 +222,7 @@ public class WebServiceParams {
 		return "";
 	}
 	
-	public static SortParam sort(String sort,String order,HashMap<String, String> fieldColumntypeMap)
+	public static SortParam sort(String sort,String order,HashMap<String, String> fieldColumntypeMap,ArrayList<String> groupbyFields)
 	{
 		String sortField = null;
 		String sortType = null;
@@ -263,6 +268,18 @@ public class WebServiceParams {
 				isStat=true;
 			}else{
 			    sortField=sort;
+			    sortType="column";
+			    cmptype="string";
+			    if(fieldColumntypeMap.containsKey(sortField))
+			    {
+			    	cmptype=fieldColumntypeMap.get(sortField);
+			    }
+			    isStat=false;
+			}
+		}else{
+			if(groupbyFields.size()>0)
+			{
+				 sortField=groupbyFields.get(0);
 			    sortType="column";
 			    cmptype="string";
 			    if(fieldColumntypeMap.containsKey(sortField))
@@ -1167,77 +1184,153 @@ public static OperateType parseOperateType(int operate)
 	}
 	
 	
-	public static HashMap<String, String[]> fillStatFields(Count row )
+	public static QueryResponse fetchGroupCrcQr(SolrQuery query,CommonsHttpSolrServer server) throws SolrServerException, JSONException
 	{
-		HashMap<String, String[]> statFieldAll =new HashMap<String, String[]>();
-		ArrayList<String> ext = row.getExtList();
-	   	if(ext!=null){
-	   		for(String extStr : ext){
-	   			String[] extValues = extStr.split(",");
-	   			if(extValues.length>=4){
-	   				String field=extValues[0];
-	   				String[] mapValue = statFieldAll.get(extValues[0]);
-	   				if(mapValue==null){
-	   				 mapValue=new String[6];
-	   				statFieldAll.put(field, mapValue);
-	   				}
-	   				          
-	   				boolean isCountNull=false;
-	   				if(field.indexOf("higoempty_")>=0)
-	   				{
-	   					isCountNull=true;
-	   				}
-	   				mapValue[0] = String.valueOf(isCountNull?row.getCount():0);
-	   				mapValue[1] = extValues[1];
-	   				mapValue[2] = extValues[2];
-	   				mapValue[3] = extValues[3];
-	   				double tempValue = Double.parseDouble(extValues[1]);
-	   				if(row.getCount()!=0)
-	   				{
-	   					mapValue[4] = ""+(tempValue/row.getCount());
-	   				}
-	   				else
-	   				{
-	   					mapValue[4] = "0";
-	   				}
-	   				if(extValues.length>=5)
-	   				{
-	   				    mapValue[5] = extValues[4];//dist
-	   				}else{
-	   				    mapValue[5] = "0";//dist
-	   				}
-	   				
-	   				if(extValues.length>=6)
-	   				{
-		   				double cnt = Double.parseDouble(extValues[5]);
-		   				if(cnt>0)
-		   				{
-		   					mapValue[4] = ""+(tempValue/cnt);
-		   				}
-		   				if(!isCountNull)
-		   				{
-		   					mapValue[0] = String.valueOf((long)cnt);
-		   				}
-		   				
-	   				}
-	   			}
-	   		}
-	   	}
-	   	
-	   	return statFieldAll;
+		String crcid=java.util.UUID.randomUUID().toString();
+
+		query.set("mdrill.crc.key.set", crcid);
+		QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+		query.remove("mdrill.crc.key.set");
+		query.set("mdrill.crc.key.get", crcid);
+		query.set("mdrill.crc.key.get.crclist", WebServiceParams.getGroupByCrc(qr));
+		QueryResponse qrCrc = server.query(query, SolrRequest.METHOD.POST);
+		query.remove("mdrill.crc.key.set");
+		query.remove("mdrill.crc.key.get");
+		query.remove("mdrill.crc.key.get.crclist");
+		setGroupByCrc(qr, qrCrc);
+		return qr;
 	}
 	
-	public static LinkedHashMap<String,Count> setGroupByResult(JSONObject jsonObj,QueryResponse qr,
+	public static QueryResponse fetchDetailCrcQr(SolrQuery query,CommonsHttpSolrServer server) throws SolrServerException, JSONException
+	{
+		String crcid=java.util.UUID.randomUUID().toString();
+
+		query.set("mdrill.crc.key.set", crcid);
+		QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+		query.remove("mdrill.crc.key.set");
+		query.set("mdrill.crc.key.get", crcid);
+		query.set("mdrill.crc.key.get.crclist", WebServiceParams.getDetailCrc(qr));
+		QueryResponse qrCrc = server.query(query, SolrRequest.METHOD.POST);
+		query.remove("mdrill.crc.key.set");
+		query.remove("mdrill.crc.key.get");
+		query.remove("mdrill.crc.key.get.crclist");
+		setDetailCrc(qr, qrCrc);
+		return qr;
+	}
+	
+	public static void setGroupByCrc(QueryResponse qr,QueryResponse qr2) throws JSONException
+	{
+	 StringBuffer buff=new StringBuffer();
+	 NamedList ff = (NamedList) qr.get_mdrillData();
+	 Map<Long,String> crcvalue = (Map<Long,String>) qr2.get_mdrillData();
+
+			
+			ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
+
+			int fcsize = 0;
+			if(facetCounts != null){
+				fcsize = facetCounts.size();
+			}
+			
+			ArrayList<Object> newlist=new ArrayList<Object>();
+			for(int i=0;i<fcsize;i++){
+				GroupbyRow row = new GroupbyRow((ArrayList<Object>)facetCounts.get(i));
+				row.setKey(new ColumnKey(crcvalue.get(row.getKey().getCrc())));
+				newlist.add(row.toNamedList());
+			}
+			
+			ff.remove("list");
+			ff.add("list",newlist);
+	}
+	
+	public static String getGroupByCrc(QueryResponse qr) throws JSONException
+		{
+		 StringBuffer buff=new StringBuffer();
+		 NamedList ff = (NamedList) qr.get_mdrillData();
+				
+				ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
+
+				int fcsize = 0;
+				if(facetCounts != null){
+					fcsize = facetCounts.size();
+				}
+				String join="";
+				for(int i=0;i<fcsize;i++){
+					GroupbyRow row = new GroupbyRow((ArrayList<Object>)facetCounts.get(i));
+					buff.append(join);
+					buff.append(row.getKey().getCrc());
+					join=",";
+				}
+				
+				return buff.toString();
+		}
+	
+	public static void setDetailCrc(QueryResponse qr,QueryResponse qr2) throws JSONException
+	{
+	 StringBuffer buff=new StringBuffer();
+	 NamedList ff = (NamedList) qr.get_mdrillData();
+	 Map<Long,String> crcvalue = (Map<Long,String>) qr2.get_mdrillData();
+
+			
+			ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
+
+			int fcsize = 0;
+			if(facetCounts != null){
+				fcsize = facetCounts.size();
+			}
+			
+			ArrayList<Object> newlist=new ArrayList<Object>();
+			for(int i=0;i<fcsize;i++){
+				SelectDetailRow row = new SelectDetailRow((ArrayList<Object>)facetCounts.get(i));
+				row.setKey(new ColumnKey(crcvalue.get(row.getKey().getCrc())));
+				newlist.add(row.toNamedList());
+			}
+			
+			ff.remove("list");
+			ff.add("list",newlist);
+	}
+	
+	public static String getDetailCrc(QueryResponse qr) throws JSONException
+	{
+	 StringBuffer buff=new StringBuffer();
+	 NamedList ff = (NamedList) qr.get_mdrillData();
+
+			
+			ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
+
+			int fcsize = 0;
+			if(facetCounts != null){
+				fcsize = facetCounts.size();
+			}
+			String join="";
+			for(int i=0;i<fcsize;i++){
+				SelectDetailRow row = new SelectDetailRow((ArrayList<Object>)facetCounts.get(i));
+				buff.append(join);
+				buff.append(row.getKey().getCrc());
+				join=",";
+			}
+			
+			return buff.toString();
+	}
+	
+	public static LinkedHashMap<String,GroupbyRow> setGroupByResult(SolrQuery query,JSONObject jsonObj,QueryResponse qr,
 		ArrayList<String> groupFields,
 		ArrayList<String> showFields,
 		HigoJoinParams[] joins,
-		LinkedHashMap<String,Count> groupValueCacheLast
+		LinkedHashMap<String,GroupbyRow> groupValueCacheLast
 	) throws JSONException
 	{
-		LinkedHashMap<String,Count> groupValueCache=new LinkedHashMap<String,Count>();
+		String[] crossFs=query.getParams(FacetParams.FACET_CROSS_FL);
+		String[] distFS=query.getParams(FacetParams.FACET_CROSSDIST_FL);
+		
+		LinkedHashMap<String,GroupbyRow> groupValueCache=new LinkedHashMap<String,GroupbyRow>();
 
-			FacetField ff = qr.getFacetField("solrCorssFields_s");
-			long totalRecord = ff.getTotal();
+		NamedList ff = (NamedList) qr.get_mdrillData();
+		
+		ArrayList<Object> count=(ArrayList<Object>) ff.get("count");
+		RecordCount p = new RecordCount(count);
+		
+		long totalRecord = p.getValue();
 				
 			if(groupValueCacheLast==null)
 			{
@@ -1250,8 +1343,8 @@ public static OperateType parseOperateType(int operate)
 			JSONArray jsonArray = new JSONArray();
 			JSONArray jsonArray_debug = new JSONArray();
 
-			List<Count> facetCounts = ff.getValues();
 			
+			ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
 
 			int fcsize = 0;
 			if(facetCounts != null){
@@ -1260,8 +1353,9 @@ public static OperateType parseOperateType(int operate)
 			if(groupValueCacheLast==null)
 			{
 				for(int i=0;i<fcsize;i++){
-				   	Count row = facetCounts.get(i);
-					String groupValues = row.getName();
+					GroupbyRow row = new GroupbyRow((ArrayList<Object>)facetCounts.get(i));
+					row.setCross(crossFs, distFS);
+					String groupValues = row.getKey().getKey();
 				   	groupValueCache.put(groupValues, row);
 				   	JSONObject jo = new JSONObject();
 				   	setGroup(jo, groupFields, joins, groupValues);
@@ -1270,25 +1364,28 @@ public static OperateType parseOperateType(int operate)
 				}
 			}else{
 				for(int i=0;i<fcsize;i++){
-				   	Count row = facetCounts.get(i);
-					String groupValues = row.getName();
+					GroupbyRow row = new GroupbyRow((ArrayList<Object>)facetCounts.get(i));
+					row.setCross(crossFs, distFS);
+					String groupValues = row.getKey().getKey();
 				   	groupValueCache.put(groupValues, row);
 				}
 				
 				int index=0;
-				for(Entry<String,Count> e:groupValueCacheLast.entrySet())
+				for(Entry<String,GroupbyRow> e:groupValueCacheLast.entrySet())
 				{
 			   		JSONObject jo = new JSONObject();
 			   		JSONObject jo_debug = new JSONObject();
 
 			   		jo_debug.put("__higo_gruss__", "false");
 					String groupValues = e.getKey();
-					Count row = groupValueCache.get(groupValues);
+					GroupbyRow row = groupValueCache.get(groupValues);
 					if(row==null)
 					{
 						row=e.getValue();
 						jo_debug.put("__higo_gruss__", "true");
 					}
+					row.setCross(crossFs, distFS);
+
 					//set group by result
 				   	setGroup(jo, groupFields, joins, groupValues);
 				   	//set stat result
@@ -1398,9 +1495,12 @@ public static OperateType parseOperateType(int operate)
 		return rtn;
 	}
 	
-	public static void setStat(JSONObject jo,ArrayList<String> showFields,	Count row) throws JSONException
+	private static String parseRealField(String realField)
 	{
-		HashMap<String, String[]> statFieldAll =fillStatFields(row);
+		return realField.equals("*")?"higoempty_count_l":realField;
+	}
+	public static void setStat(JSONObject jo,ArrayList<String> showFields,	GroupbyRow row) throws JSONException
+	{
 		for(String showfield : showFields){
 			if(showfield.equals("higoempty_groupby_forjoin_l"))
 			{
@@ -1410,38 +1510,42 @@ public static OperateType parseOperateType(int operate)
 			{
 				continue;
 			}
-			String realField=null;
-			Integer index=-1;
 			if(showfield.startsWith("count(")){
-				realField = showfield.substring(6,showfield.length()-1);
-				index=0;
+   				if(showfield.indexOf("higoempty_")>=0)
+   				{
+   					jo.put(showfield, String.valueOf(row.getValue()));
+   				}else{
+   					String realField = parseRealField(showfield.substring(6,showfield.length()-1));
+   					double cnt=row.getStat(realField, "cnt");
+   					jo.put(showfield, String.valueOf(cnt));
+   				}
 			}
 			if(showfield.startsWith("sum(")){
-				realField = showfield.substring(4,showfield.length()-1);
-				index=1;
+				String realField = parseRealField(showfield.substring(4,showfield.length()-1));
+				jo.put(showfield, String.valueOf(row.getStat(realField, "sum")));
+
 			}
 			if(showfield.startsWith("max(")){
-				realField = showfield.substring(4,showfield.length()-1);
-				index=2;
+				String realField = parseRealField(showfield.substring(4,showfield.length()-1));
+				jo.put(showfield, String.valueOf(row.getStat(realField, "max")));
 			}
 			if(showfield.startsWith("min(")){
-				realField = showfield.substring(4,showfield.length()-1);
-				index=3;
+				String realField = parseRealField(showfield.substring(4,showfield.length()-1));
+				jo.put(showfield, String.valueOf(row.getStat(realField, "min")));
 			}
 			if(showfield.startsWith("average(")){
-				realField = showfield.substring(8,showfield.length()-1);
-				index=4;
+				String realField = parseRealField(showfield.substring(8,showfield.length()-1));
+				double cnt=row.getStat(realField, "cnt");
+				if(cnt!=0)
+				{
+					jo.put(showfield, String.valueOf(row.getStat(realField, "sum")/cnt));
+				}else{
+					jo.put(showfield, "0");
+				}
 			}
 			if(showfield.startsWith("dist(")){
-				realField = showfield.substring(5,showfield.length()-1);
-				index=5;
-			}
-			String[] mapValue = statFieldAll.get(realField.equals("*")?"higoempty_count_l":realField);
-			if(mapValue!=null&&mapValue.length>index&&index>=0)
-			{
-				jo.put(showfield, mapValue[index]);
-			}else{
-				jo.put(showfield, " ");
+				String realField = parseRealField(showfield.substring(5,showfield.length()-1));
+				jo.put(showfield, row.getDist(realField));
 			}
 	   	}
 	}
@@ -1453,8 +1557,10 @@ public static OperateType parseOperateType(int operate)
 			HigoJoinParams[] joins		
 	) throws JSONException
 		{
-				FacetField ff = qr.getFacetField("solrCorssFields_s");
-				long totalRecord = ff.getTotal();
+		NamedList ff = (NamedList) qr.get_mdrillData();
+		ArrayList<Object> count=(ArrayList<Object>) ff.get("count");
+		RecordCountDetail p = new RecordCountDetail(count);
+				long totalRecord = p.getValue();
 					
 				jsonObj.put("code", "1"); 
 				jsonObj.put("message", "success"); 
@@ -1462,7 +1568,7 @@ public static OperateType parseOperateType(int operate)
 				JSONObject jsonObj2 = new JSONObject(); 
 				JSONArray jsonArray = new JSONArray();
 
-				List<Count> facetCounts = ff.getValues();
+				ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
 				
 				int fcsize = 0;
 				if(facetCounts != null){
@@ -1471,10 +1577,10 @@ public static OperateType parseOperateType(int operate)
 				jsonObj.put("total", totalRecord);
 
 				for(int i=0;i<fcsize;i++){
-				   	Count row = facetCounts.get(i);
+				   	SelectDetailRow row = new SelectDetailRow((ArrayList<Object>)facetCounts.get(i));
 				   	
 				   	JSONObject jo = new JSONObject();
-				   	String groupValues = row.getName();
+				   	String groupValues = row.getKey().getKey();
 				   	String[] values =  EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString()));
 				   	int valuesoffset=2;
 				   	for(int j =0;j<(values.length-valuesoffset)&&j<showFields.size();j++){
@@ -1514,7 +1620,7 @@ public static OperateType parseOperateType(int operate)
 				
 		}
 	
-	public static void setGroupByQuery(SolrQuery query, ArrayList<String> fqList,ArrayList<String> groupFields,int start,int rows,HashSet<String> realDistFieldMap,HashSet<String> realFieldMap,SortParam sortType,HigoJoinParams[] joins,HashMap<String,Count> groupValueCache)
+	public static void setGroupByQuery(SolrQuery query, ArrayList<String> fqList,ArrayList<String> groupFields,int start,int rows,HashSet<String> realDistFieldMap,HashSet<String> realFieldMap,SortParam sortType,HigoJoinParams[] joins,HashMap<String,GroupbyRow> groupValueCache)
 	{
 		query.setParam("start","0");
 		query.setParam("rows", "0");

@@ -3,6 +3,7 @@ package org.apache.solr.request.compare;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.solr.common.util.NamedList;
@@ -15,28 +16,18 @@ import com.alimama.mdrill.distinct.DistinctCount;
  */
 public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 	public Integer docidkey;//仅仅用于明细
-	private String key;
+	private ColumnKey key;
+	public void setKey(ColumnKey key) {
+		this.key = key;
+	}
+
 	private long value;
 	private ArrayList<ArrayList<Double>> stat=new ArrayList<ArrayList<Double>>();
 	public ArrayList<DistinctCount> dist=new ArrayList<DistinctCount>();
 
-	private boolean isFinalResult=false;
-	
 	private String[] crossFs;
 	private String[] distFS;
-	
-	public void setKey(String key) {
-		this.key = key;
-	}
-	
-	public boolean isFinalResult() {
-		return isFinalResult;
-	}
 
-	public void setFinalResult(boolean isFinalResult) {
-		this.isFinalResult = isFinalResult;
-	}
-	
 	public void setCross(String[] crossFs,String[] distFS){
 		this.crossFs=crossFs;
 		this.distFS=distFS;
@@ -58,24 +49,29 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 				dist.add(new DistinctCount());
 			}
 		}
-		
 	}
 
 	
 	public GroupbyRow() {
 	}
 	
-	public GroupbyRow(String key, Long value) {
+	
+	public void ToCrcSet(MergerGroupByGroupbyRowCompare cmp,Map<Long,String> cache)
+	{
+		this.key.ToCrcSet(cmp,cache);
+	}
+	public GroupbyRow(ColumnKey key, Long value) {
 		this.key = key;
 		this.value = value;
 	}
 	
-	public GroupbyRow(String key,NamedList nst)
+	public GroupbyRow(ArrayList<Object> nst)
 	{
-		this.key=key;
-		this.value=(Long) nst.get("count");
-		this.stat=(ArrayList<ArrayList<Double>>) nst.get("stat");
-		ArrayList<byte[]> compress=(ArrayList<byte[]>) nst.get("dist");
+		this.key=new ColumnKey((ArrayList<Object>)nst.get(0));
+		ArrayList<byte[]> compress=(ArrayList<byte[]>) nst.get(2);
+		this.stat=(ArrayList<ArrayList<Double>>) nst.get(3);
+		this.value=(Long) nst.get(4);
+		
 		int compresssize=compress.size();
 		this.dist=new ArrayList<DistinctCount>(compresssize);
 		for(int i=0;i<compresssize;i++)
@@ -87,7 +83,7 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 	public void shardsMerge(GroupbyItem o)
 	{
 		GroupbyRow instance=(GroupbyRow)o;
-		if (this.key == null || this.key.isEmpty()) {
+		if (this.key == null ) {
 			this.key = instance.key;
 		}
 		this.value += instance.value;
@@ -129,12 +125,153 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 		return new Double[]{0d,0d,0d,0d,0d};
 	}
 	
-	public NamedList toNamedList()
+	
+	private String transKeyName(int i)
 	{
-		NamedList rtn=new NamedList();
-		rtn.add("count", value);
-		if(isFinalResult)
+		String keyname=null;
+		switch(i)
 		{
+			case 0:
+			{
+				keyname="dist";
+				break;
+			}
+			case 1:
+			{
+				keyname="sum";
+				break;
+			}
+			case 2:
+			{
+				keyname="max";
+				break;
+			}
+			case 3:
+			{
+				keyname="min";
+				break;
+			}
+			case 4:
+			{
+				keyname="cnt";
+				break;
+			}
+		}
+		return keyname;
+	}
+	
+	public static HashMap<String,Integer> typeIndex=new HashMap<String, Integer>();
+	static{
+		typeIndex.put("sum", 1);
+		typeIndex.put("max", 2);
+		typeIndex.put("min", 3);
+		typeIndex.put("cnt", 4);
+	}
+	
+	public double getStat(String field,String type)
+	{
+		ArrayList<Double> vv = this.stat.get(UniqTypeNum.foundIndex(this.crossFs, field));
+		return vv.get(typeIndex.get(type));
+	}
+	
+	public double getDist(String field)
+	{
+		DistinctCount vv = this.dist.get(UniqTypeNum.foundIndex(this.distFS, field));
+		return vv.getValue();
+	}
+	
+	public ArrayList<Object> toNamedList()
+	{
+
+		ArrayList<Object> rtn=new ArrayList<Object>();
+		ArrayList<byte[]> compress=new ArrayList<byte[]>();
+		for(int field=0;field<this.dist.size();field++)
+		{
+			DistinctCount vv =this.dist.get(field) ;
+			compress.add(field, vv.toBytes());
+		}
+		rtn.add(0, this.key.toNamedList());//"key"
+		rtn.add(1, 1);//"rc"
+		rtn.add(2,compress);//"dist"
+		rtn.add(3, this.stat);//"stat"
+		rtn.add(4,this.value);//"count"
+		return rtn;
+
+	
+		
+	}
+	
+	
+	
+
+	public ColumnKey getKey() {
+		return key;
+	}
+	
+	public double getStatVal(int field,int index)
+	{
+		return stat.get(field).get(index);
+	}
+	
+	public void addStat(int field, int type, Double value) {
+		
+		ArrayList<Double> w = stat.get(field);
+		Double lastValue =  w.get(type);
+		Double cnt =  w.get(4);
+		if(cnt<=0)
+		{
+			w.set(type,value);
+			return ;
+		}
+
+		switch(type)
+		{
+			case 1://sum
+			{
+				w.set(type, lastValue+value);
+				break;
+			}
+			case 2://max
+			{
+				w.set(type, Math.max(value, lastValue));
+				break;
+			}
+			case 3://min
+			{
+				w.set(type, Math.min(value, lastValue));
+				break;
+			}
+			case 4://cnt
+			{
+				w.set(type, lastValue+value);
+				break;
+			}
+			default:{
+				w.set(type,value);
+				break;
+			}
+		}
+	}
+	
+	public void addDistinct(Integer field, DistinctCount value) {
+		DistinctCount w = dist.get(field);
+		w.merge(value);
+	}
+	
+	public Long getValue() {
+		return value;
+	}
+
+
+	@Override
+	public int compareTo(GroupbyRow o) {
+		return Double.compare(this.value, o.value);
+	}
+
+	/**
+	 * 
+			NamedList rtn=new NamedList();
+			rtn.add("count", value);
 			HashMap<String,ArrayList<Double>> finalResult=new HashMap<String, ArrayList<Double>>();
 			for(int field=0;field<this.dist.size();field++)
 			{
@@ -179,122 +316,8 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 					}
 					rtn.add(field, stat);
 				}
-		}else{
-			ArrayList<byte[]> compress=new ArrayList<byte[]>();
-			for(int field=0;field<this.dist.size();field++)
-			{
-				DistinctCount vv =this.dist.get(field) ;
-				compress.add(field, vv.toBytes());
-			}
-			rtn.add("dist",compress);
-			rtn.add("stat", this.stat);
-			rtn.add("rc", 1);
-		}
+				return rtn;
+
 		
-		return rtn;
-	}
-	
-	private String transKeyName(int i)
-	{
-		String keyname=null;
-		switch(i)
-		{
-			case 0:
-			{
-				keyname="dist";
-				break;
-			}
-			case 1:
-			{
-				keyname="sum";
-				break;
-			}
-			case 2:
-			{
-				keyname="max";
-				break;
-			}
-			case 3:
-			{
-				keyname="min";
-				break;
-			}
-			case 4:
-			{
-				keyname="cnt";
-				break;
-			}
-		}
-		return keyname;
-	}
-	
-
-	public String getKey() {
-		return key;
-	}
-	
-	public double getStatVal(int field,int index)
-	{
-		return stat.get(field).get(index);
-	}
-	
-
-	public void addStat(int field, int type, Double value) {
-		
-		ArrayList<Double> w = stat.get(field);
-		Double lastValue =  w.get(type);
-		Double cnt =  w.get(4);
-		if(cnt<=0)
-		{
-			w.set(type,value);
-			return ;
-		}
-
-		switch(type)
-		{
-			case 1://sum
-			{
-				w.set(type, lastValue+value);
-				break;
-			}
-			case 2://max
-			{
-				w.set(type, Math.max(value, lastValue));
-				break;
-			}
-			case 3://min
-			{
-				w.set(type, Math.min(value, lastValue));
-				break;
-			}
-			case 4://cnt
-			{
-				w.set(type, lastValue+value);
-				break;
-			}
-			default:{
-				w.set(type,value);
-				break;
-			}
-		}
-	}
-	
-	public void addDistinct(Integer field, DistinctCount value) {
-	
-		DistinctCount w = dist.get(field);
-		w.merge(value);
-
-	}
-	
-	public Long getValue() {
-		return value;
-	}
-
-
-	@Override
-	public int compareTo(GroupbyRow o) {
-		return Double.compare(this.value, o.value);
-	}
-
-
+	 */
 }

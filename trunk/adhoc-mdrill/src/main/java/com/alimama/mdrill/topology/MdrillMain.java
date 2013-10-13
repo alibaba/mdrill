@@ -198,7 +198,7 @@ public class MdrillMain {
 		}
 
 
-		JobIndexerPartion index = new JobIndexerPartion(conf, shards,
+		JobIndexerPartion index = new JobIndexerPartion(tablename,conf, shards,
 				new Path(hdfsSolrDir,tablename).toString(), inputdir, 3, maxday, startday, format, type);
 		ToolRunner.run(conf, index, jobValues);
 

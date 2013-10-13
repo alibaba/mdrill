@@ -107,7 +107,7 @@ public class TimeCacheMap<K, V> {
         }
     }
     
-    public Object remove(K key) {
+    public V remove(K key) {
         synchronized(_lock) {
             for(HashMap<K, V> bucket: _buckets) {
                 if(bucket.containsKey(key)) {

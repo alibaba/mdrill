@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -21,7 +22,9 @@ import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.compare.ColumnKey;
 import org.apache.solr.request.compare.GroupbyRow;
+import org.apache.solr.request.compare.MergerGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.RecordCount;
 import org.apache.solr.request.compare.ShardGroupByTermNum;
 import org.apache.solr.request.join.HigoJoinInvert;
@@ -221,22 +224,49 @@ public class MdrillGroupBy {
 
 		Integer index = 0;
 		NamedList res = new NamedList();
-		res.add(recordCount.getKey(), recordCount.toNamedList());
+		res.add("count", recordCount.toNamedList());
+		
+		ConcurrentHashMap<Long,String> cache=null;
+
+		boolean issetCrc=this.parse.crcOutputSet!=null;
+		MergerGroupByGroupbyRowCompare mergerCmp=null;
+		if(issetCrc)
+		{
+			synchronized (MdrillUtils.CRC_CACHE_SIZE) {
+				cache=MdrillUtils.CRC_CACHE_SIZE.get(this.parse.crcOutputSet);
+				if(cache==null)
+				{
+					cache=new ConcurrentHashMap<Long,String>();
+					MdrillUtils.CRC_CACHE_SIZE.put(this.parse.crcOutputSet, cache);
+
+				}
+			}
+			
+			FacetComponent.FieldFacet facet=new FacetComponent.FieldFacet(this.parse.params, "solrCorssFields_s");
+			mergerCmp=facet.createMergerGroupCmp();
+		}
+		
+		ArrayList<Object> list=new ArrayList<Object>();
+		
 		for (GroupbyRow kv : recommendations) {
 			if (index >= this.parse.offset) {
-				res.add(kv.getKey(), kv.toNamedList());
+				if(issetCrc)
+				{
+					kv.ToCrcSet(mergerCmp,cache);
+				}
+				list.add(kv.toNamedList());
 			}
 			index++;
 		}
+		res.add("list", list);
 		return res;
 	}
 		  
 	private void setCrossRow(RefRow ref,String groupname) throws ParseException, IOException
 	  {
 		  this.recordCount.setCrcRecord(groupname);
-		  GroupbyRow row = new GroupbyRow(groupname, ref.val);
+		  GroupbyRow row = new GroupbyRow(new ColumnKey(groupname), ref.val);
 		  row.setCross(this.parse.crossFs, this.parse.distFS);
-		  row.setFinalResult(false);
 		  if(this.parse.hasStat())
 		{
 				for(int i=0;i<this.parse.crossFs.length;i++)

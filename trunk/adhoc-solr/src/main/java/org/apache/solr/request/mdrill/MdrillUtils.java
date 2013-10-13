@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.SegmentReader;
@@ -14,11 +15,17 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 
+
+import com.alimama.mdrill.adhoc.TimeCacheMap;
 import com.alimama.mdrill.distinct.DistinctCount;
+import com.alimama.mdrill.utils.UniqConfig;
 
 public class MdrillUtils {
     static Logger LOG = Logger.getLogger(MdrillUtils.class);
 
+    public static TimeCacheMap<String, ConcurrentHashMap<Long,String>> CRC_CACHE_SIZE = new TimeCacheMap<String, ConcurrentHashMap<Long,String>>(UniqConfig.getCrcCacheTimeoutSecs());
+
+    
 	public static class TermNumToString{
 		private static Object lock=new Object();
 		HashSet<Integer> tmlist=new HashSet<Integer>();

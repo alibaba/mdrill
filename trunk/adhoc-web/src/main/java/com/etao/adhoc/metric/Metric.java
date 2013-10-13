@@ -1,57 +1,8 @@
 package com.etao.adhoc.metric;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Metric {
 
-	public static void main(String[] args) {
-		System.out.println(parsePercent("2","Stage-1 map = 100.0%, reduce = 97.49997%",false));
-	}
-	
-	private static Pattern  pat=null;
-	public static String parsePercent(String stage,String percent,boolean issuccess)
-	{
-		if(issuccess)
-		{
-			return "100%";
-		}
-//		Stage-2 map = 100%,  reduce = 100%
-		if(pat==null)
-		{
-			pat= Pattern.compile(".*Stage.*[^\\d]*(\\d+)[^\\d]map[^\\d]*(\\d+)[^\\d].*reduce[^\\d]*(\\d+)[^\\d].*");
-		}
-		
-		if(!percent.startsWith("Stage"))
-		{
-			return "0%";
-		}
-		
-		Integer totalstage=Integer.parseInt(stage);
-		Integer currStage=0;
-		double map=0;
-		double reduce=0;
-		
-		Matcher mat = pat.matcher(percent);
-        while (mat.find()) {
-        	currStage=Integer.parseInt(mat.group(1));
-        	map=Double.parseDouble(mat.group(2));
-        	reduce=Double.parseDouble(mat.group(3));
-
-        }
-        
-        if(currStage<1)
-        {
-        	currStage=1;
-        }
-        
-        if(totalstage>0)
-        {
-        	double result= (100d*(currStage-1)+map*0.5d+reduce*0.5d)/totalstage;
-        	return String.valueOf(result)+"%";
-        }
-		return "100%";
-	}
 	private long lineCnt;
 	private long impression;
 	private long finClick;

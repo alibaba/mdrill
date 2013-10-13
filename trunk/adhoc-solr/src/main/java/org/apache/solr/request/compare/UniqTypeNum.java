@@ -94,7 +94,7 @@ public class UniqTypeNum {
 	public static Integer foundIndex(String[] list,String fl)
 	{
 		int rtn= foundIndex(list, fl, 0);
-		LOG.info("####"+Arrays.toString(list)+"@"+fl+"@"+rtn);
+//		LOG.info("####"+Arrays.toString(list)+"@"+fl+"@"+rtn);
 		return rtn;
 	}
 	
@@ -187,6 +187,9 @@ public static void main(String[] args) {
 	 public static int compareDecodeNum(String value1, String value2) {
 			return compareStrNum(EncodeUtils.decode(value1),EncodeUtils.decode(value2));
 	    }
+	 
+	 
+
 	
 	public static int compareDecode(String[] a, String[] a2) {
 		int len = a.length;

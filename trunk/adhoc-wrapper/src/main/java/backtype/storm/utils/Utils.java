@@ -146,6 +146,13 @@ public class Utils {
 		ret.putAll(storm);
 		return ret;
 	}
+	
+	public static Map readStormConfig(String filename) {
+		Map ret = readStormConfig();
+		Map storm = findAndReadConfigFile(filename, false);
+		ret.putAll(storm);
+		return ret;
+	}
 
 
 

@@ -28,6 +28,7 @@ import org.apache.solr.common.util.RTimer;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.mdrill.FacetComponent;
+import org.apache.solr.request.mdrill.MdrillUtils;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
@@ -41,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class is experimental and will be changing in the future.
@@ -57,6 +59,7 @@ public class ResponseBuilder
   public boolean doStats;
   public boolean doTerms;
   public Map<String,String> timetaken=new LinkedHashMap<String,String>();
+	public Map<Long,String> crcvalue=new HashMap<Long,String>();
 
 
   private boolean needDocList = false;

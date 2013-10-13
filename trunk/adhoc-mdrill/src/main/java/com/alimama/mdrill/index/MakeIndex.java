@@ -209,6 +209,8 @@ public class MakeIndex {
 		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 		FileOutputFormat.setOutputPath(job, smallindex);
 		job.setNumReduceTasks(shards * parallel);
+		int result=0;
+
 		if(update!=null)
 		{
 	        job.submit();
@@ -221,44 +223,45 @@ public class MakeIndex {
 	        	return -1;
 	        }
 		}else{
-			job.waitForCompletion(true);
+			result=job.waitForCompletion(true)? 0 : -1;
 		}
         
         
 
-
-		Job job2 = new Job(new Configuration(jconf));
-		JobIndexPublic.setJars(job2.getConfiguration());
-		job2.setJobName("mdrill_stage_2@"+jobnameOutput);
-		Configuration conf2 = job2.getConfiguration();
-		JobIndexPublic.setDistributecache(new Path(solrHome,"solr/conf"), fs,conf2);
-		conf2.set("higo.index.fields", fields);
-		job2.setJarByClass(JobIndexerPartion.class);
-		job2.setInputFormatClass(SequenceFileInputFormat.class);
-		SequenceFileInputFormat.addInputPath(job2, new Path(smallindex,"part-r-*"));
-		job2.setMapOutputKeyClass(IntWritable.class);
-		job2.setMapOutputValueClass(Text.class);
-		job2.setPartitionerClass(IntPartion.class) ;
-		job2.setReducerClass(IndexReducerMerge.class);
-		job2.setOutputKeyClass(IntWritable.class);
-		job2.setOutputValueClass(Text.class);
-		job2.setOutputFormatClass(SequenceFileOutputFormat.class);
-		job2.setNumReduceTasks(shards);
-		SequenceFileOutputFormat.setOutputPath(job2, new Path(output));
-		int result=0;
-		if(update!=null)
+		if(result==0)
 		{
-			job2.submit();
-	        while(!job2.isComplete())
-	        {
-	        	update.update(2, job2);
-	        	Thread.sleep(3000);
-	        }
-	        
-	        update.finish();
-		}else{
-			result= job2.waitForCompletion(true) ? 0 : -1;
-
+			Job job2 = new Job(new Configuration(jconf));
+			JobIndexPublic.setJars(job2.getConfiguration());
+			job2.setJobName("mdrill_stage_2@"+jobnameOutput);
+			Configuration conf2 = job2.getConfiguration();
+			JobIndexPublic.setDistributecache(new Path(solrHome,"solr/conf"), fs,conf2);
+			conf2.set("higo.index.fields", fields);
+			job2.setJarByClass(JobIndexerPartion.class);
+			job2.setInputFormatClass(SequenceFileInputFormat.class);
+			SequenceFileInputFormat.addInputPath(job2, new Path(smallindex,"part-r-*"));
+			job2.setMapOutputKeyClass(IntWritable.class);
+			job2.setMapOutputValueClass(Text.class);
+			job2.setPartitionerClass(IntPartion.class) ;
+			job2.setReducerClass(IndexReducerMerge.class);
+			job2.setOutputKeyClass(IntWritable.class);
+			job2.setOutputValueClass(Text.class);
+			job2.setOutputFormatClass(SequenceFileOutputFormat.class);
+			job2.setNumReduceTasks(shards);
+			SequenceFileOutputFormat.setOutputPath(job2, new Path(output));
+			if(update!=null)
+			{
+				job2.submit();
+		        while(!job2.isComplete())
+		        {
+		        	update.update(2, job2);
+		        	Thread.sleep(3000);
+		        }
+		        
+		        update.finish();
+			}else{
+				result= job2.waitForCompletion(true) ? 0 : -1;
+	
+			}
 		}
 		
 		fs.delete(smallindex, true);

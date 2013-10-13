@@ -1,11 +1,10 @@
 package org.apache.solr.request.compare;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 import org.apache.log4j.Logger;
-import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare.CompareColumn;
-import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare.CompareColumnNum;
 import org.apache.solr.request.join.HigoJoinSort;
 
 import com.alimama.mdrill.distinct.DistinctCount;
@@ -104,6 +103,10 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 
 	}
 
+	public compareInterface getCmpobj() {
+		return cmpobj;
+	}
+
 	@Override
 	public int compare(GroupbyRow o1,
 			GroupbyRow o2) {
@@ -117,15 +120,27 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	
 	public interface compareInterface
 	{
+		public ArrayList<Object> getCompareValue(ColumnKey o1);
 		public int compare(GroupbyRow o1, GroupbyRow o2);
 	}
 	
 	public class CompareIndex implements compareInterface
 	{
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			ArrayList<Object> rtn=new ArrayList<Object>();
+			rtn.add(0, o1.getkeyCrc());
+			return rtn;
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
-			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
-			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
+			if(o1.getKey().isIscrc())
+			{
+				return UniqTypeNum.compare((Long)o1.getKey().getSort().get(0), (Long)o2.getKey().getSort().get(0));
+			}
+			
+			String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
+			String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
 			return UniqTypeNum.compareDecode(values1, values2);
 		}
 	}
@@ -133,6 +148,11 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareCountall implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			return index.getCompareValue(o1);
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			int cmp= UniqTypeNum.compare(o1.getValue(), o2.getValue());
@@ -146,6 +166,10 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareCount implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			return index.getCompareValue(o1);
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
@@ -170,6 +194,10 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareDist implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			return index.getCompareValue(o1);
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
@@ -195,6 +223,10 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareSum implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			return index.getCompareValue(o1);
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
@@ -214,6 +246,10 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareMax implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			return index.getCompareValue(o1);
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
@@ -233,6 +269,10 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareMin implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			return index.getCompareValue(o1);
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
@@ -251,6 +291,10 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	
 	public class CompareAvg implements compareInterface
 	{
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			return index.getCompareValue(o1);
+		}
 		CompareIndex index=new CompareIndex();
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
@@ -276,17 +320,31 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareColumn implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			ArrayList<Object> list=index.getCompareValue(o1);
+			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
+			
+			list.add(1, values1[fl_num]);
+			
+			return list;
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
-			
-			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
-			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
-
-			int cmp= UniqTypeNum.compareDecode(values1[fl_num],values2[fl_num]);
+			int cmp=0;
+			if(o1.getKey().isIscrc())
+			{
+				cmp= UniqTypeNum.compareDecode((String)o1.getKey().getSort().get(1),(String) o2.getKey().getSort().get(1));
+			}else{
+				String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
+				String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
+				cmp= UniqTypeNum.compareDecode(values1[fl_num],values2[fl_num]);
+			}
 			if(cmp==0)
 			{
 				cmp=index.compare(o1, o2);
 			}
+			
 			return cmp;
 		}
 	}
@@ -294,16 +352,29 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 	public class CompareColumnNum implements compareInterface
 	{
 		CompareIndex index=new CompareIndex();
+		public ArrayList<Object> getCompareValue(ColumnKey o1)
+		{
+			ArrayList<Object> list=index.getCompareValue(o1);
+			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
+			list.add(1, Double.parseDouble(UniqTypeNum.filterUnNumber(values1[fl_num])));
+			return list;
+		}
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
-			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
-			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
-
-			int cmp= UniqTypeNum.compareDecodeNum(values1[fl_num],values2[fl_num]);
-			if(cmp==0)
+		
+			int cmp=0;
+			if(o1.getKey().isIscrc())
 			{
-				cmp=index.compare(o1, o2);
+				cmp= UniqTypeNum.compare((Double)o1.getKey().getSort().get(1), (Double)o2.getKey().getSort().get(1));
+			}else{
+				String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
+				String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
+				cmp= UniqTypeNum.compareDecodeNum(values1[fl_num],values2[fl_num]);
+				if(cmp==0)
+				{
+					cmp=index.compare(o1, o2);
+				}
 			}
 			return cmp;
 		}

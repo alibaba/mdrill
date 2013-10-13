@@ -5,8 +5,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.zip.CRC32;
 
-import org.apache.solr.common.util.NamedList;
-
 /**
  * groupby 分页的总记录数实现
  * @author yannian.mu
@@ -17,12 +15,12 @@ public class RecordCount implements GroupbyItem{
 	private Integer maxUniqSize=Integer.MAX_VALUE;
 	private boolean isoversize=false;
 	public RecordCount() {}
-	public RecordCount(String key,NamedList nst)
+	public RecordCount(ArrayList<Object> nst)
 	{
-		String oversize=(String) nst.get("isoversize");
+		String oversize=(String) nst.get(0);
 		this.isoversize="yes".equals(oversize);
-		this.maxUniqSize=(Integer) nst.get("maxUniqSize");
-		this.uniq.addAll((Collection<? extends ArrayList<Integer>>) nst.get("dist"));
+		this.maxUniqSize=(Integer) nst.get(2);
+		this.uniq.addAll((Collection<? extends ArrayList<Integer>>) nst.get(3));
 	}
 	
 	public void shardsMerge(GroupbyItem g)
@@ -116,30 +114,17 @@ public class RecordCount implements GroupbyItem{
 		this.isoversize = isoversize;
 	}
 
-	private NamedList toNamelistForMerge(NamedList rtn)
-	{
-		rtn.add("isoversize", this.isoversize?"yes":"no");
-		rtn.add("maxUniqSize", maxUniqSize);
-		rtn.add("dist", this.uniq);
-		rtn.add("rc", 0);
-		return rtn;
-	}
 	
-	public NamedList toNamelistForResult(NamedList rtn)
-	{
-		rtn.add("recordcount", this.getValue());	
-		rtn.add("count", Integer.MAX_VALUE);	
-		return rtn;
-	}
 	
-	public NamedList toNamedList()
+	public ArrayList<Object> toNamedList()
 	{
-		NamedList rtn=new NamedList();
-		if(!isFinalResult)
-		{
-			return toNamelistForMerge(rtn);
-		}
-		return toNamelistForResult(rtn);
+		ArrayList<Object> rtn=new ArrayList<Object>();
+		rtn.add(0, this.isoversize?"yes":"no");//"key"
+		rtn.add(1, 0);//顺序不能乱改
+		rtn.add(2, maxUniqSize);
+		rtn.add(3, this.uniq);
+		
+		return rtn;
 	}
 	
 

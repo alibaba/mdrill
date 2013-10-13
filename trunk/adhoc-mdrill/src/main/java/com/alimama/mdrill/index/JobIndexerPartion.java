@@ -1,5 +1,6 @@
 package com.alimama.mdrill.index;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -20,6 +21,7 @@ import org.apache.hadoop.util.Tool;
 import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.MdrillPartionsInterface;
 import com.alimama.mdrill.utils.HadoopUtil;
+import com.alimama.mdrill.utils.TryLockFile;
 
 public class JobIndexerPartion extends Configured implements Tool {
 	private int shards;
@@ -38,7 +40,8 @@ public class JobIndexerPartion extends Configured implements Tool {
 	private JobIndexParse parse=null;
 	private MdrillPartionsInterface mdrillpartion;
 
-	public JobIndexerPartion(Configuration conf,int _shards, String _solrHome,  String _inputBase,  int _dayplus,int _maxRunDays, String _startday, String _filetype,String type)
+	TryLockFile flock=null;
+	public JobIndexerPartion(String tablename,Configuration conf,int _shards, String _solrHome,  String _inputBase,  int _dayplus,int _maxRunDays, String _startday, String _filetype,String type)
 			throws IOException {
 		this.shards = _shards;
 		this.solrHome = _solrHome;
@@ -54,6 +57,17 @@ public class JobIndexerPartion extends Configured implements Tool {
 		this.parse=new JobIndexParse(fs);
 		this.type=type;
 		this.mdrillpartion=MdrillPartions.INSTANCE(this.type);
+		
+		
+		String stormhome = System.getProperty("storm.home");
+		if (stormhome == null) {
+			stormhome=".";
+		}
+		
+		String lockPathBase=stormhome+"/lock";
+		File file = new File(lockPathBase);
+		file.mkdirs();
+		flock=new TryLockFile(lockPathBase+"/"+tablename);
 
 	}
 
@@ -170,9 +184,23 @@ public class JobIndexerPartion extends Configured implements Tool {
 			if(runPartion!=null)
 			{
 				System.out.println("vertify:"+runPartion.partion+">>>"+runPartion.partionvertify);
-			
-				int ret = this.subRun(runPartion.days, runPartion.tmpindexOtherPath.toString(),split,split,parallel);
-				parse.writeStr(new Path(runPartion.tmpindexOtherPath, "vertify"), runPartion.partionvertify);
+				int ret=0;
+				try{
+					flock.trylock();
+					String currentvertify = this.getCurrentVertify(runPartion.partion, runPartion.days,submatch);
+					Path indexOtherPath = new Path(this.index, runPartion.partion);
+					Path otherveritify=new Path(indexOtherPath, "vertify");
+					if (currentvertify.equals(parse.readFirstLineStr(otherveritify))) {
+						System.out.println("##########finiesd by other process #########");
+						continue;
+					}
+					
+					
+					ret = this.subRun(runPartion.days, runPartion.tmpindexOtherPath.toString(),split,split,parallel);
+					parse.writeStr(new Path(runPartion.tmpindexOtherPath, "vertify"), runPartion.partionvertify);
+				}finally{
+					flock.unlock();
+				}
 				if (ret != 0) {
 					return ret;
 				}

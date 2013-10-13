@@ -20,6 +20,7 @@ package org.apache.solr.request.mdrill;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
@@ -33,6 +34,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.compare.ColumnKey;
 import org.apache.solr.request.compare.GroupbyAgent;
 import org.apache.solr.request.compare.GroupbyItem;
 import org.apache.solr.request.compare.GroupbyRow;
@@ -73,28 +75,53 @@ public class  FacetComponent extends SearchComponent
     }
 
     SolrParams params = rb.req.getParams();
-    NamedList res = new SimpleOrderedMap();
+    String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
+
     try{
-	    String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
 	    if (null != facetFs) {
 	    	boolean isdetail = params.getBool(FacetParams.FACET_CROSS_DETAIL,false);
-            res.add("solrCorssFields_s", this.getResult(isdetail,rb.req.getSearcher(), params,rb.req,facetFs,rb.getResults().docSet));
+	    	 Object res= this.getResult(isdetail,rb.req.getSearcher(), params,rb.req,facetFs,rb.getResults().docSet);
+	        rb.rsp.add( "mdrill_data", res);
+	    }else{
+	    	throw new Exception("null != facetFs");
 	    }
     }catch(Throwable e)
     {
     	LOG.error("getFacetCounts",e);
     	throw new SolrException(ErrorCode.SERVER_ERROR,e);
     }
-    
-    SimpleOrderedMap facetResponse = new SimpleOrderedMap();
-    facetResponse.add("facet_queries", new SimpleOrderedMap());//getFacetQueryCounts()
-    facetResponse.add("facet_fields", res);
-    facetResponse.add("facet_dates",  new SimpleOrderedMap());//getFacetDateCounts()
-    facetResponse.add("facet_ranges",new SimpleOrderedMap() );//getFacetRangeCounts()
-    rb.rsp.add( "facet_counts", facetResponse);
   }
-  private NamedList getResult(boolean isdetail,SolrIndexSearcher searcher,SolrParams params,SolrQueryRequest req,String[] fields, DocSet base)throws Exception 
+  private Object getResult(boolean isdetail,SolrIndexSearcher searcher,SolrParams params,SolrQueryRequest req,String[] fields, DocSet base)throws Exception 
 	{
+	  String crcget=params.get("mdrill.crc.key.get",null);
+	  if(crcget!=null)
+	  {
+			ConcurrentHashMap<Long,String> cache=MdrillUtils.CRC_CACHE_SIZE.remove(crcget);
+			
+			Map<Long,String> crcvalue=new HashMap<Long,String>();
+			if(cache==null)
+			{
+				return crcvalue;
+			}
+			
+			String crcliststr=params.get("mdrill.crc.key.get.crclist");
+			if(crcliststr!=null)
+			{
+				String[] crclist=crcliststr.split(",");
+				for(String s:crclist)
+				{
+					Long crc=Long.parseLong(s);
+					String v=cache.get(crc);
+					if(v!=null)
+					{
+						crcvalue.put(crc, v);
+					}
+				}
+			}
+
+			return crcvalue;
+	  }
+	  
 		SolrIndexReader reader=searcher.getReader();
 		IndexReader.InvertParams invparam=new IndexReader.InvertParams();
 		invparam.searcher=searcher;
@@ -117,21 +144,26 @@ public class  FacetComponent extends SearchComponent
 	         dff.add(nl);
 	     }
 	     
-	     int offset = params.getInt(FacetParams.FACET_CROSS_OFFSET, 0);
-			int limit = params.getInt(FacetParams.FACET_CROSS_LIMIT, 100);
-			int limit_offset=offset+limit;
+		int offset = params.getInt(FacetParams.FACET_CROSS_OFFSET, 0);
+		int limit = params.getInt(FacetParams.FACET_CROSS_LIMIT, 100);
+		int limit_offset = offset + limit;
 	     
 	     NamedList fieldCounts = new NamedList();
 	      GroupbyItem[] counts = dff.getPairSorted(limit_offset);
 	      if(dff.recordcount!=null)
 	      {
 	    	  GroupbyItem recordcount=dff.recordcount;
-		      fieldCounts.add(recordcount.getKey(), recordcount.toNamedList());
+		      fieldCounts.add("count", recordcount.toNamedList());
 	      }
+			ArrayList<Object> list=new ArrayList<Object>();
+
 	      int end = limit_offset> counts.length ?counts.length:limit_offset;
 	      for (int i=offset; i<end; i++) {
-	        fieldCounts.add(counts[i].getKey(), counts[i].toNamedList());
+	    	  list.add(counts[i].toNamedList());
 	      }
+	      
+	      fieldCounts.add("list", list);
+
 
 		return fieldCounts;
 	}
@@ -180,21 +212,20 @@ public class  FacetComponent extends SearchComponent
     	  rb.timetaken.putAll(shardtime);
       }
       
-      NamedList facet_counts = (NamedList)rspq.get("facet_counts");
+      Object facet_counts = rspq.get("mdrill_data");
 
       if(facet_counts==null)
       {
-    	 SolrCore.log.error("facet_counts is null "+srsp.getShard(),new Exception());
+    	 SolrCore.log.error("mdrill_data is null "+srsp.getShard(),new Exception());
 	     continue;
       }
-
-      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
-      if (facet_fields == null) {
- 	     continue;
-      }
       
-	  fi.cross.add((NamedList)facet_fields.get(fi.cross.getKey()));
-
+      if(rb.req.getParams().get("mdrill.crc.key.get",null)!=null)
+      {
+    	  rb.crcvalue.putAll((Map<Long,String>)facet_counts);
+      }else{
+    	  fi.cross.add((NamedList)facet_counts);
+      }
       
     }
     
@@ -211,37 +242,38 @@ public class  FacetComponent extends SearchComponent
 
 	long t1=System.currentTimeMillis();
     FacetInfo fi = rb._facetInfo;
-    NamedList facet_counts = new SimpleOrderedMap();
-    facet_counts.add("facet_queries",new SimpleOrderedMap());
-
-    NamedList facet_fields = new SimpleOrderedMap();
-    facet_counts.add("facet_fields", facet_fields);
-
-    DistribFieldFacet dff=fi.cross;
-
-    NamedList fieldCounts = new NamedList(); // order is more important for facets
-    facet_fields.add(dff.getKey(), fieldCounts);
-
-    int saverecords=dff.offset + dff.limit;
-    GroupbyItem[] counts = dff.getPairSorted(saverecords);
-    if(dff.recordcount!=null)
+    if(rb.req.getParams().get("mdrill.crc.key.get",null)!=null)
     {
-  	  GroupbyItem recordcount=dff.recordcount;
-	      fieldCounts.add(recordcount.getKey(), recordcount.toNamedList());
+        rb.rsp.add("mdrill_data", rb.crcvalue);
+    }else{
+	    NamedList fieldCounts = new SimpleOrderedMap();
+	
+	    DistribFieldFacet dff=fi.cross;
+	
+	    int saverecords=dff.offset + dff.limit;
+	    GroupbyItem[] counts = dff.getPairSorted(saverecords);
+	    if(dff.recordcount!=null)
+	    {
+	  	  	GroupbyItem recordcount=dff.recordcount;
+		    fieldCounts.add("count", recordcount.toNamedList());
+	    }
+	
+	    int end = dff.limit < 0 ? counts.length : Math.min(dff.offset + dff.limit, counts.length);
+		ArrayList<Object> list=new ArrayList<Object>();
+
+	    for (int i=dff.offset; i<end; i++) {
+	  	  GroupbyItem item=counts[i];
+	  	  list.add(item.toNamedList());
+	    }
+	    fieldCounts.add("list", list);
+	    rb.rsp.add("mdrill_data", fieldCounts);
     }
 
-    int end = dff.limit < 0 ? counts.length : Math.min(dff.offset + dff.limit, counts.length);
-    for (int i=dff.offset; i<end; i++) {
-  	  GroupbyItem item=counts[i];
-      fieldCounts.add(item.getKey(), item.toNamedList());
-    }
-  
 
 
-    facet_counts.add("facet_dates", new SimpleOrderedMap());
-    facet_counts.add("facet_ranges", new SimpleOrderedMap());
     rb.rsp.add("mdrill_shard_time", rb.timetaken);
-    rb.rsp.add("facet_counts", facet_counts);
+    rb.crcvalue=new HashMap<Long,String>() ;
+    rb.timetaken=new LinkedHashMap<String,String>();
     rb._facetInfo = null;  // could be big, so release asap
     long t2=System.currentTimeMillis();
 	LOG.info("##finishStage## time taken "+(t2-t1));
@@ -345,14 +377,23 @@ public class  FacetComponent extends SearchComponent
 			}
 
 		}
+		
+		public MergerGroupByGroupbyRowCompare createMergerGroupCmp()
+		{
+			return new MergerGroupByGroupbyRowCompare(this.sort_column_type,this.facetFs, this.crossFs,this.distFS, this.joinSort, this.sort_fl, this.sort_type, this.isdesc);
+		}
+		
+		public MergerDetailSelectDetailRowCompare createMergerDetailCmp()
+		{
+			return new MergerDetailSelectDetailRowCompare(this.sort_column_type,this.isdesc);
+		}
 
 	    public String getKey() { return key; }
-
 	}
 
   public static class DistribFieldFacet extends FieldFacet {
 
-    public HashMap<String,GroupbyRow> counts = new HashMap<String,GroupbyRow>(128);
+    public HashMap<ColumnKey,GroupbyRow> counts = new HashMap<ColumnKey,GroupbyRow>(128);
     public ArrayList<SelectDetailRow> countsDetail = new ArrayList<SelectDetailRow>(128);
     
     public GroupbyItem recordcount=null;
@@ -362,32 +403,39 @@ public class  FacetComponent extends SearchComponent
 
 	long add(NamedList shardCounts) {
 		long t1 = System.currentTimeMillis();
-		int sz = shardCounts == null ? 0 : shardCounts.size();
-		for (int i = 0; i < sz; i++) {
-			String name = shardCounts.getName(i);
-			Object obj = shardCounts.getVal(i);
-			GroupbyAgent p = new GroupbyAgent(name, (NamedList) obj);
+		ArrayList<Object> count=(ArrayList<Object>) shardCounts.get("count");
+		if(count!=null)
+		{
+			GroupbyAgent p = new GroupbyAgent(count);
 			p.setCross(this.crossFs, this.distFS);
-			p.setFinalResult(this.isFinalResult);
-			if (p.isrecordcount()) {
-				if (recordcount == null) {
-					recordcount = p;
-				} else {
-					recordcount.shardsMerge(p);
-				}
+			if (recordcount == null) {
+				recordcount = p;
 			} else {
-				if (this.isdetail) {
-					countsDetail.add((SelectDetailRow) p.getRaw());
+				recordcount.shardsMerge(p);
+			}
+		}
+		
+		
+		ArrayList<Object> list=(ArrayList<Object>) shardCounts.get("list");
+		int sz = list == null ? 0 : list.size();
+		
+		for (int i = 0; i < sz; i++) {
+			ArrayList<Object> obj=(ArrayList<Object>)list.get(i);
+			GroupbyAgent p = new GroupbyAgent(obj);
+			p.setCross(this.crossFs, this.distFS);
+
+			if (this.isdetail) {
+				countsDetail.add((SelectDetailRow) p.getRaw());
+			} else {
+				GroupbyRow row=(GroupbyRow) p.getRaw();
+				GroupbyRow sfc = counts.get(row.getKey());
+				if (sfc == null) {
+					counts.put(row.getKey(), row);
 				} else {
-					GroupbyRow sfc = counts.get(name);
-					if (sfc == null) {
-						counts.put(name, (GroupbyRow) p.getRaw());
-					} else {
-						sfc.shardsMerge((GroupbyRow) p.getRaw());
-					}
+					sfc.shardsMerge(row);
 				}
 			}
-
+		
 		}
 
 		long t2 = System.currentTimeMillis();
@@ -397,7 +445,7 @@ public class  FacetComponent extends SearchComponent
     public GroupbyItem[] getPairSortedDetail(int saverecords) {
     	long t1=System.currentTimeMillis();
     	int sz=countsDetail.size();
-        final MergerDetailSelectDetailRowCompare cmp=new MergerDetailSelectDetailRowCompare(this.sort_column_type,this.isdesc);
+        final MergerDetailSelectDetailRowCompare cmp=this.createMergerDetailCmp();
     	 if(sz<=(saverecords*2))
          {
     		 SelectDetailRow[] arr = new SelectDetailRow[sz];
@@ -414,8 +462,6 @@ public class  FacetComponent extends SearchComponent
  	        
          }
     	 
-
-
 	    	PriorityQueue<SelectDetailRow> res = new PriorityQueue<SelectDetailRow>(saverecords, Collections.reverseOrder(cmp));
 			for(SelectDetailRow f:countsDetail)
 			{
@@ -446,7 +492,7 @@ public class  FacetComponent extends SearchComponent
         Collection<GroupbyRow> collections=counts.values();
 
     	int sz=counts.size();
-        final MergerGroupByGroupbyRowCompare cmp=new MergerGroupByGroupbyRowCompare(this.sort_column_type,this.facetFs, this.crossFs,this.distFS, this.joinSort, this.sort_fl, this.sort_type, this.isdesc);
+        final MergerGroupByGroupbyRowCompare cmp=this.createMergerGroupCmp();
     	 if(sz<=(saverecords*2))
          {
     		 GroupbyRow[] arr = new GroupbyRow[sz];

@@ -33,7 +33,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
 import org.apache.solr.handler.component.StatsValues;
-import org.apache.lucene.store.LinkFSDirectory;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.SimpleLRUCache;
 import org.apache.solr.request.BigReUsedBuffer;
@@ -48,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 
 import com.alimama.mdrill.buffer.LuceneUtils;
-import com.alimama.mdrill.buffer.TryLock;
 import com.alimama.mdrill.utils.UniqConfig;
 
 import java.io.IOException;
@@ -577,7 +575,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 	public static UnInvertedField getUnInvertedField(final String field,final SegmentReader reader,String partion,final IndexSchema schema,final boolean isreadDouble) throws IOException
 	{
 		final Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
-		final ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+String.valueOf(isreadDouble)+"@"+partion + "@" + field + "@"	+reader.getStringCacheKey()+"@"+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
+		final ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+String.valueOf(isreadDouble)+"@"+partion + "@" + field + "@"	+reader.getStringCacheKey()+"@"+reader.uuid+"@"+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
 		UnInvertedField uif = (UnInvertedField)cache.get(key);
 		if (uif == null) {
 			ExecutorCompletionService<UnivertPool> serv=new ExecutorCompletionService<UnivertPool>(pool);

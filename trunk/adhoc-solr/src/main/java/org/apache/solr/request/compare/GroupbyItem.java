@@ -1,17 +1,17 @@
 package org.apache.solr.request.compare;
 
+import java.util.ArrayList;
 
 
-import org.apache.solr.common.util.NamedList;
+
 
 public interface GroupbyItem  {
 	public void setCross(String[] crossFs,String[] distFS);
 	public void shardsMerge(GroupbyItem o);
 	public boolean isrecordcount();
-	public NamedList toNamedList();
-	public String getKey() ;
+	public ArrayList<Object> toNamedList();
 //	public Integer getKeyNum() ;
 //	public Long getValue();
-	public boolean isFinalResult() ;
-	public void setFinalResult(boolean isFinalResult);
+//	public boolean isFinalResult() ;
+//	public void setFinalResult(boolean isFinalResult);
 }

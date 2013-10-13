@@ -30,6 +30,8 @@ public class MdrillParseDetail {
 	public String[] joinList ;
 	public boolean isdesc;
 	public String sort_column_type;
+	
+	public String crcOutputSet=null;
 	public MdrillParseDetail(SolrParams params)
 	{
 		this.joinList=params.getParams(HigoJoinUtils.getTables());
@@ -49,6 +51,8 @@ public class MdrillParseDetail {
 		}
 		this.sort_column_type=params.get("facet.cross.sort.cp");
 		this.isdesc=params.getBool(FacetParams.FACET_CROSS_SORT_ISDESC, true);
+		this.crcOutputSet=params.get("mdrill.crc.key.set");
+
 	}
 	public fetchContaioner createContainer(String[] fields, DocSet baseDocs,SegmentReader reader,SolrIndexSearcher searcher,SolrQueryRequest req) throws IOException, ParseException
 	{

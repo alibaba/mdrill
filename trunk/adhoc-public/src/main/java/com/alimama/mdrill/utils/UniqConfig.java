@@ -32,6 +32,11 @@ public class UniqConfig {
 		return 1024;
 	}
 	
+	public static int getCrcCacheTimeoutSecs()
+	{
+		return 1200;
+	}
+	
 	public static int getTermCacheSize()
 	{
 		return 10240;

@@ -1,7 +1,6 @@
 package org.apache.solr.request.mdrill;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.PriorityQueue;
@@ -15,12 +14,12 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.compare.GroupbyRow;
+import org.apache.solr.request.compare.MergerGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.ShardGroupByTermNumCompare;
 import org.apache.solr.request.join.HigoJoinInvert;
 import org.apache.solr.request.join.HigoJoinSort;
 import org.apache.solr.request.join.HigoJoinUtils;
-import org.apache.solr.request.mdrill.GroupListCache.GroupList;
 import org.apache.solr.request.mdrill.MdrillGroupBy.EmptyPrecontains;
 import org.apache.solr.request.mdrill.MdrillGroupBy.Iprecontains;
 import org.apache.solr.request.mdrill.MdrillGroupBy.PreContains;
@@ -51,10 +50,13 @@ public class MdrillParseGroupby {
 	public String sort_fl;
 	public String sort_type;
 	public String sort_column_type;
+	public String crcOutputSet=null;
+
 	public boolean isdesc;
-	
+	public SolrParams params;
 	public MdrillParseGroupby(SolrParams params)
 	{
+		this.params=params;
 		this.offset = params.getInt(FacetParams.FACET_CROSS_OFFSET, 0);
 		int limit = params.getInt(FacetParams.FACET_CROSS_LIMIT, 100);
 		this.limit_offset=this.offset+limit;
@@ -71,6 +73,8 @@ public class MdrillParseGroupby {
 			this.joinList= new String[0];
 		}
 		
+		this.crcOutputSet=params.get("mdrill.crc.key.set");
+
 		this.preGroupList=params.getParams(FacetParams.FACET_CROSS_FL_PRE_GROUPS);
 		if(this.preGroupList==null)
 		{
@@ -134,6 +138,7 @@ public class MdrillParseGroupby {
 			this.baseDocs=baseDocs;
 			this.cmpString=new ShardGroupByGroupbyRowCompare(parse.sort_column_type,fields, parse.crossFs, parse.distFS, this.joinSort, parse.sort_fl, parse.sort_type, parse.isdesc);
 			this.cmpTermNum=new ShardGroupByTermNumCompare(fields, parse.crossFs, parse.distFS, this.joinSort, parse.sort_fl, parse.sort_type, parse.isdesc);
+
 			this.res = new PriorityQueue<GroupbyRow>(	parse.limit_offset, Collections.reverseOrder(this.cmpString));
 			
 			this.groupbySize=this.ufs.length;

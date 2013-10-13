@@ -16,10 +16,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.request.compare.GroupbyRow;
 
 import backtype.storm.utils.Utils;
 
@@ -143,7 +143,6 @@ public class MdrillService {
 		new Thread(hb).start();
 		try {
 			queryStr = WebServiceParams.query(queryStr);
-//			queryStr = WebServiceParams.queryadHoc(queryStr,part.parttype);
 			
 			String logParams2 = logRequest(projectName, callback, startStr, rowsStr,
 					queryStr, dist, fl, groupby, sort, order,leftjoin);
@@ -161,7 +160,7 @@ public class MdrillService {
 	
 			LinkedHashMap<String, String> fieldColumntypeMap = readFieldsFromSchemaXml(part.name);
 
-			SortParam sortType = WebServiceParams.sort(sort, order,fieldColumntypeMap);
+			SortParam sortType = WebServiceParams.sort(sort, order,fieldColumntypeMap,groupbyFields);
 
 			ShardsList[] cores = GetShards.get(part.name, false);
 			
@@ -372,10 +371,11 @@ public class MdrillService {
 				WebServiceParams.setGroupByQuery(query, fqList, groupbyFields,
 						minstart, maxEend, distStatFieldMap, commonStatMap, sortType,joins,null);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
-				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+				
+				QueryResponse qr = WebServiceParams.fetchGroupCrcQr(query, server);
 				
 				jsonObj.put("__timedebug", qr.getTimetaken().toString());
-				LinkedHashMap<String,Count> groupValueCache=WebServiceParams.setGroupByResult(jsonObj, qr, groupbyFields, showFields,joins,null);
+				LinkedHashMap<String,GroupbyRow> groupValueCache=WebServiceParams.setGroupByResult(query,jsonObj, qr, groupbyFields, showFields,joins,null);
 				
 				if(jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10)&&groupValueCache.size()<=UniqConfig.defaultCrossMaxLimit()&&jsonObj.getString("code").equals("1"))
 				{
@@ -386,7 +386,7 @@ public class MdrillService {
 					LOG.info("queryinfo_pre:"+shard.urlMain + "/select/?" + query.toString());
 					QueryResponse qr2 = server.query(query, SolrRequest.METHOD.POST);
 					jsonObj.put("__timedebug_qr2", qr2.getTimetaken().toString());
-					WebServiceParams.setGroupByResult(jsonObj, qr2, groupbyFields, showFields,joins,groupValueCache);
+					WebServiceParams.setGroupByResult(query,jsonObj, qr2, groupbyFields, showFields,joins,groupValueCache);
 					}catch(Exception e2)
 					{
 						LOG.error("queryinfo_pre_exception",e2);
@@ -453,13 +453,14 @@ public class MdrillService {
 				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
 				jsonObj.put("__timedebug", qr.getTimetaken().toString());
 
-				WebServiceParams.setGroupByResult(jsonObj, qr, groupbyFields,showFields,joins,null);
+				WebServiceParams.setGroupByResult(query,jsonObj, qr, groupbyFields,showFields,joins,null);
 			} else {
 				WebServiceParams.setDetailByQuery(
 						query, fqList, showFields,
 						start, rows, sortType,joins);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
-				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+				
+				QueryResponse qr = WebServiceParams.fetchDetailCrcQr(query, server);
 				jsonObj.put("__timedebug", qr.getTimetaken().toString());
 
 				WebServiceParams.setDetailResult(jsonObj, qr, showFields,joins);

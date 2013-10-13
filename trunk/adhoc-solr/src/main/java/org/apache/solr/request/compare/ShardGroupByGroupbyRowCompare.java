@@ -125,8 +125,8 @@ public class ShardGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Ser
 	{
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
-			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
-			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
+			String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
+			String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
 			return UniqTypeNum.compareDecode(values1, values2);
 		}
 	}
@@ -280,8 +280,8 @@ public class ShardGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Ser
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
-			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
-			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
+			String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
+			String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
 
 			int cmp= UniqTypeNum.compareDecode(values1[fl_num],values2[fl_num]);
 			if(cmp==0)
@@ -299,8 +299,8 @@ public class ShardGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Ser
 		@Override
 		public int compare(GroupbyRow o1, GroupbyRow o2) {
 			
-			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
-			String[] values2 = o2.getKey().split(UniqConfig.GroupJoinString());
+			String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
+			String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
 
 			int cmp= UniqTypeNum.compareDecodeNum(values1[fl_num],values2[fl_num]);
 			if(cmp==0)

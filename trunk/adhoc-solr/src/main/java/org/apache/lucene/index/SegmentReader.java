@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 public class SegmentReader extends IndexReader implements Cloneable {
 	  public static Logger log = LoggerFactory.getLogger(SegmentReader.class);
 
+  public String uuid=java.util.UUID.randomUUID().toString();
   protected boolean readOnly;
 
   private SegmentInfo si;

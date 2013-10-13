@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.PriorityQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.lucene.index.SegmentReader;
@@ -15,11 +16,11 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.compare.ColumnKey;
 import org.apache.solr.request.compare.RecordCountDetail;
 import org.apache.solr.request.compare.SelectDetailRow;
 import org.apache.solr.request.join.HigoJoinInvert;
 import org.apache.solr.request.mdrill.MdrillUtils.*;
-import org.apache.solr.request.uninverted.UnInvertedField;
 
 import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
@@ -43,7 +44,6 @@ public class MdrillDetail {
 		this.searcher=_searcher;
 		this.parse=new MdrillParseDetail(_params);
 		this.recordCount = new RecordCountDetail();
-		this.recordCount.setFinalResult(false);
 	}
 	
 
@@ -205,7 +205,7 @@ public class MdrillDetail {
 			buff.sortString=sortString;
 			this.setGroupJoin(buff, ufs.length,doc);
 			SelectDetailRow newrow = SelectDetailRow.INSTANCE(doc, row.getCompareValue());
-			newrow.setKey(buff.groupbuff.toString());
+			newrow.setKey(new ColumnKey(buff.groupbuff.toString()));
 			newrow.colVal=buff.sortString;
 			QueuePutUtils.put2QueueDetail(newrow, topItems, this.parse.limit_offset, this.container.cmpresult);
 		}
@@ -247,13 +247,39 @@ public class MdrillDetail {
 		Collections.sort(recommendations, this.container.cmpresult);
 		Integer index = 0;
 		NamedList res = new NamedList();
-		res.add(recordCount.getKey(), recordCount.toNamedList());
+		res.add("count", recordCount.toNamedList());
+		
+		
+		ConcurrentHashMap<Long,String> cache=null;
+
+		boolean issetCrc=this.parse.crcOutputSet!=null;
+		if(issetCrc)
+		{
+			synchronized (MdrillUtils.CRC_CACHE_SIZE) {
+				cache=MdrillUtils.CRC_CACHE_SIZE.get(this.parse.crcOutputSet);
+				if(cache==null)
+				{
+					cache=new ConcurrentHashMap<Long,String>();
+					MdrillUtils.CRC_CACHE_SIZE.put(this.parse.crcOutputSet, cache);
+				}
+			}
+			
+		}
+		
+		ArrayList<Object> list=new ArrayList<Object>();
+
+		
 		for (SelectDetailRow kv : recommendations) {
 			if (index >= this.parse.offset) {
-				res.add(kv.getKey(), kv.toNamedList());
+				if(issetCrc)
+				{
+					kv.ToCrcSet(cache);
+				}
+				list.add(kv.toNamedList());
 			}
 			index++;
 		}
+		res.add("list", list);
 		return res;
 	}
 	

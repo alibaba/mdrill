@@ -38,7 +38,13 @@ public class QueryResponse extends SolrResponseBase
   private SolrDocumentList _results = null;
   private NamedList<ArrayList> _sortvalues = null;
   private NamedList<Object> _facetInfo = null;
-  private NamedList<Object> _debugInfo = null;
+  private Object _mdrillData = null;
+  public Object get_mdrillData() {
+	return _mdrillData;
+}
+
+
+private NamedList<Object> _debugInfo = null;
   private NamedList<Object> _highlightingInfo = null;
   private NamedList<Object> _spellInfo = null;
   private NamedList<Object> _statsInfo = null;
@@ -114,6 +120,10 @@ public class QueryResponse extends SolrResponseBase
         // extractFacetInfo inspects _results, so defer calling it
         // in case it hasn't been populated yet.
       }
+      else if( "mdrill_data".equals( n ) ) {
+    	  _mdrillData =  res.getVal( i );
+       }
+      
       
       else if( "mdrill_shard_time".equals( n ) ) {
     	  timetaken = (Map<String,String>) res.getVal( i );
