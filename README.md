@@ -13,7 +13,9 @@
  2013.09.01 version 0.19-alpha HA by replication <a href="https://github.com/alibaba/mdrill/wiki/019_alpha">see detail</a>  (此版本需要一定时间的测试与调整，慎用) <br>
  2013.09.26 version 0.19.1-beta Bug Fix <a href="https://github.com/alibaba/mdrill/wiki/019_beta_1">see detail</a>  (<a href="http://yunpan.cn/QGprqdtDD7r2x" target="_blank">下载</a>) <br>
  2013.09.29 version 0.19.2-beta Bug Fix (<a href="http://yunpan.cn/QGC7TX2tupBcn" target="_blank">下载</a>) <br>
- 2013.10.09 version 0.19.3-beta speed up (推荐版本,<a href="http://yunpan.cn/QbreqTZbusDtu" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
+ 2013.10.09 version 0.19.3-beta speed up (此版本有严重BUG,请勿使用,<a href="http://yunpan.cn/QbreqTZbusDtu" target="_blank">下载</a>) <br>
+ 2013.10.13 version 0.19.4-beta mergerServer优化&&bigfix (推荐版本,<a href="http://yunpan.cn/Qbk4ebcjuUyjL" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
+
 
  
  <h1>版本源码路径</h1>
@@ -26,9 +28,6 @@
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
 <li><a href="https://github.com/alibaba/mdrill/wiki/plan" target="_blank">版本开发计划</a></li>
-<li><a href="https://github.com/muyannian/higo/blob/master/doc/doc.rar?raw=true" target="_blank">文档逐步整理中，之前的海狗ppt请看这里</a></li>
-<li><a href="https://github.com/muyannian/higo" target="_blank">mdrill之前的旧文档以及开发日志入口</a></li>
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/improve.docx?raw=true" target="_blank">adhoc项目我们一年走过的路</a></li>
 
 <li><a hfef="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">LICENSE</a></li>
 </ul>
