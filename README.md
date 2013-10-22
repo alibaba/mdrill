@@ -48,6 +48,7 @@
 <h1>其他</h1>
 <ul>
 <li><a href="https://github.com/alibaba/mdrill/wiki/faq" target="_blank">FAQ</a></li>
+<li>来往交流账号:子落</li>
 <li>mdrill技术交流群:171465049</li>
 <li>微博：<a href="http://weibo.com/mynyannian" >http://weibo.com/mynyannian</a></li>
 
