@@ -15,7 +15,7 @@
  2013.09.29 version 0.19.2-beta Bug Fix (<a href="http://yunpan.cn/QGC7TX2tupBcn" target="_blank">下载</a>) <br>
  2013.10.09 version 0.19.3-beta speed up (此版本有严重BUG,请勿使用,<a href="http://yunpan.cn/QbreqTZbusDtu" target="_blank">下载</a>) <br>
  2013.10.13 version 0.19.4-beta mergerServer优化&&bugfix (推荐版本,<a href="http://yunpan.cn/Qbk4ebcjuUyjL" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
- 2013.11.19 version 0.20.1-alpha 使用hdfs进行检索&&实时append <a href="https://github.com/alibaba/mdrill/wiki/020_1">see detail</a>(<a href="http://yunpan.cn/QUypgcZpmvwwv" target="_blank">源码下载</a>) <br>
+ 2013.11.19 version 0.20.1-alpha 使用hdfs进行检索&&实时append <a href="https://github.com/alibaba/mdrill/wiki/020_1">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUypgcZpmvwwv" target="_blank">源码下载</a>) <br>
 
 https://github.com/alibaba/mdrill/wiki/020_1
 
@@ -50,7 +50,6 @@ https://github.com/alibaba/mdrill/wiki/020_1
 <h1>其他</h1>
 <ul>
 <li><a href="https://github.com/alibaba/mdrill/wiki/faq" target="_blank">FAQ</a></li>
-<li>来往交流账号:子落</li>
 <li>mdrill技术交流群:171465049</li>
 <li>微博：<a href="http://weibo.com/mynyannian" >http://weibo.com/mynyannian</a></li>
 
