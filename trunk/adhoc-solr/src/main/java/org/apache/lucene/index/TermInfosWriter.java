@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.zip.CRC32;
 
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -35,8 +36,12 @@ import org.apache.solr.request.uninverted.UnInvertedFieldUtils;
 import org.apache.solr.request.uninverted.UnInvertedFieldUtils.Datatype;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class TermInfosWriter implements Closeable {
+	  public static Logger LOG = LoggerFactory.getLogger(TermInfosWriter.class);
+
 	private static IndexSchema schema=null;
 	public static void setSchema(IndexSchema schema)
 	{
@@ -63,7 +68,13 @@ public final class TermInfosWriter implements Closeable {
 
   int indexInterval = 128;
 
-  int skipInterval = 16;
+  private static int SKIP_INTERVAL=Integer.MAX_VALUE;
+  public static void setSkipInterVal(int i)
+  {
+	  //如果是全文检索模式，为了提升跳跃的效率，该值不宜设置的太大，其他模式设置的DataOutput.BLOGK_SIZE_COMPRESS,能有比较好的压缩比
+	  SKIP_INTERVAL=i;
+  }
+  int skipInterval = DataOutput.BLOGK_SIZE_COMPRESS;
   
   int maxSkipLevels = 10;
 
@@ -78,6 +89,7 @@ public final class TermInfosWriter implements Closeable {
   TermInfosWriter(Directory directory, String segment, FieldInfos fis,
                   int interval)
        throws IOException {
+	  
     initialize(directory, segment, fis, interval, false);
     boolean success = false;
     try {
@@ -98,11 +110,17 @@ public final class TermInfosWriter implements Closeable {
 
   private void initialize(Directory directory, String segment, FieldInfos fis,
                           int interval, boolean isi) throws IOException {
+	skipInterval=SKIP_INTERVAL<(Integer.MAX_VALUE-1000)?SKIP_INTERVAL:DataOutput.BLOGK_SIZE_COMPRESS;
     indexInterval = interval;
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));
     outputQuickTii=isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_INDEX_EXTENSION_QUICK):null;
+    IndexSchema schema=directory.getSchema();
+    if(schema!=null)
+    {
+    	this.schemainfo=schema;
+    }
     if(this.schemainfo!=null)
     {
     	outputQuickTis=!isIndex?directory.createOutput(segment+"." +IndexFileNames.TERMS_EXTENSION_QUICK):null;
@@ -186,8 +204,6 @@ public final class TermInfosWriter implements Closeable {
   void add(Term term,int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti)
     throws IOException {
 	  
-	  
-
     assert compareToLastTerm(fieldNumber, termBytes, termBytesLength) < 0 ||
       (isIndex && termBytesLength == 0 && lastTermBytesLength == 0) :
       "Terms are out of order: field=" + fieldInfos.fieldName(fieldNumber) + " (number " + fieldNumber + ")" +

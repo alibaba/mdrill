@@ -27,6 +27,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.schema.IndexSchema;
 
 import com.alimama.mdrill.buffer.BlockBufferInput;
+import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -105,7 +106,19 @@ public class SegmentCoreReaders {
 	      } else {
 	        proxStream = null;
 	      }
-      }else{
+      }else if(cfsDir instanceof FileSystemDirectory)
+      {
+    	  FileSystemDirectory dddir=(FileSystemDirectory)cfsDir;
+    	  String absPath=dddir.directory.toString();
+    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), absPath+"@"+filename);
+    	  if (fieldInfos.hasProx()) {
+		  String fname=IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION);
+	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), absPath+"@"+fname);
+	      } else {
+	        proxStream = null;
+	      }
+      }
+      else{
     	  freqStream=cfsDir.openInput(filename, readBufferSize);
     	  if (fieldInfos.hasProx()) {
     	        proxStream = cfsDir.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION), readBufferSize);

@@ -219,7 +219,6 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         }
         
         docConsumer.reset();
-
 	    while (numToMerge > 0) {
 		FreqProxFieldMergeState minState = termStates[0];
 		for (int i = 1; i < numToMerge; i++)

@@ -120,7 +120,11 @@ public class AdhocOfflineService {
 				String line;
 				while ((line = bf.readLine()) != null) {
 					bytesRead += line.getBytes().length;
-					String towrite=line.replaceAll("\001", ",").replaceAll("\t", ",");
+					String towrite=line;
+					if(line.indexOf("\001")>=0||line.indexOf("\t")>=0)
+					{
+						towrite=line.replaceAll(",", "\\\",\\\"").replaceAll("\001", ",").replaceAll("\t", ",");
+					}
 					if(!towrite.isEmpty())
 					{
 					outStream.write(towrite);
@@ -259,6 +263,7 @@ public class AdhocOfflineService {
 					{
 						sqlGroup.append(join);
 						sqlGroup.append("jr"+i+"."+s);
+						join=",";
 					}
 				}
 			}
@@ -273,27 +278,33 @@ public class AdhocOfflineService {
 		
 		 ArrayList<String> fq2list=WebServiceParams.fqListHive(true,hpart,fq2, shard,
 					isPartionByPt, filetypeMap,colMap,colMapforStatFilter,"fq2");
-		 if(fq2list.size()>0)
+		 if(fq2list.size()>0||orderby2!=null)
 		 {
 				StringBuffer buffer=new StringBuffer();
 				buffer.append("select * from ");
 				buffer.append("("+hql+") fq2");
-				String join2 = " where ";
-				for (String fq : fq2list) {
-					buffer.append(join2);
-					buffer.append(fq);
-					join2 = " and ";
+				
+				if(fq2list.size()>0)
+				{
+					String join2 = " where ";
+					for (String fq : fq2list) {
+						buffer.append(join2);
+						buffer.append(fq);
+						join2 = " and ";
+					}
 				}
+				
+				 if(orderby2!=null)
+				 {
+					 buffer.append(" order by "+WebServiceParams.parseFqAlias(orderby2, colMap, colMapforStatFilter, "fq2")+" "+desc2);
+				 }
 				hql=buffer.toString();
 		 }
 		 
 		
 
 		 
-		 if(orderby2!=null)
-		 {
-			 hql=hql+" order by "+WebServiceParams.parseFqAlias(orderby2, colMap, colMapforStatFilter, "fq2")+" "+desc2;
-		 }
+		
 		 
 		 if(limit >1000000)
 		 {

@@ -33,7 +33,7 @@ public class FailSpoutMsg implements Runnable {
     }
 
     public void run() {
-	LOG.info("Failing message " + msg_id  );
+//	LOG.info("Failing message " + msg_id  );
 	spout.fail(msg_id);
 	if (time_delta != null) {
 	    Stats.spout_failed_tuple((SpoutTaskStatsRolling) task_stats,tuple.getStream(), time_delta);

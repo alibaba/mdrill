@@ -10,6 +10,10 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.TermInfosWriter;
+import org.apache.solr.core.SolrCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alimama.mdrill.index.utils.DocumentConverter;
 import com.alimama.mdrill.index.utils.DocumentList;
@@ -22,6 +26,8 @@ import com.alimama.mdrill.index.utils.ShardWriter;
 
 
 public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritable, Text> {
+	  public static Logger LOG = LoggerFactory.getLogger(IndexReducer.class);
+
     private HeartBeater heartBeater = null;
     private ShardWriter shardWriter = null;
     private String tmpath = null;
@@ -32,12 +38,21 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
     private DocumentConverter documentConverter = null;
     DocumentList doclistcache=new DocumentList();
     RamWriter ramMerger=null;
+	boolean isNotFdtMode=true;
+
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
 		super.setup(context);
+
 		context.getCounter("higo", "dumpcount").increment(0);
 
 		Configuration conf = context.getConfiguration();
+		isNotFdtMode=conf.get("mdrill.table.mode","").indexOf("@hdfs@")<0;
+		
+		if(!isNotFdtMode)
+		{
+			TermInfosWriter.setSkipInterVal(16);
+		}
 
 		heartBeater = new HeartBeater(context);
 		heartBeater.needHeartBeat();
@@ -147,11 +162,13 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 				continue;
 			}
 			RamWriter ram = doclistcache.toRamWriter(documentConverter, analyzer,context);
+			doclistcache=new DocumentList();
+
+			
 			ramMerger.process(ram);
 			if (this.maybeFlush(ramMerger,context,false)) {
 				ramMerger =  new RamWriter();;
 			}
-			doclistcache=new DocumentList();
 		}
 	}
     
@@ -168,12 +185,22 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 		}
 		long formSize = form.totalSizeInBytes();
 		Integer docs=form.getNumDocs();
+		if(docs<=0)
+		{
+			return false;
+		}
 		if ((docs>=1000&&formSize>minsize)||fource) {
+			try{
 			context.getCounter("higo", "docCount").increment(docs);;
 			doccount+=docs;
 			form.closeWriter();
 			shardWriter.process(form);
 			form.closeDir();
+			}catch(Throwable e)
+			{
+				LOG.error("maybeFlush error",e);
+				throw new IOException(e);
+			}
 			return true;
 		}
 

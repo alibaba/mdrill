@@ -1341,7 +1341,7 @@ public static OperateType parseOperateType(int operate)
 			
 			JSONObject jsonObj2 = new JSONObject(); 
 			JSONArray jsonArray = new JSONArray();
-			JSONArray jsonArray_debug = new JSONArray();
+//			JSONArray jsonArray_debug = new JSONArray();
 
 			
 			ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
@@ -1374,15 +1374,15 @@ public static OperateType parseOperateType(int operate)
 				for(Entry<String,GroupbyRow> e:groupValueCacheLast.entrySet())
 				{
 			   		JSONObject jo = new JSONObject();
-			   		JSONObject jo_debug = new JSONObject();
+//			   		JSONObject jo_debug = new JSONObject();
 
-			   		jo_debug.put("__higo_gruss__", "false");
+//			   		jo_debug.put("__higo_gruss__", "false");
 					String groupValues = e.getKey();
 					GroupbyRow row = groupValueCache.get(groupValues);
 					if(row==null)
 					{
 						row=e.getValue();
-						jo_debug.put("__higo_gruss__", "true");
+//						jo_debug.put("__higo_gruss__", "true");
 					}
 					row.setCross(crossFs, distFS);
 
@@ -1392,18 +1392,18 @@ public static OperateType parseOperateType(int operate)
 					setStat(jo, showFields, row);
 					
 					//set group by result
-				   	setGroup(jo_debug, groupFields, joins, groupValues);
+//				   	setGroup(jo_debug, groupFields, joins, groupValues);
 				   	//set stat result
-					setStat(jo_debug, showFields, row);
+//					setStat(jo_debug, showFields, row);
 					jsonArray.add(index, jo);
-					jsonArray_debug.add(index, jo_debug);
+//					jsonArray_debug.add(index, jo_debug);
 					index++;
 				}
 			}
 			
 			jsonObj2.put("docs", jsonArray);
 			
-			jsonObj2.put("docs_debug", jsonArray_debug);
+//			jsonObj2.put("docs_debug", jsonArray_debug);
 			
 			jsonObj.put("data", jsonObj2);
 			return groupValueCache;
@@ -1411,7 +1411,7 @@ public static OperateType parseOperateType(int operate)
 	
 	private static void setGroup(JSONObject jo,ArrayList<String> groupFields,HigoJoinParams[] joins,String groupValues) throws JSONException
 	{
-		String[] values = EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString()));
+		String[] values = EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString(),-1));
 	   	
 	   	for(int j =0;j<values.length&&j<groupFields.size();j++){
 	   		if(groupFields.get(j).equals("higoempty_groupby_forjoin_l"))
@@ -1511,11 +1511,11 @@ public static OperateType parseOperateType(int operate)
 				continue;
 			}
 			if(showfield.startsWith("count(")){
-   				if(showfield.indexOf("higoempty_")>=0)
+				String realField = parseRealField(showfield.substring(6,showfield.length()-1));
+   				if(realField.indexOf("higoempty_")>=0)
    				{
    					jo.put(showfield, String.valueOf(row.getValue()));
    				}else{
-   					String realField = parseRealField(showfield.substring(6,showfield.length()-1));
    					double cnt=row.getStat(realField, "cnt");
    					jo.put(showfield, String.valueOf(cnt));
    				}
@@ -1581,7 +1581,7 @@ public static OperateType parseOperateType(int operate)
 				   	
 				   	JSONObject jo = new JSONObject();
 				   	String groupValues = row.getKey().getKey();
-				   	String[] values =  EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString()));
+				   	String[] values =  EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString(),-1));
 				   	int valuesoffset=2;
 				   	for(int j =0;j<(values.length-valuesoffset)&&j<showFields.size();j++){
 				   		if(showFields.get(j).equals("higoempty_groupby_forjoin_l"))
@@ -1695,7 +1695,7 @@ public static OperateType parseOperateType(int operate)
 	
 	
 	public static void setDetailByQuery(SolrQuery query, ArrayList<String> fqList,
-			ArrayList<String> showFields,int start,int rows,SortParam sortType,HigoJoinParams[] joins
+			ArrayList<String> showFields,int start,int rows,SortParam sortType,HigoJoinParams[] joins,boolean isfdt
 	)
 	{
 		query.setParam("start","0");
@@ -1711,42 +1711,42 @@ public static OperateType parseOperateType(int operate)
 		query.setParam("facet.cross.join", UniqConfig.GroupJoinString());
 		query.setParam("facet.cross.offset", ""+start);
 		query.setParam("facet.cross.limit", ""+rows);
+		query.setParam("fetchfdt", isfdt);
 		
-		for(HigoJoinParams p:joins)
+		if(!isfdt)
 		{
-			query.add(HigoJoinUtils.getTables(), p.tablename);
-			query.add(HigoJoinUtils.getPath(p.tablename),p.hdfsPath);
-			query.add(HigoJoinUtils.getLeftField(p.tablename),p.leftkey);
-			query.add(HigoJoinUtils.getRightField(p.tablename),p.rightkey);
-			for(String fl:p.fl)
+			for(HigoJoinParams p:joins)
 			{
-				query.add(HigoJoinUtils.getFields(p.tablename),fl);
+				query.add(HigoJoinUtils.getTables(), p.tablename);
+				query.add(HigoJoinUtils.getPath(p.tablename),p.hdfsPath);
+				query.add(HigoJoinUtils.getLeftField(p.tablename),p.leftkey);
+				query.add(HigoJoinUtils.getRightField(p.tablename),p.rightkey);
+				for(String fl:p.fl)
+				{
+					query.add(HigoJoinUtils.getFields(p.tablename),fl);
+				}
+				for(String fq:p.fq)
+				{
+					query.add(HigoJoinUtils.getFq(p.tablename),fq);
+				}
+				query.add(HigoJoinUtils.getsortField(p.tablename),p.sort);
+	
+				
 			}
-			for(String fq:p.fq)
-			{
-				query.add(HigoJoinUtils.getFq(p.tablename),fq);
-			}
-			query.add(HigoJoinUtils.getsortField(p.tablename),p.sort);
-
-			
 		}
 		
 		for(String gf : showFields){
 			query.addFacetField(gf);
 		}
 		
-		if(sortType.sortField!=null && !sortType.sortField.equals("")){
+		if(sortType.sortField!=null && !sortType.sortField.equals("")&&!isfdt){
 			query.setParam("facet.cross.sort.desc", sortType.order);
 			query.setParam("facet.cross.sort.fl", sortType.sortField);
 			query.setParam("facet.cross.sort.cp", sortType.cmptype);
-
-//			query.setParam("facet.cross.sort.tp", sortType.);
 		}else{
 			query.setParam("facet.cross.sort.desc", sortType.order);
 			query.setParam("facet.cross.sort.fl", "higoempty_count_s");
 			query.setParam("facet.cross.sort.cp", "tdouble");
-
-//			query.setParam("facet.cross.sort.tp", "index");
 		}
 	}
 	

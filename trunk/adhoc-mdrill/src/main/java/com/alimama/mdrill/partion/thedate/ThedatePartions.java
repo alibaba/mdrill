@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.solr.common.SolrInputDocument;
 
 
 import com.alimama.mdrill.index.utils.JobIndexPublic;
@@ -33,6 +34,12 @@ public class ThedatePartions implements MdrillPartionsInterface{
 	
 	private SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
 
+	public String InsertPartion(SolrInputDocument doc)  throws Exception{
+		String thedate=String.valueOf(doc.getFieldValue("thedate"));
+		return ThedatePartionsUtils.parseDay(thedate, this.parttype);
+	}
+
+	
 	@Override
 	public String[] SqlPartions(String queryStr) throws Exception {
 

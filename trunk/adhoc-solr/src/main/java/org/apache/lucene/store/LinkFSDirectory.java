@@ -24,15 +24,11 @@ import org.apache.lucene.util.cache.SimpleLRUCache;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.DocSet;
 
 import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
-import com.alimama.mdrill.solr.realtime.HigoRealTime;
 import com.alimama.mdrill.utils.HadoopUtil;
-import com.alimama.mdrill.utils.UniqConfig;
 public abstract class LinkFSDirectory extends FSDirectory {
 	
 	public static FSDirectory open(File path) throws IOException {
@@ -98,22 +94,6 @@ public abstract class LinkFSDirectory extends FSDirectory {
 		
 		synchronized (lock) {
 			
-			if(isRealTime.get())
-			{
-				String key=HigoRealTime.normalize_path(path.getAbsolutePath());
-				RAMDirectory ram=HigoRealTime.ramDirectory.get(key);
-				if(ram==null)
-				{
-					ram=new RAMDirectory();
-					
-					IndexWriter writer=new IndexWriter(ram, null,new KeepOnlyLastCommitDeletionPolicy(), MaxFieldLength.UNLIMITED);
-					writer.setMergeFactor(10);
-					writer.setUseCompoundFile(false);
-					writer.close();
-					HigoRealTime.ramDirectory.put(key, ram);
-				}
-				return ram;
-			}
 			
 //			System.out.println("LinkFSDirectory readOnlyOpen "+path.getAbsolutePath());
 			File links=new File(path,"indexLinks");

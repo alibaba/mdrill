@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher.MdrillCollector;
 
 /**
  * The interface for search implementations.
@@ -48,6 +49,10 @@ import org.apache.lucene.index.Term;
 @Deprecated
 public interface Searchable extends Closeable {
   
+	 public void ScoreFind(Query query, Filter filter, MdrillCollector results)
+	  throws IOException;
+	  abstract public void ScoreFind(Weight weight, Filter filter, MdrillCollector collector)
+	  throws IOException;
   /**
    * Lower-level search API.
    * 

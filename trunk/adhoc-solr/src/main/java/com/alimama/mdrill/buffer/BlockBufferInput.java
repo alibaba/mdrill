@@ -30,34 +30,20 @@ public class BlockBufferInput extends BufferedIndexInput {
 	public static Logger log = LoggerFactory.getLogger(BlockBufferInput.class);
 	public static int BLOCK_SIZE_OFFSET=16;//1024*64
 	public static int BLOCK_SIZE = 1<<BLOCK_SIZE_OFFSET;
-//	private static int CACHE_SIZE=(int)(UniqConfig.getBlockBufferMemsize()/BLOCK_SIZE);
-//	private static Cache<block, blockData> fieldValueCache = Cache.synchronizedCache(new BlockBufferMalloc.SimpleLRUCache(CACHE_SIZE));;
 	private Descriptor descriptor;
 	private boolean isOpen;
 	private boolean isClone;
-	private String key;
-	private String keyCut;
+	private Object key;
 	
 	
 	public blockData lastbuff =new blockData(null, 0);
 	public Long lastBlockIndex = -1l;
 	
-	public BlockBufferInput(IndexInput input,String key) {
+	public BlockBufferInput(IndexInput input,Object key) {
 		super("BlockBufferInput", 1024);
-//		log.info("BlockBufferInput init");
 		this.descriptor = new Descriptor(input);
 		this.isOpen = true;
 		this.key=key;
-		
-		this.keyCut=new String(this.key);
-		int cutoutlen=50;
-		if(this.keyCut.length()>cutoutlen)
-		{
-			this.keyCut=keyCut.substring(this.keyCut.length()-cutoutlen, this.keyCut.length());
-		}
-		
-//		log.info("##buffer_open##"+this.keyCut+"#lru:"+fieldValueCache.size()+"#"+CACHE_SIZE+"@free:"+BlockBufferMalloc.free.size()+"#malloc:"+BlockBufferMalloc.mallocTimes.get()+":"+BlockBufferMalloc.reusedTimes.get()+"@create:"+this.createcount);
-
 	}
 	
 	
@@ -68,7 +54,6 @@ public class BlockBufferInput extends BufferedIndexInput {
 		long blockIndex=position>>BLOCK_SIZE_OFFSET;
 		long blocktart=blockIndex<<BLOCK_SIZE_OFFSET;
 		blockData blockdata=null;
-
 		if(blockIndex==this.lastBlockIndex)
 		{
 			blockdata=this.lastbuff;
@@ -128,10 +113,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 		if (!isClone && isOpen) {
 			close(); 
 		    }
-		
 		this.freeBlock();
-
-		
     }
 	
 	private void freeBlock()
@@ -158,7 +140,6 @@ public class BlockBufferInput extends BufferedIndexInput {
 
 	@Override
 	protected void seekInternal(long pos) throws IOException {
-		// TODO Auto-generated method stub
 		
 	}
 
@@ -188,13 +169,11 @@ public class BlockBufferInput extends BufferedIndexInput {
 	@Override
 	public long length() {
 	    return descriptor.in.length();
-
 	}
 	
 	
 	private class Descriptor {
 		public final IndexInput in;
-
 		public Descriptor(IndexInput input) {
 			this.in = input;
 		}
@@ -244,7 +223,4 @@ public class BlockBufferInput extends BufferedIndexInput {
 		}
 		
 	}
-	
-	
-
 }

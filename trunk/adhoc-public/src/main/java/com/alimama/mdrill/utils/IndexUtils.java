@@ -94,8 +94,7 @@ public class IndexUtils {
 
     public static String getHdfsForder(int index) {
 	StringBuilder cmd = new StringBuilder();
-	cmd.append("part-00").append(index > 99 ? "" : "0")
-	        .append(index > 9 ? index : "0" + index);
+	cmd.append("part-0").append(index > 999 ? "" : "0").append(index > 99 ? "" : "0").append(index > 9 ? index : "0" + index);
 	return cmd.toString();
     }
     
@@ -128,6 +127,8 @@ public class IndexUtils {
 		Path tmp=new Path(tmpparent,String.valueOf(index));
 		
 		LOG.info("higolog copyToLocal begin " + src.toString() + ","+ target.toString()+","+tmp.toString());
+		
+		
 		try {
 			truncate(lfs, tmp);
 			boolean isziped=false;
@@ -235,6 +236,51 @@ public class IndexUtils {
 	}
 	
 	return rtn;
+    }
+    
+    
+  
+    
+    public static Long readReadTimeTs(FileSystem fs, Path file) throws IOException {
+		Path vertify = new Path(file, "realtime_ts");
+	
+		try{
+		if (fs.exists(vertify)) {
+			StringBuffer rtn = new StringBuffer();
+
+		    Integer bytesRead = 0;
+		    int size = 10240;
+		    int maxsize = 1024 * 1024;
+		    byte[] buff = new byte[size];
+		    FSDataInputStream in = fs.open(vertify);
+	
+		    while (true) {
+			int num = in.read(buff, 0, size);
+			if (num < 0) {
+			    break;
+			}
+			bytesRead += num;
+			rtn.append(new String(buff, 0, num, ENCODE_NAME));
+			if (bytesRead >= maxsize) {
+			    break;
+			}
+		    }
+		    in.close();
+			LOG.info("readReadTimeTs:"+rtn.toString()+":"+file.toString());
+
+		    return Long.parseLong(rtn.toString());
+		}
+		
+		else{
+			LOG.info("readReadTimeTs:0:"+file.toString());
+			return 0l;
+		}
+		}catch(Throwable e)
+		{
+			LOG.info("readReadTimeTs:0:"+file.toString());
+
+			return 0l;
+		}
     }
     
 }

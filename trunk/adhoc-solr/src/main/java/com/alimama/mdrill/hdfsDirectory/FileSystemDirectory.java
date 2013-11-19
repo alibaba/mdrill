@@ -19,7 +19,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LinkFSDirectory;
-import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.SingleInstanceLockFactory;
 
 
 public class FileSystemDirectory extends Directory {
@@ -85,6 +85,12 @@ public class FileSystemDirectory extends Directory {
     
     public FileSystemDirectory(FileSystem fs, Path directory, boolean create,
 	    Configuration conf) throws IOException {
+    	
+    	try {
+    	      setLockFactory(new SingleInstanceLockFactory());
+    	    } catch (IOException e) {
+    	      // Cannot happen
+    	    }
 	this.fs = fs;
 	this.directory = directory;
 	this.ioFileBufferSize = conf.getInt("io.file.buffer.size", 4096);
@@ -243,29 +249,29 @@ public class FileSystemDirectory extends Directory {
 	return new FileSystemIndexInput(f, bufferSize);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.apache.lucene.store.Directory#makeLock(java.lang.String)
-     */
-    public Lock makeLock(final String name) {
-	return new Lock() {
-	    public boolean obtain() {
-		return true;
-	    }
-
-	    public void release() {
-	    }
-
-	    public boolean isLocked() {
-		throw new UnsupportedOperationException();
-	    }
-
-	    public String toString() {
-		return "Lock@" + new Path(directory, name);
-	    }
-	};
-    }
+//    /*
+//     * (non-Javadoc)
+//     * 
+//     * @see org.apache.lucene.store.Directory#makeLock(java.lang.String)
+//     */
+//    public Lock makeLock(final String name) {
+//	return new Lock() {
+//	    public boolean obtain() {
+//		return true;
+//	    }
+//
+//	    public void release() {
+//	    }
+//
+//	    public boolean isLocked() {
+//		throw new UnsupportedOperationException();
+//	    }
+//
+//	    public String toString() {
+//		return "Lock@" + new Path(directory, name);
+//	    }
+//	};
+//    }
 
     /*
      * (non-Javadoc)
@@ -303,17 +309,28 @@ public class FileSystemDirectory extends Directory {
 	private final long length;
 	private boolean isOpen;
 	private boolean isClone;
+	
+	private long tlSum=0;
+	private long tlCount=0;
 
         public FileSystemIndexInput(final Path path, final int ioFileBufferSize)
 	        throws IOException {
 	    filePath = path;
+	    long t1=System.currentTimeMillis();
 	    descriptor = new Descriptor(path, ioFileBufferSize);
 	    length = fs.getFileStatus(path).getLen();
+	    long t2=System.currentTimeMillis();
+	    long tl=t2-t1;
+	    if(tl>100)
+	    {
+	    	logger.info("fs.open "+path.getName()+" timetaken "+tl);
+	    }
 	    isOpen = true;
 	}
 
 	protected void readInternal(byte[] b, int offset, int len)
 	        throws IOException {
+		long t1=System.currentTimeMillis();
 	    synchronized (descriptor) {
 		long position = getFilePointer();
 		if (position != descriptor.position) {
@@ -330,16 +347,32 @@ public class FileSystemDirectory extends Directory {
 		    total += i;
 		} while (total < len);
 	    }
+	    
+	    long t2=System.currentTimeMillis();
+	    long tl=t2-t1;
+	    tlSum+=tl;
+	    tlCount+=1;
+	    if(tl>100||tlCount%1000==0)
+	    {
+	    	logger.info("readInternal "+this.filePath.getName()+" timetaken="+tl+",tlSum="+tlSum+",tlCount="+tlCount);
+	    	if(tlSum>10000000)
+		    {
+		    	tlCount=0;
+		    	tlSum=0;
+		    }
+	    }
+	    
+	    
 	}
 
 	public void close() throws IOException {
+    	logger.info("close "+this.filePath.getName()+" tlSum="+tlSum+",tlCount="+tlCount);
 	    if (!isClone) {
 		if (isOpen) {
 		    descriptor.in.close();
 		    isOpen = false;
 		} else {
-		    throw new IOException("Index file " + filePath
-			    + " already closed");
+		    throw new IOException("Index file " + filePath   + " already closed");
 		}
 	    }
 	}
@@ -357,6 +390,8 @@ public class FileSystemDirectory extends Directory {
 	public Object clone() {
 	    FileSystemIndexInput clone = (FileSystemIndexInput) super.clone();
 	    clone.isClone = true;
+	    clone.tlCount=0;
+	    clone.tlSum=0;
 	    return clone;
 	}
 

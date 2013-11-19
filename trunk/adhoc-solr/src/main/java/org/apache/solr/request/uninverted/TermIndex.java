@@ -41,6 +41,10 @@ public static class IndexSearch
      {
     	 if(quicktisInput==null)
     	 {
+    		 if(index==null||i>=index.length)
+    		 {
+    			 return "null";
+    		 }
     		 return index[i];
     	 }
     	 

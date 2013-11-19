@@ -60,6 +60,11 @@ public class MdrillMain {
 	
 	private static void createtable(String[] args) throws Exception {
 		String tableConfig = args[1];
+		String store="false";
+		if(args.length>2)
+		{
+			store= args[2];
+		}
 		String stormhome = System.getProperty("storm.home");
 		if (stormhome == null) {
 			stormhome=".";
@@ -85,7 +90,13 @@ public class MdrillMain {
 		{
 			ColumnDefinition col=(ColumnDefinition)createTable.getColumnDefinitions().get(i);
 			String colname=col.getColumnName();
-			String type=col.getColDataType().getDataType();
+			String[] coltype=col.getColDataType().getDataType().split("_mdrill_");
+			String type=coltype[0];
+			String fieldstore=store;
+			if(coltype.length>1)
+			{
+				fieldstore=coltype[1];
+			}
 			if(type.equals("long")||type.equals("int")||type.equals("tint")||type.equals("bigint"))
 			{
 				type="tlong";
@@ -106,7 +117,14 @@ public class MdrillMain {
 				type="string";
 			}
 			
-			buffer.append("<field name=\""+colname+"\" type=\""+type+"\" indexed=\"true\" stored=\"false\"/>");
+			if(type.toLowerCase().equals("text"))
+			{
+				buffer.append("<field name=\""+colname+"\" type=\""+type+"\" indexed=\"true\" stored=\""+fieldstore+"\"  omitTermFreqAndPositions=\"true\" multiValued=\"true\" />");
+
+			}else{
+				buffer.append("<field name=\""+colname+"\" type=\""+type+"\" indexed=\"true\" stored=\""+fieldstore+"\"  omitTermFreqAndPositions=\"true\" />");
+
+			}
 			buffer.append("\r\n");
 		}
 		
@@ -162,6 +180,13 @@ public class MdrillMain {
 	}
 
 	private static void makeIndex(String[] args) throws Exception {
+		
+		
+		Map stormconf = Utils.readStormConfig();
+		Integer shards = StormUtils.parseInt(stormconf.get("higo.shards.count"));
+		String hdfsSolrDir = (String) stormconf.get("higo.table.path");
+		Configuration conf = getConf(stormconf);
+		
 		String tablename=args[1];
 		String inputdir = args[2];
 		Integer maxday = Integer.parseInt(args[3]);
@@ -180,16 +205,28 @@ public class MdrillMain {
 			submatch = args[7];
 		}
 		
-		Map stormconf = Utils.readStormConfig();
-		Integer shards = StormUtils.parseInt(stormconf.get("higo.shards.count"));
-		String hdfsSolrDir = (String) stormconf.get("higo.table.path");
-		Configuration conf = getConf(stormconf);
+		String rep = conf.get("dfs.replication");
+		if (args.length > 8) {
+			rep = args[8];
+		}
+		
+		int dayplus=3;
+		if (args.length > 9) {
+			dayplus = Integer.parseInt(args[9]);;
+		}
+	
 		Integer parallel = StormUtils.parseInt(stormconf.get("higo.index.parallel"));
 		if(stormconf.containsKey("higo.index.parallel."+tablename))
 		{
 			parallel=StormUtils.parseInt(String.valueOf(stormconf.get("higo.index.parallel."+tablename)));
 		}
-		String[] jobValues = new String[]{split,submatch,String.valueOf(parallel)};
+		String tablemode="";
+
+		if(stormconf.containsKey("higo.mode."+tablename))
+		{
+			tablemode=String.valueOf(stormconf.get("higo.mode."+tablename));
+		}
+		String[] jobValues = new String[]{split,submatch,String.valueOf(parallel),tablemode,rep};
 		String type = (String) stormconf.get("higo.partion.type");
 		String tabletype = (String) stormconf.get("higo.partion.type."+tablename);
 		if(tabletype!=null&&!tabletype.isEmpty())
@@ -199,7 +236,7 @@ public class MdrillMain {
 
 
 		JobIndexerPartion index = new JobIndexerPartion(tablename,conf, shards,
-				new Path(hdfsSolrDir,tablename).toString(), inputdir, 3, maxday, startday, format, type);
+				new Path(hdfsSolrDir,tablename).toString(), inputdir, dayplus, maxday, startday, format, type);
 		ToolRunner.run(conf, index, jobValues);
 
 		System.exit(0);
@@ -245,6 +282,17 @@ public class MdrillMain {
 		Integer msCount = StormUtils.parseInt(stormconf
 				.get("higo.mergeServer.count"));
 		Config conf = new Config();
+		String[] tablelist=tableName.split(",");
+		for(String tbl:tablelist)
+		{
+			String key="higo.mode."+tbl;
+			Object val=stormconf.get(key);
+			if(val!=null)
+			{
+				conf.put(key, val);
+			}
+		}
+
 		conf.setNumWorkers(shards + msCount);
 		conf.setNumAckers(1);
 		conf.setMaxSpoutPending(100);

@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher.MdrillCollector;
 import org.apache.lucene.document.FieldSelector;
 
 /**
@@ -208,4 +209,10 @@ public abstract class Searcher implements Searchable {
   abstract public Explanation explain(Weight weight, int doc) throws IOException;
   abstract public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort) throws IOException;
   /* End patch for GCJ bug #15411. */
+  public void ScoreFind(Query query, Filter filter, MdrillCollector results)
+  throws IOException{
+	  ScoreFind(createNormalizedWeight(query), filter, results);
+  }
+  abstract public void ScoreFind(Weight weight, Filter filter, MdrillCollector collector)
+  throws IOException;
 }

@@ -956,6 +956,12 @@ public class MemoryIndex implements Serializable {
           return false;
         }
 
+		@Override
+		public void debug(StringBuffer buff) {
+			// TODO Auto-generated method stub
+			
+		}
+
       };
     }
   

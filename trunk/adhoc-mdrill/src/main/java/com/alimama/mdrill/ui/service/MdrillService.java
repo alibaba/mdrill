@@ -7,8 +7,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32;
 
 import javax.servlet.jsp.JspWriter;
 
@@ -18,7 +20,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.*;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.compare.GroupbyRow;
 
 import backtype.storm.utils.Utils;
@@ -129,6 +133,165 @@ public class MdrillService {
 	}
 
 
+	private static AtomicLong InsertIndex=new AtomicLong(0); 
+	
+	
+	public static Long uuid()
+	{
+		CRC32 crc32 = new CRC32();
+		crc32.update(String.valueOf(java.util.UUID.randomUUID().toString()).getBytes());
+		return crc32.getValue();
+	}
+	
+	public static enum FlushType{
+		buffer,sync,syncHdfs
+	}
+	public synchronized static String insert(String projectName,Collection<SolrInputDocument> docs,FlushType tp)
+	throws Exception {
+		return insert(projectName, docs,null, tp);
+	}
+	
+	public synchronized static String insert(String projectName,Collection<SolrInputDocument> docs,ShardsList[] coresfortest,FlushType tp)
+			throws Exception {
+		
+		
+		
+		TablePartion part = GetPartions.partion(projectName);
+		MdrillPartionsInterface drillpart=MdrillPartions.INSTANCE(part.parttype);
+		
+		ShardsList[] cores = coresfortest;
+
+		if (cores == null) {
+			
+			cores = GetShards.get(part.name, false);
+			
+			Map stormconf = Utils.readStormConfig();
+			for(int i=0;i<10;i++)
+			{
+				if(cores.length!=StormUtils.parseInt(stormconf.get("higo.shards.count")))
+				{
+					if(i>5)
+					{
+						if(cores.length<=(StormUtils.parseInt(stormconf.get("higo.shards.count"))/2))
+						{
+							throw new Exception("core.size="+cores.length);
+						}else{
+							break;
+						}
+					}
+					SolrInfoList infolist=GetShards.getSolrInfoList(part.name);
+			    	infolist.run();
+					cores = GetShards.get(part.name, false);
+					LOG.info("core.size="+cores.length);
+					
+					Thread.sleep(1000);
+				}else{
+					break;
+				}
+			}
+		}
+		for(SolrInputDocument doc:docs)
+		{
+			doc.addField("mdrill_uuid", uuid());
+			if(!doc.containsKey("mdrillPartion"))
+			{
+				String partion=drillpart.InsertPartion(doc);
+				doc.setField("mdrillPartion", partion);
+			}
+				
+			if(tp!=null)
+			{
+				if(tp.equals(FlushType.sync))
+				{
+					doc.setField("mdrillCmd", "sync");
+				}else if(tp.equals(FlushType.syncHdfs))
+				{
+					doc.setField("mdrillCmd", "syncHdfs");
+				}else{
+					doc.setField("mdrillCmd", "add");
+				}
+			}
+		}
+		
+		long index = InsertIndex.getAndIncrement();
+		if (index > 100000000) {
+			index = 0l;
+			InsertIndex.set(index);
+		}
+
+		JSONObject rtn = new JSONObject();
+	
+		if(tp.equals(FlushType.buffer))
+		{
+			ShardsList write = cores[(int) (index % cores.length)];
+	
+			for (String s : write.list) {
+				String url = "http://" + s + "/solr/" + projectName;
+				CommonsHttpSolrServer server = new CommonsHttpSolrServer(url);
+				server.setConnectionManagerTimeout(60000l);
+				server.setSoTimeout(60000);
+				server.setConnectionTimeout(10000);
+				server.setDefaultMaxConnectionsPerHost(100);
+				server.setMaxTotalConnections(100);
+				server.setFollowRedirects(false);
+				server.setAllowCompression(false);
+				server.setMaxRetries(4);
+				server.setRequestWriter(new BinaryRequestWriter());
+				UpdateRequest req = new UpdateRequest();
+				req.add(docs);
+				UpdateResponse rsp = req.process(server);
+				rtn.put(s, rsp.toString());
+			}
+
+		}else if(tp.equals(FlushType.sync)||tp.equals(FlushType.syncHdfs))
+		{
+			for(ShardsList write:cores)
+			{
+				for (String s : write.list) {
+					String url = "http://" + s + "/solr/" + projectName;
+					CommonsHttpSolrServer server = new CommonsHttpSolrServer(url);
+					server.setConnectionManagerTimeout(60000l);
+					server.setSoTimeout(60000);
+					server.setConnectionTimeout(10000);
+					server.setDefaultMaxConnectionsPerHost(100);
+					server.setMaxTotalConnections(100);
+					server.setFollowRedirects(false);
+					server.setAllowCompression(false);
+					server.setMaxRetries(4);
+					server.setRequestWriter(new BinaryRequestWriter());
+					UpdateRequest req = new UpdateRequest();
+					req.add(docs);
+					UpdateResponse rsp = req.process(server);
+					rtn.put(s, rsp.toString());
+				}
+			}
+		}
+		rtn.put("code","1");
+		rtn.put("message","success");
+		return rtn.toString();
+
+
+	}
+	public static String insert(String projectName,String list,ShardsList[] coresfortest)
+			throws Exception {
+		JSONArray jsonStr=new JSONArray(list.trim());
+	    Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+
+		for(int i=0;i<jsonStr.length();i++)
+		{
+			SolrInputDocument doc=new SolrInputDocument();
+			JSONObject obj=jsonStr.getJSONObject(i);
+			Iterator keys = obj.keys();
+			while (keys.hasNext()) {
+				String key = (String) keys.next();
+				doc.addField(key, obj.get(key));
+			}
+			docs.add(doc);
+		}
+		
+		return insert(projectName, docs, coresfortest,FlushType.buffer);
+
+	}
 
 	public static String result(String projectName, String callback,
 			String startStr, String rowsStr, String queryStr, String dist,
@@ -158,13 +321,15 @@ public class MdrillService {
 			HashSet<String> distStatFieldMap = new HashSet<String>();
 			WebServiceParams.setCrossStatMap(showFields,commonStatMap,distStatFieldMap);
 	
+			Map stormconf = Utils.readStormConfig();
+			String mode=String.valueOf(stormconf.get("higo.mode."+part.name));
+
 			LinkedHashMap<String, String> fieldColumntypeMap = readFieldsFromSchemaXml(part.name);
 
 			SortParam sortType = WebServiceParams.sort(sort, order,fieldColumntypeMap,groupbyFields);
 
 			ShardsList[] cores = GetShards.get(part.name, false);
 			
-			Map stormconf = Utils.readStormConfig();
 			for(int i=0;i<10;i++)
 			{
 				if(cores.length!=StormUtils.parseInt(stormconf.get("higo.shards.count")))
@@ -200,7 +365,7 @@ public class MdrillService {
 
 			String rtn= result(part,callback, fqList, shard, start, rows, sortType,
 					groupbyFields, showFields, commonStatMap,
-					distStatFieldMap,joins);
+					distStatFieldMap,joins,mode);
 			long t2=System.currentTimeMillis();
 			long timetaken=t2-t1;
 			LOG.info("timetaken:"+(timetaken)+",logParams2:"+logParams2);
@@ -308,7 +473,7 @@ public class MdrillService {
 		Map stormconf = Utils.readStormConfig();
 		Configuration conf = getConf(stormconf);
 		FileSystem fs = FileSystem.get(conf);
-		String regex = "<field\\s+name=\"([^\"]*?)\"\\s+type=\"([^\"]*?)\"\\s+indexed=\"([^\"]*?)\"\\s+stored=\"([^\"]*?)\"\\s*/>";
+		String regex = "<field\\s+name=\"([^\"]*?)\"\\s+type=\"([^\"]*?)\"\\s+indexed=\"([^\"]*?)\"\\s+stored=\"([^\"]*?)\"\\s*.*/>";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher("");
 		BufferedReader br = null;
@@ -343,7 +508,7 @@ public class MdrillService {
 			GetPartions.Shards shard, int start, int rows, final SortParam sortType,
 			ArrayList<String> groupbyFields, ArrayList<String> showFields,
 			HashSet<String> commonStatMap,
-			HashSet<String> distStatFieldMap,HigoJoinParams[] joins) throws Exception {
+			HashSet<String> distStatFieldMap,HigoJoinParams[] joins,String mode) throws Exception {
 		CommonsHttpSolrServer server = WebServiceParams.makeServer(shard);
 		SolrQuery query = WebServiceParams.makeSolrQuery(shard);
 		JSONObject jsonObj = new JSONObject();
@@ -374,7 +539,7 @@ public class MdrillService {
 				
 				QueryResponse qr = WebServiceParams.fetchGroupCrcQr(query, server);
 				
-				jsonObj.put("__timedebug", qr.getTimetaken().toString());
+//				jsonObj.put("__timedebug", qr.getTimetaken().toString());
 				LinkedHashMap<String,GroupbyRow> groupValueCache=WebServiceParams.setGroupByResult(query,jsonObj, qr, groupbyFields, showFields,joins,null);
 				
 				if(jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10)&&groupValueCache.size()<=UniqConfig.defaultCrossMaxLimit()&&jsonObj.getString("code").equals("1"))
@@ -385,7 +550,7 @@ public class MdrillService {
 							0, Math.min(groupValueCache.size()*10,UniqConfig.defaultCrossMaxLimit()), distStatFieldMap, commonStatMap, sortType,joins,groupValueCache);
 					LOG.info("queryinfo_pre:"+shard.urlMain + "/select/?" + query.toString());
 					QueryResponse qr2 = server.query(query, SolrRequest.METHOD.POST);
-					jsonObj.put("__timedebug_qr2", qr2.getTimetaken().toString());
+//					jsonObj.put("__timedebug_qr2", qr2.getTimetaken().toString());
 					WebServiceParams.setGroupByResult(query,jsonObj, qr2, groupbyFields, showFields,joins,groupValueCache);
 					}catch(Exception e2)
 					{
@@ -451,17 +616,17 @@ public class MdrillService {
 						commonStatMap, sortType,joins,null);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
 				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
-				jsonObj.put("__timedebug", qr.getTimetaken().toString());
+//				jsonObj.put("__timedebug", qr.getTimetaken().toString());
 
 				WebServiceParams.setGroupByResult(query,jsonObj, qr, groupbyFields,showFields,joins,null);
 			} else {
 				WebServiceParams.setDetailByQuery(
 						query, fqList, showFields,
-						start, rows, sortType,joins);
+						start, rows, sortType,joins,mode.indexOf("@fdt@")>=0);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
 				
 				QueryResponse qr = WebServiceParams.fetchDetailCrcQr(query, server);
-				jsonObj.put("__timedebug", qr.getTimetaken().toString());
+//				jsonObj.put("__timedebug", qr.getTimetaken().toString());
 
 				WebServiceParams.setDetailResult(jsonObj, qr, showFields,joins);
 			}

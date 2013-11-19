@@ -12,6 +12,6 @@
     <dynamicField name="*_p" type="payloads" indexed="true"  stored="false"/>
   </fields>
   <uniqueKey>higo_uuid</uniqueKey>
-  <solrQueryParser defaultOperator="OR"/>
+  <solrQueryParser defaultOperator="AND"/>
 
 </schema>

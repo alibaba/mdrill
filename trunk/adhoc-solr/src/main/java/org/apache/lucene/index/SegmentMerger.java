@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -34,6 +35,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.solr.core.SolrCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
@@ -49,6 +53,8 @@ final class SegmentMerger {
   private int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
 
   private List<IndexReader> readers = new ArrayList<IndexReader>();
+//  private HashSet<IndexReader> readersSet = new HashSet<IndexReader>();
+
   private final FieldInfos fieldInfos;
   
   private int mergedDocs;
@@ -490,6 +496,7 @@ final class SegmentMerger {
   private final void mergeTermInfos(final FormatPostingsFieldsConsumer consumer) throws CorruptIndexException, IOException {
     int base = 0;
     final int readerCount = readers.size();
+    
     for (int i = 0; i < readerCount; i++) {
       IndexReader reader = readers.get(i);
       TermEnum termEnum = reader.terms();
@@ -504,15 +511,18 @@ final class SegmentMerger {
         }
         docMaps[i] = docMap;
       }
-      
       base += reader.numDocs();
 
       assert reader.numDocs() == reader.maxDoc() - smi.delCount;
 
       if (smi.next())
+      {
         queue.add(smi);				  // initialize queue
+      }
       else
+      {
         smi.close();
+      }
     }
 
     SegmentMergeInfo[] match = new SegmentMergeInfo[readers.size()];
@@ -521,6 +531,8 @@ final class SegmentMerger {
     FormatPostingsTermsConsumer termsConsumer = null;
 
     while (queue.size() > 0) {
+    	
+
       int matchSize = 0;			  // pop matching terms
       match[matchSize++] = queue.pop();
       Term term = match[0].term;
@@ -566,13 +578,17 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  
+  public static Logger LOG = LoggerFactory.getLogger(SegmentMerger.class);
+
   private final int appendPostings(final FormatPostingsTermsConsumer termsConsumer, SegmentMergeInfo[] smis, int n)
         throws CorruptIndexException, IOException {
 
     final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(smis[0].term,smis[0].term.text);
-    int df = 0;
     docConsumer.reset();
+    int df = 0;
 
+    try{
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
       TermPositions postings = smi.getPositions();
@@ -585,15 +601,68 @@ final class SegmentMerger {
       if (smi.dirPayloadProcessor != null) {
         payloadProcessor = smi.dirPayloadProcessor.getProcessor(smi.term);
       }
+      
+
       while (postings.next()) {
         df++;
         int doc = postings.doc();
         if (docMap != null)
+        {
           doc = docMap[doc];                      // map around deletions
-        doc += base;                              // convert to merged space
+        }
+        doc += base;  
+       
 
         final int freq = postings.freq();
-        final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(doc, freq);
+        FormatPostingsPositionsConsumer posConsumer=null;
+        try{
+        posConsumer=docConsumer.addDoc(doc, freq);
+        }
+        catch(CorruptIndexException e)
+        {
+            StringBuffer doclist=new StringBuffer();
+
+            StringBuffer debug=new StringBuffer();
+        	 debug.append("doc2=").append(doc).append(",");
+             debug.append("df=").append(df).append(",");
+             debug.append("base=").append(base).append(",");
+             debug.append("n=").append(n).append(",");
+             debug.append("term=").append(smis[0].term.toString()).append(",");
+             debug.append("sigterm=").append(smi.term.toString()).append(",");
+             
+             
+             for (int j = 0; j < n; j++) {
+                 debug.append(j+"=").append(smis[j].base).append(",");
+             }
+             
+             for (int j = 0; j < n; j++) {
+                 debug.append(j+"=").append(smis[j].term.toString()).append(",");
+             }
+             
+             for (int j = 0; j < n; j++) {
+                 debug.append(j+"=").append(smis[j].reader.numDocs()).append(",");
+             }
+             debug.append("\r\n");
+             for (int j = 0; j < n; j++) {
+                 debug.append(j+"=").append(smis[j].reader.directory().dir_uuid).append(",");
+             }
+             
+             
+             for (int j = 0; j < n; j++) {
+                 debug.append(j+"=").append(smis[j].reader.toString()).append(",");
+             }
+             debug.append("\r\n");
+             while (postings.next()) {
+                 int doc2 = postings.doc();
+                 doclist.append(doc2+":"+postings.freq()).append(",");
+             }
+             postings.debug(doclist);
+             doclist.append(",outdf=").append(smi.termEnum.docFreq());
+
+             debug.append(doclist);
+        	LOG.error(debug.toString(),e);
+        	throw e;
+        }
 
         if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
           for (int j = 0; j < freq; j++) {
@@ -615,8 +684,10 @@ final class SegmentMerger {
         
       }
     }
+    }finally{
 
     docConsumer.finish();
+    }
 
     return df;
   }

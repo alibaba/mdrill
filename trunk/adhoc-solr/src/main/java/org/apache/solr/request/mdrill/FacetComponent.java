@@ -183,16 +183,28 @@ public class  FacetComponent extends SearchComponent
         if (fi == null) {
           rb._facetInfo = fi = new FacetInfo(rb.req.getParams());
         }
-        
         sreq.params.remove(FacetParams.FACET_MINCOUNT);
         sreq.params.remove(FacetParams.FACET_OFFSET);
         sreq.params.remove(FacetParams.FACET_LIMIT);
+        if(sreq.params.getBool("fetchfdt", false))
+		  {
+        	 int offset=sreq.params.getInt(FacetParams.FACET_CROSS_OFFSET,0);
+        	 int limit=sreq.params.getInt(FacetParams.FACET_CROSS_LIMIT,0);
+        	 sreq.params.remove(FacetParams.FACET_CROSS_OFFSET);
+             sreq.params.remove(FacetParams.FACET_CROSS_LIMIT);
+             sreq.params.set(FacetParams.FACET_CROSS_OFFSET,  0);
+         	sreq.params.set(FacetParams.FACET_CROSS_LIMIT,  offset+limit);
+        	
+		  }else{
+        
+      
         sreq.params.remove(FacetParams.FACET_CROSS_OFFSET);
         sreq.params.remove(FacetParams.FACET_CROSS_LIMIT);
         
         int maxlimit=MdrillGroupBy.MAX_CROSS_ROWS;
         sreq.params.set(FacetParams.FACET_CROSS_OFFSET,  0);
     	sreq.params.set(FacetParams.FACET_CROSS_LIMIT,  maxlimit);
+		  }
   }
   
 

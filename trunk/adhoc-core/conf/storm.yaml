@@ -112,6 +112,13 @@
  higo.partion.type.r_rpt_cps_adhoc_seller: "default"
  higo.partion.type.rpt_seller_all_m_single: "single"
  higo.partion.type.rpt_seller_all_m_dir: "dir@thedate"
+ higo.partion.type.ods_allpv_ad_d: "day"
+ 
+ 
+ #-------------hdfs mode-----------------
+ higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:5@blocksize:1073741824@" 
+ higo.index.parallel.ods_allpv_ad_d: 30
+ 
 
 ####以下为adhoc项目专用，跟mdrill无关，不启动UI的话可忽略####
  higo.ui.conf.dir: "/home/taobao/bluewhale/ui16/alimama/adhoc-core/webapp"

@@ -203,7 +203,12 @@ public class RepeatCompress {
 	  
 	  public static int[] decompress(final int[] compress)
 	  {
-		  int groupsize=compress.length-1;
+		  return decompress(compress,compress.length);
+	  }
+	  
+	  public static int[] decompress(final int[] compress,int len)
+	  {
+		  int groupsize=len-1;
 		  int[] rtn=new int[compress[groupsize]];
 		  int index=0;
 		  for(int i=0;i<groupsize;)

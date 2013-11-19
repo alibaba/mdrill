@@ -15,6 +15,7 @@
 		<module>adhoc-web</module>
 		<module>adhoc-jdbc</module>
 		<module>adhoc-public</module>
+		<module>adhoc-internal</module>
 	</modules>
 
 	<repositories>
@@ -85,6 +86,8 @@
 		</dependency>
 		
 		
+		
+
 		<dependency>
 			<groupId>org.mortbay.jetty</groupId>
 			<artifactId>jsp-2.1-jetty</artifactId>
@@ -96,7 +99,6 @@
             </exclusion>
          </exclusions>
 		</dependency>
-
 		  <dependency>
       <groupId>javax.servlet.jsp</groupId>
       <artifactId>jsp-api</artifactId>
@@ -270,12 +272,7 @@
 		
 		
 		
-		
-        <dependency>
-			<groupId>storm</groupId>
-			<artifactId>libthrift7</artifactId>
-			<version>0.7.0</version>
-	</dependency>
+
   
         <dependency>
 			<groupId>backtype</groupId>
@@ -315,7 +312,7 @@
 
 
 		
-		<dependency>
+		<!--dependency>
   <groupId>org.apache.hadoop</groupId>
   <artifactId>hadoop-core</artifactId>
   <version>0.20.2</version>
@@ -387,7 +384,7 @@
 					<artifactId>core</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
+		</dependency-->
 		
 		<!--mvn install:install-file -Dfile=./hive-exec-1.1.7.jar -DgroupId=org.apache.hive -DartifactId=hive-exec -Dversion=0.8.0 -Dpackaging=jar-->
 		<dependency>
@@ -406,8 +403,440 @@
 				</exclusion>
 		   </exclusions>
 </dependency>
+		
+				
+		<dependency>
+  <groupId>com.alibaba-inc.yunti</groupId>
+  <artifactId>hadoop-common</artifactId>
+  <version>0.19.1-dc-r302585</version>
+<exclusions>
 
+<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.sf.kosmosfs</groupId>
+					<artifactId>kfs</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty-util</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>hsqldb</groupId>
+					<artifactId>hsqldb</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-el</groupId>
+					<artifactId>commons-el</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>oro</groupId>
+					<artifactId>oro</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-api-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>servlet-api-2.5</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-net</groupId>
+					<artifactId>commons-net</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-runtime</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-compiler</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xmlenc</groupId>
+					<artifactId>xmlenc</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.java.dev.jets3t</groupId>
+					<artifactId>jets3t</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jdt</groupId>
+					<artifactId>core</artifactId>
+				</exclusion>
+			</exclusions>
+</dependency>
+
+<dependency>
+  <groupId>com.alibaba-inc.yunti</groupId>
+  <artifactId>hadoop-hdfs</artifactId>
+  <version>0.19.1-dc-r302585</version>
+<exclusions>
+
+<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.sf.kosmosfs</groupId>
+					<artifactId>kfs</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty-util</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>hsqldb</groupId>
+					<artifactId>hsqldb</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-el</groupId>
+					<artifactId>commons-el</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>oro</groupId>
+					<artifactId>oro</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-api-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>servlet-api-2.5</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-net</groupId>
+					<artifactId>commons-net</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-runtime</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-compiler</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xmlenc</groupId>
+					<artifactId>xmlenc</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.java.dev.jets3t</groupId>
+					<artifactId>jets3t</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jdt</groupId>
+					<artifactId>core</artifactId>
+				</exclusion>
+			</exclusions>
+</dependency>
+
+
+<dependency>
+  <groupId>com.alibaba.yunti</groupId>
+  <artifactId>hadoop-auth</artifactId>
+  <version>2.0.0-cdh4.0.1</version>
+  <exclusions>
+  <exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-core</artifactId>
+				</exclusion>
+
+				<exclusion>
+					<groupId>net.sf.kosmosfs</groupId>
+					<artifactId>kfs</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty-util</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>hsqldb</groupId>
+					<artifactId>hsqldb</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-el</groupId>
+					<artifactId>commons-el</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>oro</groupId>
+					<artifactId>oro</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-api-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>servlet-api-2.5</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-net</groupId>
+					<artifactId>commons-net</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-runtime</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-compiler</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xmlenc</groupId>
+					<artifactId>xmlenc</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.java.dev.jets3t</groupId>
+					<artifactId>jets3t</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jdt</groupId>
+					<artifactId>core</artifactId>
+				</exclusion>
+				
+			</exclusions>
+</dependency>
+
+
+<dependency>
+  <groupId>com.alibaba-inc.yunti</groupId>
+  <artifactId>hadoop-mapred</artifactId>
+  <version>0.19.1-dc-r302585</version>
+<exclusions>
+<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-core</artifactId>
+				</exclusion>
+
+				<exclusion>
+					<groupId>net.sf.kosmosfs</groupId>
+					<artifactId>kfs</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty-util</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>hsqldb</groupId>
+					<artifactId>hsqldb</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-el</groupId>
+					<artifactId>commons-el</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>oro</groupId>
+					<artifactId>oro</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-api-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>servlet-api-2.5</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-net</groupId>
+					<artifactId>commons-net</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-runtime</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-compiler</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xmlenc</groupId>
+					<artifactId>xmlenc</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.java.dev.jets3t</groupId>
+					<artifactId>jets3t</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jdt</groupId>
+					<artifactId>core</artifactId>
+				</exclusion>
+			</exclusions>
+</dependency>
+<dependency>
+  <groupId>com.alibaba-inc.yunti</groupId>
+  <artifactId>hadoop-core</artifactId>
+  <version>0.19.1-dc-SNAPSHOT</version>
+  <classifier>sources</classifier>
+<exclusions>
+
+	<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.sf.kosmosfs</groupId>
+					<artifactId>kfs</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jetty-util</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>hsqldb</groupId>
+					<artifactId>hsqldb</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-el</groupId>
+					<artifactId>commons-el</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>oro</groupId>
+					<artifactId>oro</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>jsp-api-2.1</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mortbay.jetty</groupId>
+					<artifactId>servlet-api-2.5</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-net</groupId>
+					<artifactId>commons-net</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-runtime</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tomcat</groupId>
+					<artifactId>jasper-compiler</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xmlenc</groupId>
+					<artifactId>xmlenc</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.java.dev.jets3t</groupId>
+					<artifactId>jets3t</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jdt</groupId>
+					<artifactId>core</artifactId>
+				</exclusion>
+			</exclusions>
+</dependency>
+
+ 	<dependency>
+            <groupId>com.alibaba.cdo</groupId>
+            <artifactId>timetunnel-clientng</artifactId>
+            <version>0.4.1-2-SNAPSHOT</version>
+            <exclusions>
+        <exclusion>
+          <groupId>org.apache.thrift</groupId>
+  <artifactId>libthrift</artifactId>
+        </exclusion>
+      </exclusions>          
+		</dependency>
+	
+	
+	    <dependency>
+      <groupId>com.taobao.loganalyzer</groupId>
+      <artifactId>p4ppv</artifactId>
+      <version>1.1.8</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.taobao.loganalyzer</groupId>
+      <artifactId>p4pclick</artifactId>
+      <version>1.2.6</version>
+    </dependency>
+
+    		
+        <dependency>
+			<groupId>storm</groupId>
+			<artifactId>libthrift7</artifactId>
+			<version>0.7.0</version>
+			   <exclusions>
+        <exclusion>
+          <groupId>org.apache.thrift</groupId>
+  <artifactId>libthrift</artifactId>
+        </exclusion>
+      </exclusions>
+			
+	</dependency>
+
+        <dependency>
+        	<groupId>org.apache.thrift</groupId>
+        	<artifactId>libthrift</artifactId>
+        	<version>0.8.0</version>
+        </dependency>
 	</dependencies>
-
 	
 </project>

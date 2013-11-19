@@ -55,7 +55,12 @@ public class DocumentList
 		for (HashMap<String, String> res : list) {
 			try{
 			Document doc = documentConverter.convert(res);
-			doclist.add(doc);
+			if(doc.getFields().size()<=0)
+			{
+				context.getCounter("higo", "skipdocument2").increment(1);
+			}else{
+				doclist.add(doc);
+			}
 			}catch(org.apache.solr.common.SolrException e){
 				context.getCounter("higo", "skipdocument").increment(1);
 				if(debuglines<100)

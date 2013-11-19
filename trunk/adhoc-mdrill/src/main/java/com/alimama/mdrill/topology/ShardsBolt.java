@@ -3,6 +3,9 @@ package com.alimama.mdrill.topology;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -49,11 +52,13 @@ public class ShardsBolt implements IRichBolt{
     }
     
     private SolrStartInterface solr=null;
+	ThreadPoolExecutor EXECUTE =null;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
             OutputCollector collector) {
 	this.collector=collector;
+	this.EXECUTE= new ThreadPoolExecutor(3, 3,1800l, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 	try {
 	    this.conf=new Configuration();
 	    HadoopUtil.grabConfiguration(this.hadoopConfPath, this.conf);
@@ -65,7 +70,9 @@ public class ShardsBolt implements IRichBolt{
 	    Integer taskIndex=context.getThisTaskIndex();
 	    
 	    this.solr=new SolrStart(this.params,collector, conf, solrhome, tablename.split(","), storePath, this.portbase, taskIndex, this.topologyName, context.getThisTaskId(), this.partions);
+	    this.solr.setExecute(this.EXECUTE);
 	    this.solr.setConfigDir(this.hadoopConfPath);
+	    this.solr.setConf(stormConf);
 	    this.solr.setRealTime(this.isRealTime);
 	    this.solr.setMergeServer(!this.isRealTime&&taskIndex>=this.shards);
 	    this.solr.start();
@@ -88,18 +95,12 @@ public class ShardsBolt implements IRichBolt{
 	List<Object> data = StormUtils.mk_list((Object) System.currentTimeMillis());
         this.collector.emit(data);
 	try {
-	    this.solr.heartbeat();
-        } catch (RuntimeException e1) {
+	    this.solr.checkError();
+        } catch (Throwable e1) {
             LOG.error(StormUtils.stringify_error(e1));
             this.solr.unregister();
             this.collector.reportError(e1);
             throw new RuntimeException(e1);
-        }
-	catch (Exception e) {
-	    LOG.error(StormUtils.stringify_error(e));
-            this.solr.unregister();
-            this.collector.reportError(e);
-            throw new RuntimeException(e);
         }
 	
 	this.collector.ack(input);

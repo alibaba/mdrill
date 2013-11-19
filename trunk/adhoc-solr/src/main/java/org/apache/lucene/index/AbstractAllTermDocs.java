@@ -28,6 +28,10 @@ import java.io.IOException;
  * Lucene release.  Use directly at your own risk! */
 public abstract class AbstractAllTermDocs implements TermDocs {
 
+	  public void debug(StringBuffer buff){
+		  
+	  }
+
   protected int maxDoc;
   protected int doc = -1;
 

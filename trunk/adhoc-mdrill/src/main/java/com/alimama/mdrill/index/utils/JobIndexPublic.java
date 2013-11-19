@@ -60,7 +60,7 @@ public class JobIndexPublic {
 
 	public static String readFieldsFromSchemaXml(String schemaFile,
 			FileSystem fs, Configuration conf) throws Exception {
-		String regex = "<field\\s+name=\"([^\"]*?)\"\\s+type=\"([^\"]*?)\"\\s+indexed=\"([^\"]*?)\"\\s+stored=\"([^\"]*?)\"\\s*/>";
+		String regex = "<field\\s+name=\"([^\"]*?)\"\\s+type=\"([^\"]*?)\"\\s+indexed=\"([^\"]*?)\"\\s+stored=\"([^\"]*?)\"\\s*.*/>";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher("");
 		List<String> list = new ArrayList<String>();

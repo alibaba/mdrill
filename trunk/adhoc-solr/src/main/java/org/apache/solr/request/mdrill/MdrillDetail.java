@@ -30,7 +30,7 @@ import com.alimama.mdrill.utils.UniqConfig;
  * @author yannian.mu
  */
 public class MdrillDetail {
-	public static Integer MAX_CROSS_ROWS=UniqConfig.defaultCrossMaxLimit();
+//	public static Integer MAX_CROSS_ROWS=UniqConfig.defaultCrossMaxLimit();
 	private SolrIndexSearcher searcher;
 	private RecordCountDetail recordCount ;
 	private SolrQueryRequest req;

@@ -79,34 +79,44 @@ public static void execute(String sql,String connstr,JspWriter out) throws Class
 	Connection con = DriverManager.getConnection(connstr, "", "");
 
 	Statement stmt = con.createStatement();
+	
+	  String lowercase=sql.toLowerCase();
+	    if(lowercase.indexOf("insert")>=0&&lowercase.indexOf("into")>0 && lowercase.indexOf("values")>0)
+	    {
+	    	stmt.execute(sql);
+	    	buff.append("执行完毕<br>\r\n");
+	    	buff.append("<br>\r\n");
+	    }else{
 
-	MdrillQueryResultSet res = null;
-
-	res = (MdrillQueryResultSet) stmt.executeQuery(sql);
-	buff.append("totalRecords:"+res.getTotal());
-	buff.append("<br>\r\n");
-	buff.append("<table border=1><tr>");
-	List<String> colsNames = res.getColumnNames();
-	for (int i = 0; i < colsNames.size(); i++) {
-		buff.append("<td>");
-	    buff.append(colsNames.get(i));
-	    buff.append("</td>");
-	}
-	buff.append("</tr>");
-	while (res.next()) {
-		buff.append("<tr>");
-	    for (int i = 0; i < colsNames.size(); i++) {
-	    	buff.append("<td>");
-		buff.append(res.getString(colsNames.get(i)));
-		buff.append("</td>");
+				MdrillQueryResultSet res = null;
+			
+				res = (MdrillQueryResultSet) stmt.executeQuery(sql);
+				buff.append("totalRecords:"+res.getTotal());
+				buff.append("<br>\r\n");
+				buff.append("<table border=1><tr>");
+				List<String> colsNames = res.getColumnNames();
+				for (int i = 0; i < colsNames.size(); i++) {
+					buff.append("<td>");
+				    buff.append(colsNames.get(i));
+				    buff.append("</td>");
+				}
+				buff.append("</tr>");
+				while (res.next()) {
+					buff.append("<tr>");
+				    for (int i = 0; i < colsNames.size(); i++) {
+				    	buff.append("<td>");
+					buff.append(res.getString(colsNames.get(i)));
+					buff.append("</td>");
+				    }
+				    buff.append("</tr>");
+				}
+				con.close();
+				buff.append("</table>");
+				
 	    }
-	    buff.append("</tr>");
-	}
-	con.close();
-	buff.append("</table>");
-	long time2=System.currentTimeMillis();
-    buff.append("times taken "+((time2-time1)*1.0/1000)+" seconds");
-    buff.append("<br>\r\n");
+	    long time2=System.currentTimeMillis();
+	    buff.append("times taken "+((time2-time1)*1.0/1000)+" seconds");
+	    buff.append("<br>\r\n");
     
     hb.setIsstop(true);
     while(!hb.isstop())

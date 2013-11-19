@@ -38,6 +38,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
 public class RAMDirectory extends Directory implements Serializable {
 
   private static final long serialVersionUID = 1l;
+  
+  public String uuid=java.util.UUID.randomUUID().toString();
 
   protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<String,RAMFile>();
   protected final AtomicLong sizeInBytes = new AtomicLong();

@@ -85,12 +85,15 @@ public class HigoJoinInvert {
 		UnvertFields ufs=ufsRight;
 		for (int i:ufs.listIndex) {
 			UnvertFile uf=ufs.cols[i];
-
-			try {
-				group.list[i+offset]=uf.uif.getTermNum(uf.ti,values[i+offset],uf.filetype);
-			} catch (Throwable e) {
-				LOG.error("setfieldNum",e);
-				group.list[i+offset]=uf.uif.getNullTm();
+			int off=i+offset;
+			if(off<group.list.length)
+			{
+				try {
+					group.list[off]=uf.uif.getTermNum(uf.ti,values[off],uf.filetype);
+				} catch (Throwable e) {
+					LOG.error("setfieldNum",e);
+					group.list[off]=uf.uif.getNullTm();
+				}
 			}
 		}
 	}

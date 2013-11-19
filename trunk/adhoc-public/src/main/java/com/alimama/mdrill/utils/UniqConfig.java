@@ -8,6 +8,64 @@ public class UniqConfig {
 	{
 		return maxfieldvaluemem;
 	}
+	
+	public static int RealTimeBufferFlush()
+	{
+		return 30;
+	}
+	
+	
+	public static int RealTimeLocalMergerInterval()
+	{
+		return 3600;
+	}
+	public static int RealTimeLocalFlush()
+	{
+		return 300;
+	}
+	
+	
+	public static int RealTimeDoclistFlush()
+	{
+		return 10;
+	}
+	public static int RealTimeDoclistBuffer()
+	{
+		return 1024;
+	}
+	
+
+	public static int RealTimeHdfsFlush()
+	{
+		return 3600*6;
+	}
+	
+	public static int RealTimeDelete()
+	{
+		return 3600;
+	}
+	
+	public static int RealTimeRam2localFactory()
+	{
+		return 6;
+	}
+	
+	public static int RealTimeLocalMergerFactory()
+	{
+		return 3;
+	}
+	
+	static long buffersize=1024l*1024*10;
+	public static long RealTimeBufferSize()
+	{
+		return buffersize;
+	}
+	
+	static long ramsize=1024l*1024*100;
+	public static long RealTimeRamSize()
+	{
+		return ramsize;
+	}
 		
 	public static int maxHbTablesParal()
 	{
@@ -49,7 +107,7 @@ public class UniqConfig {
 	
 	public static Integer fqCacheSize()
 	{
-		return 32;
+		return 16;
 	}
 	
 	

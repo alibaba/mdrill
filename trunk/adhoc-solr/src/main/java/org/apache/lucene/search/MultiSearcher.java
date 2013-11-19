@@ -22,6 +22,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher.MdrillCollector;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.DummyConcurrentLock;
 
@@ -130,6 +131,19 @@ public class MultiSearcher extends Searcher {
     public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) {
       throw new UnsupportedOperationException();
     }
+
+	@Override
+	public void ScoreFind(Query query, Filter filter, MdrillCollector results) {
+	      throw new UnsupportedOperationException();
+		
+	}
+
+	@Override
+	public void ScoreFind(Weight weight, Filter filter,
+			MdrillCollector collector) {
+	      throw new UnsupportedOperationException();
+		
+	}
   }
 
   private Searchable[] searchables;
@@ -475,5 +489,35 @@ public class MultiSearcher extends Searcher {
       return docs;
     }
   }
+
+
+
+@Override
+public void ScoreFind(Weight weight, Filter filter, final MdrillCollector collector) throws IOException {
+
+    for (int i = 0; i < searchables.length; i++) {
+      
+      final int start = starts[i];
+      
+      final MdrillCollector hc = new MdrillCollector() {
+        @Override
+        public void collect(int doc) throws IOException {
+          collector.collect(doc);
+        }
+        @Override
+        public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          collector.setNextReader(reader, start + docBase);
+        }
+		@Override
+		public boolean isstop() throws IOException {
+			return collector.isstop();
+		}
+       
+      };
+      
+      searchables[i].ScoreFind(weight, filter, hc);
+    }
+  
+}
 
 }

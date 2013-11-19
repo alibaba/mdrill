@@ -15,6 +15,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.store.Directory;
@@ -52,16 +53,12 @@ public class ShardWriter {
 	writer = new IndexWriter(dir, null,
 	        new KeepOnlyLastCommitDeletionPolicy(),
 	        MaxFieldLength.UNLIMITED);
+//	writer.setMergeScheduler(new SerialMergeScheduler());//new ConcurrentMergeScheduler()
 	writer.setMergeFactor(256);
 	writer.setTermIndexInterval(128);
 	writer.setUseCompoundFile(false);
 
 
-    }
-    
-    public void setUseCompoundFile()
-    {
-    	writer.setUseCompoundFile(true);
     }
     
     public void addEmptyDoc() throws CorruptIndexException, IOException
@@ -73,9 +70,12 @@ public class ShardWriter {
 
     public void process(RamWriter form) throws IOException {
 	int docs=form.getNumDocs();
-	numDocs+=docs;
-	numForms++;
-	this.process(form.getDirectory());
+	if(docs>0)
+	{
+		numDocs+=docs;
+		numForms++;
+		this.process(form.getDirectory());
+	}
     }
     public void process(Directory dir) throws CorruptIndexException, IOException
     {

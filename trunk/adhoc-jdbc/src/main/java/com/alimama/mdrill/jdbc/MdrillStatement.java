@@ -1,12 +1,24 @@
 package com.alimama.mdrill.jdbc;
 
 
+import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.ByteArrayBuffer;
 
 
 public class MdrillStatement implements java.sql.Statement{
@@ -68,6 +80,40 @@ public class MdrillStatement implements java.sql.Statement{
 
 
 	  public boolean execute(String sql) throws SQLException {
+
+		  String lowercase=sql.toLowerCase();
+		    if(lowercase.indexOf("insert")>=0&&lowercase.indexOf("into")>0 && lowercase.indexOf("values")>0)
+		    {
+		    	InsertParser parser=new InsertParser();
+		    	try {
+		    		parser.parse(sql);
+					HttpClient httpclient = new DefaultHttpClient();
+					httpclient.getParams().setParameter(HttpMethodParams.SO_TIMEOUT, 60000*30);
+					 httpclient.getParams().setParameter(HttpMethodParams.HTTP_CONTENT_CHARSET, "UTF8");
+					HttpPost httppost = new HttpPost("http://" + this.strurl+ "/higo/insert.jsp");
+					List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+					nameValuePairs.add(new BasicNameValuePair("project",parser.tablename));
+					nameValuePairs.add(new BasicNameValuePair("json", parser.jsons));
+
+					httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs,"UTF-8"));
+
+					HttpResponse response = httpclient.execute(httppost);
+
+					InputStream is = response.getEntity().getContent();
+					BufferedInputStream bis = new BufferedInputStream(is);
+					ByteArrayBuffer baf = new ByteArrayBuffer(1024);
+
+					int current = 0;
+					while ((current = bis.read()) != -1) {
+						baf.append((byte) current);
+					}
+							
+		    	return true;
+		    	}catch(Throwable e){
+		    		throw new SQLException(e); 
+		    	}
+		    }
+		  
 	    ResultSet rs = executeQuery(sql);
 	    return rs != null;
 	  }
@@ -99,6 +145,9 @@ public class MdrillStatement implements java.sql.Statement{
 	    if (isClosed) {
 	      throw new SQLException("Can't execute after statement has been closed");
 	    }
+	    
+	   
+	    
 
 	    SqlParser parse=new SqlParser();
 	    Long total=0l;

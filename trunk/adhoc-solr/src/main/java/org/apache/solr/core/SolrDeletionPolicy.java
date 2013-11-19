@@ -27,6 +27,8 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -82,7 +84,10 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
       if (dir instanceof FSDirectory) {
         FSDirectory fsd = (FSDirectory) dir;
         sb.append("dir=").append(fsd.getDirectory());
-      } else {
+      }else if (dir instanceof FileSystemDirectory) {
+    	  FileSystemDirectory fsd = (FileSystemDirectory) dir;
+          sb.append("dir=").append(fsd.directory.toString());
+        }else {
         sb.append("dir=").append(dir);
       }
 

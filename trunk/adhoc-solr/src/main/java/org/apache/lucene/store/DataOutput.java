@@ -86,23 +86,23 @@ public abstract class DataOutput {
 
   protected final int[] buffer_compress=new int[BLOGK_SIZE_COMPRESS];
   private int uptopos_compress=0;
-  private boolean blockmode_compress=false;
+  private int uptopos_compress_record=0;
   private boolean allowblock_compress=false;
   public void resetBlockMode()
   {
-	  this.blockmode_compress=false;
       this.uptopos_compress=0;
+      this.uptopos_compress_record=0;
 
   }
+  
+  
   public void setUsedBlock()
   {
 	  allowblock_compress=true;
   }
-  public void writeCompressblock(int v) throws IOException {
+  public void writeCompressblock(int v,int i) throws IOException {
+	 this.uptopos_compress_record+=i;
     buffer_compress[uptopos_compress++] = v;
-    if (uptopos_compress == BLOGK_SIZE_USED_COMPRESS) {
-        this.blockmode_compress=allowblock_compress;
-    }
     if (uptopos_compress == BLOGK_SIZE_COMPRESS) {
         flushCompressBlock();
     }
@@ -111,9 +111,13 @@ public abstract class DataOutput {
   static volatile long printindex_compress=0;
   static volatile long printindex_compress_repeat=0;
   
-  public static boolean compressEquals(int[] a, int[] a2,int len) {
+  public static boolean compressEquals(int[] a, int[] a2,int a2len) {
 
-      for (int i=0; i<len; i++)
+	  if(a.length!=a2len)
+	  {
+		  return false;
+	  }
+      for (int i=0; i<a2len; i++)
       {
           if (a[i] != a2[i])
           {
@@ -123,12 +127,15 @@ public abstract class DataOutput {
 
       return true;
   }
+  
+
+  
   public void flushCompressBlock() throws IOException {
 	  if(this.uptopos_compress<=0)
 	  {
 		  return ;
 	  }
-	  if(!this.blockmode_compress)
+	  if(!this.allowblock_compress||this.uptopos_compress_record<BLOGK_SIZE_USED_COMPRESS)
 	  {
 		  for(int i=0;i<uptopos_compress;i++) {
 		        this.writeVInt(buffer_compress[i]);
@@ -139,48 +146,56 @@ public abstract class DataOutput {
       
 	  int type=0;
 	  RepeatCompressRtn repeat=RepeatCompress.compress(buffer_compress, uptopos_compress);
-		if(repeat.index<=uptopos_compress)
-		{
-			type=1;
+	  int[] repeatdecompress=RepeatCompress.decompress(repeat.bytes, repeat.index);
+	  if(compressEquals(repeatdecompress, buffer_compress,uptopos_compress))
+	  {
+		  if(repeat.index<=uptopos_compress)
+		  {
+			  type=1;
+		  }
+	      int[] compressedBuffer =PForDelta.compressOneBlock(repeat.bytes, repeat.index);
+	      int compresslen=compressedBuffer.length;
+	      int[] decompress=PForDelta.decompressOneBlock(compressedBuffer, repeat.index);
+	      if((compresslen*100/uptopos_compress)<50&&compressEquals(decompress, repeat.bytes,repeat.index))
+	      {
+	    	  if(type==0||(type==1&&repeat.index>(compresslen*4)))
+	    	  {
+				type=1<<1;
+	    	  }
+	      }
+	      
+	      if(type!=0)
+	      {
+		      if(type==1){
+		    	  if(printindex_compress_repeat++<1000)
+			      {
+			    	  System.out.println("##RepeatCompress##"+repeat.index+"@"+uptopos_compress);
+			      }
+		          this.writeVInt((repeat.index<<2)+type);
+			      for(int i=0;i<repeat.index;i++) {
+			        this.writeVInt(repeat.bytes[i]);
+			      }
+		      }else{
+		    	   if(printindex_compress++<1000)
+		    	   {
+		    	    	  System.out.println("##PForDelta##"+compresslen+"@"+uptopos_compress);
+		    	   }
+		    	      this.writeVInt((repeat.index<<2)+type);
+			      this.writeVInt(compresslen);
+			      for(int i=0;i<compresslen;i++) {
+			        this.writeInt(compressedBuffer[i]);
+			      }
+		      }
+	      }
 		}
-
-      int[] compressedBuffer =PForDelta.compressOneBlock(repeat.bytes, repeat.index);
-      int compresslen=compressedBuffer.length;
-      int[] decompress=PForDelta.decompressOneBlock(compressedBuffer, repeat.index);
-      if((compresslen*100/uptopos_compress)<50&&compressEquals(decompress, repeat.bytes,repeat.index))
-      {
-    	  if(type==0||(type==1&&repeat.index>(compresslen*4)))
-    	  {
-			type=1<<1;
-    	  }
-      }
 
       if(type==0)
       {
-          this.writeVInt((uptopos_compress<<2)+type);
+          this.writeVInt((uptopos_compress<<2));
     	  for(int i=0;i<uptopos_compress;i++) {
   	        this.writeVInt(buffer_compress[i]);
   	      }
-      }else if(type==1){
-    	  if(printindex_compress_repeat++<1000)
-	      {
-	    	  System.out.println("##RepeatCompress##"+repeat.index+"@"+uptopos_compress);
-	      }
-          this.writeVInt((repeat.index<<2)+type);
-	      for(int i=0;i<repeat.index;i++) {
-	        this.writeVInt(repeat.bytes[i]);
-	      }
-      }else{
-    	   if(printindex_compress++<1000)
-    	   {
-    	    	  System.out.println("##PForDelta##"+compresslen+"@"+uptopos_compress);
-    	   }
-    	      this.writeVInt((repeat.index<<2)+type);
-	      this.writeVInt(compresslen);
-	      for(int i=0;i<compresslen;i++) {
-	        this.writeInt(compressedBuffer[i]);
-	      }
-      }
+      } 
       
       this.uptopos_compress=0;
     }

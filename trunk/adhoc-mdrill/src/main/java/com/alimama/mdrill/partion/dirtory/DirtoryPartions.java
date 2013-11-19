@@ -6,6 +6,7 @@ import java.util.HashSet;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.solr.common.SolrInputDocument;
 
 import com.alimama.mdrill.json.JSONArray;
 import com.alimama.mdrill.json.JSONObject;
@@ -13,6 +14,7 @@ import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.MdrillPartionsInterface;
 import com.alimama.mdrill.partion.PartionListener;
 import com.alimama.mdrill.partion.StatListenerInterface;
+import com.alimama.mdrill.partion.thedate.ThedatePartionsUtils;
 import com.alimama.mdrill.ui.service.utils.OperateType;
 import com.alimama.mdrill.ui.service.utils.WebServiceParams;
 
@@ -28,6 +30,10 @@ public class DirtoryPartions implements MdrillPartionsInterface{
 		{
 			this.fieldname=params[1];
 		}
+	}
+	
+	public String InsertPartion(SolrInputDocument doc)  throws Exception{
+		return String.valueOf(doc.getFieldValue(this.fieldname));
 	}
 
 	@Override

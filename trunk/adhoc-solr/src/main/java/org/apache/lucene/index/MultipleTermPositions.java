@@ -217,4 +217,10 @@ public class MultipleTermPositions implements TermPositions {
   public boolean isPayloadAvailable() {
     return false;
   }
+
+@Override
+public void debug(StringBuffer buff) {
+	// TODO Auto-generated method stub
+	
+}
 }

@@ -23,7 +23,9 @@ import java.io.Closeable;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexFileNameFilter;
+import org.apache.lucene.index.TermInfosWriter;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.schema.IndexSchema;
 
 /** A Directory is a flat list of files.  Files may be written once, when they
  * are created.  Once a file is created it may only be opened for read, or
@@ -43,6 +45,16 @@ import org.apache.lucene.util.IOUtils;
  */
 public abstract class Directory implements Closeable {
 
+	public String dir_uuid=java.util.UUID.randomUUID().toString();
+	private IndexSchema schema=null;
+	public IndexSchema getSchema() {
+		return schema;
+	}
+
+	public  void setSchema(IndexSchema schema)
+	{
+		this.schema=schema;
+	}
   volatile protected boolean isOpen = true;
 
   /** Holds the LockFactory instance (implements locking for

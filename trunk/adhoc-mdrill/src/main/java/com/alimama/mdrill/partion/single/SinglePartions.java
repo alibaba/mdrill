@@ -6,6 +6,7 @@ import java.util.HashSet;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.solr.common.SolrInputDocument;
 
 import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.MdrillPartionsInterface;
@@ -25,6 +26,10 @@ public class SinglePartions implements MdrillPartionsInterface{
 		 String[] rtn=new String[]{"single"};
 		return rtn;
 
+	}
+	
+	public String InsertPartion(SolrInputDocument doc)  throws Exception{
+		return String.valueOf("single");
 	}
 
 	@Override

@@ -27,6 +27,9 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.request.uninverted.UnInvertedField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implements Closeable {
 
@@ -46,9 +49,6 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
   
   private boolean currentIsUseCompress=true;
 
-//  public boolean isCurrentIsUseCompress() {
-//    return currentIsUseCompress;
-//}
 
 
 FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter parent) throws IOException {
@@ -84,28 +84,33 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
   int df;
 
 
-  
+  public static Logger LOG = LoggerFactory.getLogger(UnInvertedField.class);
+
   @Override
   FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException {
 
       final int delta = docID - lastDocID;
     assert docID < totalNumDocs: "docID=" + docID + " totalNumDocs=" + totalNumDocs;
     if (docID < 0 || (df > 0 && delta <= 0))
-        throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " ) (out: " + out + ")");
+    {
+    	CorruptIndexException ex=new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " ) (out: " + out + ")");
+    	throw ex;
+    }
     
       if ((++df % skipInterval) == 0) {
-        // TODO: abstraction violation
+    	this.out.flushCompressBlock();
+    	this.reset();
         skipListWriter.setSkipData(lastDocID, storePayloads, posWriter.lastPayloadLength);
         skipListWriter.bufferSkip(df);
       }
     lastDocID = docID;
     if (omitTermFreqAndPositions)
-    	this.out.writeCompressblock(delta);
+    	this.out.writeCompressblock(delta,1);
     else if (1 == termDocFreq)
-    	this.out.writeCompressblock((delta<<1) | 1);
+    	this.out.writeCompressblock((delta<<1) | 1,1);
     else {
-    	this.out.writeCompressblock(delta<<1);
-    	this.out.writeCompressblock(termDocFreq);
+    	this.out.writeCompressblock(delta<<1,1);
+    	this.out.writeCompressblock(termDocFreq,0);
     }
 
     return posWriter;
@@ -119,8 +124,13 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
   /** Called when we are done adding docs to this term */
   @Override
   void finish() throws IOException {
-	  this.out.flushCompressBlock();
+	this.out.flushCompressBlock();
     long skipPointer = skipListWriter.writeSkip(out);
+    
+//    if(savefreqpos!=parent.freqStart)
+//    {
+//    	LOG.info("freq start is wrong ,change it" +savefreqpos+","+parent.freqStart);
+//    }
     termInfo.set(df, parent.freqStart, parent.proxStart, (int) (skipPointer - parent.freqStart));
 
     // TODO: we could do this incrementally
@@ -148,6 +158,7 @@ public boolean reset() {
 	{
 		this.out.setUsedBlock();
 	}
+	
 	this.out.resetBlockMode();
 	return true;
 }

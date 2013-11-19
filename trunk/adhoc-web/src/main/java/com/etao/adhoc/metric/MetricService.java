@@ -173,8 +173,7 @@ public class MetricService {
 	public void close() {
 		if(conn != null) {
 			try {
-				if(! conn.isClosed())
-					conn.close();
+				conn.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				System.err.println("[" + sdf.format(new Date(System.currentTimeMillis())) + "] "

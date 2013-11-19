@@ -22,6 +22,7 @@ import org.apache.lucene.search.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.mdrill.FdtMdrillCollector;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.*;
 import org.slf4j.Logger;
@@ -110,7 +111,34 @@ public class QueryComponent extends SearchComponent
     cmd.setTimeAllowed(timeAllowed);
     SolrIndexSearcher.QueryResult result = new SolrIndexSearcher.QueryResult();
       
-    searcher.search(result,cmd);
+    if(params.getBool("fetchfdt", false))
+	  {
+    	//TODO QUICK TOP N
+    	ArrayList<Query> qlist=new ArrayList<Query>();
+    	List<Query> list=rb.getFilters();
+    	if(list!=null)
+    	{
+    		for(Query q:list)
+    		{
+    			qlist.add(q);
+    		}
+    	}
+		qlist.add(rb.getQuery());
+
+    	
+    	BooleanQuery query=new BooleanQuery();
+    	for(Query q:qlist)
+    	{
+    		query.add(q, BooleanClause.Occur.MUST);
+    	}
+    	
+    	FdtMdrillCollector coll=new FdtMdrillCollector(searcher.maxDoc());
+    	searcher.ScoreFind(query, null,coll);
+    	result.setDocSet(new BitDocSet(coll.getBits()));
+    	
+	  }else{
+		  searcher.search(result,cmd);
+	  }
     rb.setResult( result );
     rsp.add("response",rb.getResults().docList);
   }

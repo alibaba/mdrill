@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
@@ -53,41 +55,18 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	private OutputCollector collector;
 	private SolrStartJetty solrservice;
 	private boolean isMergeServer = false;
-	public ExecutorService EXECUTE = new ThreadPoolExecutor(1, 1,
+	public ExecutorService EXECUTE2 = new ThreadPoolExecutor(1, 1,
             3600*6, TimeUnit.SECONDS,
             new LinkedBlockingQueue<Runnable>());
 
-	 public static class rsyncExecute implements Runnable{
-	    	private SolrStartTable obj;
-			private boolean issync=false;
-			private AtomicBoolean isfinish=new AtomicBoolean(false);
-			private boolean result=false;
-	    	public rsyncExecute(SolrStartTable obj, boolean issync) {
-				super();
-				this.obj = obj;
-				this.issync = issync;
-			}
+	ThreadPoolExecutor EXECUTE =null;
 
-
-			
-
-			@Override
-			public void run() {
-				this.result=this.obj.sync(this.issync);
-				isfinish.set(true);
-			}
-			
-			public boolean isfinish()
-			{
-				return this.isfinish.get();
-			}
-			
-			public boolean result()
-			{
-				return this.result;
-			}
-	    	
-	    }
+	@Override
+	public void setExecute(ThreadPoolExecutor EXECUTE) {
+		this.EXECUTE=EXECUTE;
+		
+	}
+	
 	
 	private boolean isRealTime=false;
 	private AtomicInteger copy2indexFailTimes=new AtomicInteger(0);
@@ -105,6 +84,12 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	}
 	BoltParams params;
 
+	
+	Map stormConf=null;
+	@Override
+	public void setConf(Map stormConf) {
+		this.stormConf=stormConf;
+	}
 	public SolrStartTable(	BoltParams params,OutputCollector collector, Configuration conf,
 			String solrhome, String diskList, int taskIndex, String tblName,
 			Integer taskid, SolrStartJetty solrservice) throws Exception {
@@ -195,33 +180,115 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	}
 
 	private void syncPartion(String key, Path hdfspartion) throws IOException {
+		String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
+		
+		boolean ishdfsmode=false;
+		if(tablemode.indexOf("@hdfs@")>=0)
+		{
+			ishdfsmode=true;
+		}
+		
+		
 		Path localPartionWork = new Path(localIndexPath, key);
-		String partionDisk = IndexUtils.getPath(this.diskDirList, taskIndex,key.hashCode(), this.lfs);
-		Path localPartionStorePath = new Path(new Path(partionDisk, "higo"),tablename + "/" + this.params.compname + "_" + this.taskIndex + "/" + key);
+		Path hdfsPartionShardPath = new Path(hdfspartion,IndexUtils.getHdfsForder(taskIndex));
 
-		boolean iscopy = false;
-		if (!this.isMergeServer) {
-			Path hdfsPartionShardPath = new Path(hdfspartion,IndexUtils.getHdfsForder(taskIndex));
-			iscopy=IndexUtils.copyToLocal(fs, lfs, hdfsPartionShardPath,localPartionStorePath,new Path(partionDisk, "higotmp/"+tablename + "/" + this.params.compname + "_" + this.taskIndex ),true);
-			if(!iscopy)
+
+		
+		Path realtime=new Path(hdfsPartionShardPath,"realtime");
+		Path localrealtime=new Path(localPartionWork,"realtime");
+		Path indexlinks=new Path(localPartionWork,"indexLinks");
+
+		if(ishdfsmode)
+		{
+			if(!lfs.exists(indexlinks))
 			{
-				copy2indexFailTimes.incrementAndGet();
+				IndexUtils.truncate(lfs, localPartionWork);
+				FSDataOutputStream outlinks = lfs.create(indexlinks);
+				outlinks.write((new String("@hdfs@"+hdfsPartionShardPath.toString()	+ "\r\n")).getBytes());
+				outlinks.close();
+			}
+		}else
+		{
+			boolean isnotrealtime=false;
+			try{
+			if(fs.exists(hdfsPartionShardPath))
+			{
+				FileStatus fstat=fs.getFileStatus(hdfsPartionShardPath);//针对云梯，要判断是文件还是目录
+				if(!fstat.isDir())
+				{
+					isnotrealtime=true;
+				}
+			}else{
+				isnotrealtime=true;
+			}
+			}catch(Throwable e){
+				isnotrealtime=true;
+			}
+			if(!isnotrealtime&&(fs.exists(realtime)||lfs.exists(localrealtime)))
+			{
+				////实时模式， 暂时使用单个硬盘
+				boolean iscopy = false;
+				if(IndexUtils.readReadTimeTs(lfs, localrealtime)<IndexUtils.readReadTimeTs(fs, realtime))
+				{
+					iscopy=IndexUtils.copyToLocal(fs, lfs, realtime,localrealtime,new Path(localPartionWork, "higotmp/"+tablename + "/" + this.params.compname + "_" + this.taskIndex ),true);
+					if(!iscopy)
+					{
+						copy2indexFailTimes.incrementAndGet();
+					}
+				}
+				
+				if(iscopy||!lfs.exists(indexlinks))
+				{
+					if(lfs.exists(localPartionWork))
+					{
+						FileStatus[] list=lfs.listStatus(localPartionWork);
+						if(list!=null)
+						{
+							for(FileStatus s:list)
+							{
+								if(!s.getPath().getName().equals("realtime"))
+								{
+									lfs.delete(s.getPath(),true);
+								}
+							}
+						}
+					}
+					FSDataOutputStream outlinks = lfs.create(indexlinks);
+					FileStatus[] sublist=this.lfs.listStatus(localrealtime);
+					if(sublist!=null)
+					{
+						for(FileStatus f:sublist)
+						{
+							outlinks.write((new String(f.getPath().toString()	+ "\r\n")).getBytes());
+						}
+					}
+					outlinks.close();
+				}
+			}else//离线模式
+			{
+				boolean iscopy = false;
+				String partionDisk = IndexUtils.getPath(this.diskDirList, taskIndex,key.hashCode(), this.lfs);
+				Path localPartionStorePath = new Path(new Path(partionDisk, "higo"),tablename + "/" + this.params.compname + "_" + this.taskIndex + "/" + key);
+				iscopy=IndexUtils.copyToLocal(fs, lfs, hdfsPartionShardPath,localPartionStorePath,new Path(partionDisk, "higotmp/"+tablename + "/" + this.params.compname + "_" + this.taskIndex ),true);
+				if(!iscopy)
+				{
+					copy2indexFailTimes.incrementAndGet();
+				}
+			
+				if(iscopy||!lfs.exists(indexlinks))
+				{
+					IndexUtils.truncate(lfs, localPartionWork);
+					FSDataOutputStream outlinks = lfs.create(indexlinks);
+					outlinks.write((new String(localPartionStorePath.toString()	+ "\r\n")).getBytes());
+					outlinks.close();
+				}
 			}
 		}
 		
-		Path indexlinks=new Path(localPartionWork,"indexLinks");
-		if(iscopy||!lfs.exists(indexlinks))
+		Path hdfsvertify=new Path(hdfspartion, "vertify");
+		if(fs.exists(hdfsvertify))
 		{
-			IndexUtils.truncate(lfs, localPartionWork);
-			FSDataOutputStream outlinks = lfs.create(indexlinks);
-			if (!this.isMergeServer && iscopy) {
-				outlinks.write((new String(localPartionStorePath.toString()	+ "\r\n")).getBytes());
-			}
-			outlinks.close();
-		}
-		if(iscopy)
-		{
-			boolean issuccess=IndexUtils.copyToLocal(fs, lfs, new Path(hdfspartion, "vertify"),new Path(localPartionWork, "vertify"),this.localTmpPath);
+			boolean issuccess=IndexUtils.copyToLocal(fs, lfs, hdfsvertify,new Path(localPartionWork, "vertify"),this.localTmpPath);
 			if(!issuccess)
 			{
 				copy2indexFailTimes.incrementAndGet();
@@ -229,7 +296,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		}
 		statcollect.setLastTime(System.currentTimeMillis());
 	}
-
+	
 	private void dropPartion(Path localpath) throws IOException {
 		LOG.info("higolog loadIndex delete:" + localpath.toString());
 		File links = new File(localpath.toUri().getPath(), "indexLinks");
@@ -239,9 +306,12 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			String s1 = null;
 			while ((s1 = br.readLine()) != null) {
 				if (s1.trim().length() > 0) {
-					Path indexpath = new Path(s1);
-					if (lfs.exists(indexpath)) {
-						lfs.delete(new Path(s1), true);
+					if(s1.indexOf("@hdfs@")<0)
+					{
+						Path indexpath = new Path(s1);
+						if (lfs.exists(indexpath)) {
+							lfs.delete(new Path(s1), true);
+						}
 					}
 				}
 			}
@@ -257,11 +327,6 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	
 	
 	private boolean syncIndex() throws IOException {
-		if(this.isRealTime)
-		{
-			return false;
-		}
-		
 		if(this.isMergeServer)
 		{
 			return false;
@@ -332,13 +397,10 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		new Thread(this).start();
 	}
 	
-	
-
 	public void run() {
-		synchronized (this.getThrLockObj()) {
 			try {
 				rsyncExecute exe=new rsyncExecute(this,true);
-    	    	EXECUTE.submit(exe);
+    	    	EXECUTE2.submit(exe);
     	    	while(!exe.isfinish()&&!statcollect.isTimeout(1200l*1000))
     	    	{
     	    		Thread.sleep(1000l);
@@ -352,16 +414,44 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 				this.startService();
     			isInit.set(true);
 				LOG.info("higolog table end:" + this.tablename);
-			} catch (RuntimeException er) {
+				
+				
+				hb();
+				while(true)
+		    	{
+					sleep();
+		    		
+		    		if(!hbInterval.heartBeatInterval())
+		    		{
+		    		    continue ;
+		    		}
+		    		
+		    		hb();
+		    	}
+				
+			} catch (Throwable er) {
 				this.runException(er);
 			}
-			catch (Exception e) {
-				this.runException(e);
-			}
-		}
 	}
 	
-	private void runException(Exception e)
+	private void hb()
+	{
+		hbExecute exec=new hbExecute(this);
+    	EXECUTE.submit(exec);
+    	while(!exec.isfinish())
+    	{
+    		this.sleep();
+    	}
+	}
+	
+	private void sleep()
+	{
+		try {
+			Thread.sleep(10000l);
+		} catch (InterruptedException e) {}
+	}
+	
+	private void runException(Throwable e)
 	{
 		LOG.error(StormUtils.stringify_error(e));
 		statcollect.setStat(ShardsState.INITFAIL);
@@ -369,20 +459,16 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		errorCollect.setException(e);
 	}
 
-	private Object thrlock = new Object();
-	public Object getThrLockObj() {
-		return thrlock;
-	}
 
 	private SolrStartJettyExcetionCollection errorCollect=new SolrStartJettyExcetionCollection();
 	private SolrStartJettyStat statcollect=new SolrStartJettyStat();
 
 	public void stop() throws Exception {
-		synchronized (this.getThrLockObj()) {
-			statcollect.setStat(ShardsState.UINIT);
-			this.zkHeatbeat();
-			this.stopService();
-		}
+
+		statcollect.setStat(ShardsState.UINIT);
+		this.zkHeatbeat();
+		this.stopService();
+	
 	}
 
 	public Boolean isTimeout() {
@@ -391,57 +477,33 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		if (stat.equals(ShardsState.SERVICE)) {
 			timespan = 1000l * 60 * 20;
 		}
-		return isInit.get()&&statcollect.isTimeout(timespan);
+		boolean istimeout= isInit.get()&&statcollect.isTimeout(timespan);
+		
+		if(istimeout)
+		{
+			String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
+			if(tablemode.indexOf("@hdfs@")>=0)
+			{
+				return false;
+			}
+		}
+		
+		return istimeout;
 	}
 
 	private Interval hbInterval=new Interval();;
 
-	 private boolean checkInitFinish() throws Exception
-    {
-    	if(isInit.get())
-    	{
-    		return true;
-    	}
-    	
-		long nowtime = System.currentTimeMillis();
-		if (nowtime - statcollect.getSetupTime() < 1000l * 60 * 120) {
-		    return false;
-		}
-		
-		throw new Exception("init timeout");
-    }
+
+	 public void checkError()
+	    {
+			errorCollect.checkException();
+	    }
 
 	public void heartbeat() throws Exception {
-		errorCollect.checkException();
-		if (!hbInterval.heartBeatInterval()) {
-			return;
-		}
 
-		if (!this.checkInitFinish()) {
-			return;
-		}
-		
-		if(copy2indexFailTimes.get()>10)
-		{
-			errorCollect.setException(new Exception("copy2indexFailTimes>10"));
-			return ;
-		}
-
-		synchronized (this.getThrLockObj()) {
-			LOG.info("higolog heartbeat:" + this.tablename+",copy2indexFailTimes="+copy2indexFailTimes.get());
-			try {
-				this.heartbeatExecute();
-			} catch (IOException e) {
-				LOG.error(StormUtils.stringify_error(e));
-				errorCollect.setException(e);
-			}
-		}
-	}
-
-	private void heartbeatExecute() throws Exception {
 		
 		rsyncExecute exe=new rsyncExecute(this,false);
-    	EXECUTE.submit(exe);
+    	EXECUTE2.submit(exe);
     	while(!exe.isfinish()&&!statcollect.isTimeout(900l*1000))
     	{
     		Thread.sleep(1000l);
@@ -461,7 +523,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			this.stopService();
 
 			exe=new rsyncExecute(this,false);
-	    	EXECUTE.submit(exe);
+	    	EXECUTE2.submit(exe);
 	    	while(!statcollect.isTimeout(900l*1000))
 	    	{
 	    		Thread.sleep(1000l);
@@ -472,7 +534,9 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	    	}
 			this.startService();
 		}
+	
 	}
+
 
 	public Integer getBindPort() {
 		return this.solrservice.getBindPort();
@@ -488,8 +552,6 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	}
 	
 
-	
-	
 
 	private synchronized void zkHeatbeat() {
 		try {
@@ -515,11 +577,6 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 
 	
 	
-	
-	
-	
-	
-	
 	private void checkSolr() {
 		if (!this.solrservice.isService()) {
 			return;
@@ -529,18 +586,22 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			this.partstat.fetchCount(this.solrservice,this.tablename,this.part);
 			statcollect.setLastTime(System.currentTimeMillis());
 			this.zkHeatbeat();
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			LOG.error(StormUtils.stringify_error(e));
-			statcollect.setStat(ShardsState.SOLRDIE);
-			this.zkHeatbeat();
-			errorCollect.setException(e);
+			
+
+			String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
+			if(tablemode.indexOf("@hdfs@")<0)
+			{
+				statcollect.setStat(ShardsState.SOLRDIE);
+				this.zkHeatbeat();
+				errorCollect.setException(e);
+			}
 		}
 	}
 
 	public void unregister() {
-		synchronized (this.getThrLockObj()) {
-			Worker.getCluster().higo_remove_task(this.tablename, this.taskid);
-		}
+		Worker.getCluster().higo_remove_task(this.tablename, this.taskid);
 	}
 
 	private void stopService() throws Exception {
@@ -555,5 +616,67 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		}
 		return rtn;
 	}
+	
+
+	 public static class rsyncExecute implements Runnable{
+	    	private SolrStartTable obj;
+			private boolean issync=false;
+			private AtomicBoolean isfinish=new AtomicBoolean(false);
+			private boolean result=false;
+	    	public rsyncExecute(SolrStartTable obj, boolean issync) {
+				this.obj = obj;
+				this.issync = issync;
+			}
+
+
+			
+
+			@Override
+			public void run() {
+				this.result=this.obj.sync(this.issync);
+				isfinish.set(true);
+			}
+			
+			public boolean isfinish()
+			{
+				return this.isfinish.get();
+			}
+			
+			public boolean result()
+			{
+				return this.result;
+			}
+	    	
+	    }
+	 
+	 
+
+	    public static class hbExecute implements Runnable{
+	    	private SolrStartTable obj;
+			private AtomicBoolean isfinish=new AtomicBoolean(false);
+	    	public hbExecute(SolrStartTable obj) {
+				this.obj = obj;
+			}
+
+
+			
+
+			@Override
+			public void run() {
+				try {
+					this.obj.heartbeat();
+				} catch (Exception e) {
+					this.obj.errorCollect.setException(e);
+				}
+				isfinish.set(true);
+			}
+			
+			public boolean isfinish()
+			{
+				return this.isfinish.get();
+			}
+			    	
+	    }
+	
 
 }

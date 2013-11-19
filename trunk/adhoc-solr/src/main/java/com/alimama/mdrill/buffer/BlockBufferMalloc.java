@@ -9,26 +9,6 @@ import org.apache.solr.request.uninverted.GrobalCache;
 
 
 public class BlockBufferMalloc {
-//	public static class SimpleLRUCache extends SimpleMapCache<block, blockData> {
-//		  private final static float LOADFACTOR = 0.75f;
-//		  public SimpleLRUCache(final int cacheSize) {
-//		    super(new LinkedHashMap<block, blockData>((int) Math.ceil(cacheSize / LOADFACTOR) + 1, LOADFACTOR, true) {
-//		  	      @Override
-//		  	      protected boolean removeEldestEntry(Map.Entry<block, blockData> eldest) {
-//		  	    	  
-//		  	        boolean isrtn= size() > cacheSize;
-//		  	        if(isrtn)
-//		  	        {
-//		  	        	blockData freed=eldest.getValue();
-//		  		    	BlockBufferMalloc.freeData( freed);
-//		  	        }
-//		  	        return isrtn;
-//		  	      }
-//		  	    });
-//		  }
-//
-//		}
-	
 	public static LinkedBlockingQueue<blockData> free = new LinkedBlockingQueue<blockData>();
 	public static AtomicLong mallocTimes = new AtomicLong(0l);
 	public static AtomicLong reusedTimes = new AtomicLong(0l);
@@ -58,10 +38,10 @@ public class BlockBufferMalloc {
 				}
 	}
 	public static class block implements GrobalCache.ILruMemSizeKey{
-		private String key;
+		private Object key;
 		private long index;
 		private long flushkey=0;
-		public block(String key, long pos) {
+		public block(Object key, long pos) {
 			super();
 			this.key = key;
 			this.index = pos;
@@ -151,8 +131,7 @@ public class BlockBufferMalloc {
 
 		@Override
 		public void LRUclean() {
-
-			BlockBufferMalloc.freeData( this); 
+			BlockBufferMalloc.freeData(this); 
 		}
 		
 	}

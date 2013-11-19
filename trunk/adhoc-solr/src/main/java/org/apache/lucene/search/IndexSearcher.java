@@ -363,6 +363,8 @@ public class IndexSearcher extends Searcher {
     throws IOException {
     search(createNormalizedWeight(query), filter, results);
   }
+  
+  
 
   /** Lower-level search API.
   *
@@ -592,6 +594,39 @@ public class IndexSearcher extends Searcher {
       if (scorer != null) {
         scorer.score(collector);
       }
+    }
+  }
+  
+  public static interface MdrillCollector{
+	  public void setNextReader(IndexReader reader, int docBase)throws IOException;
+	  public void collect(int docid)throws IOException;
+	  public boolean isstop()throws IOException;
+  }
+  
+  public void ScoreFind(Query query, Filter filter, MdrillCollector results)
+  throws IOException {
+	  ScoreFind(createNormalizedWeight(query), filter, results);
+}
+  public void ScoreFind(Weight weight, Filter filter, MdrillCollector collector)
+      throws IOException {
+    for (int i = 0; i < subReaders.length; i++) { 
+    	if(collector.isstop())
+    	{
+    		continue;
+    	}
+      collector.setNextReader(subReaders[i], docBase + docStarts[i]);
+      final Scorer scorer = (filter == null) ?weight.scorer(subReaders[i], false, true) :
+        FilteredQuery.getFilteredScorer(subReaders[i], getSimilarity(), weight, weight, filter);
+      
+      if(scorer!=null)
+      {
+    	  int doc;
+    	   while (!collector.isstop()&&(doc = scorer.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+    	      collector.collect(doc);
+    	   }
+      }
+      
+      
     }
   }
 

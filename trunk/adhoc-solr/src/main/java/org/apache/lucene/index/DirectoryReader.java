@@ -1266,6 +1266,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
     public int freq() {
       return current.freq();
     }
+    
+    public void debug(StringBuffer buff){
+    	current.debug(buff);
+	}
   
     public void seek(Term term) {
       this.term = term;

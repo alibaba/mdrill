@@ -1203,6 +1203,7 @@ public class TableJoin {
 	{
 //		public static HashMap<String,String> getUserTablesCount(String username,int type) throws SQLException
 
+
 		HashMap<String,String> tablecount=getUserTablesCount(username, 1,"");
 	
 		

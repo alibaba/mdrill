@@ -1,6 +1,7 @@
 package com.alipay.bluewhale.core.daemon.supervisor;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -590,16 +591,44 @@ class SyncProcesses extends ShutdownWork {
 		// param[0] = stormjar;
 		// String classpath = StormUtils.add_to_classpath(
 		// StormUtils.current_classpath(), param);
-		String classpath = StormUtils.current_classpath() + ":" + stormjar;
+		String[] classpath = (new String(StormUtils.current_classpath() + ":" + stormjar)).split(":");
+		
+		String execute=(String) stormConf.get("worker.classpath.exclude");
+		
+		ArrayList<String> finalclasspath=new ArrayList<String>();
+		for(String s:classpath)
+		{
+			if(execute==null||!s.matches(execute))
+			{
+				finalclasspath.add(s);
+			}
+		}
+		
+		StringBuffer classpathBuffer=new StringBuffer();
+		String joinchar="";
+		for(String s:finalclasspath)
+		{
+			classpathBuffer.append(joinchar);
+			classpathBuffer.append(s);
+			joinchar=":";
+		}
 		// get child process parameter
 
 		String childopts = "";
+		
+		if (conf.get(Config.WORKER_CHILDOPTS) != null) {
+			childopts = ""+conf.get(Config.WORKER_CHILDOPTS);
+		} 
 		if (conf.get(Config.WORKER_CHILDOPTS+"."+port) != null) {
-			childopts += conf.get(Config.WORKER_CHILDOPTS+"."+port);
-		}else if (conf.get(Config.WORKER_CHILDOPTS) != null) {
-			childopts += conf.get(Config.WORKER_CHILDOPTS);
-		} else if (stormConf.get(Config.TOPOLOGY_WORKER_CHILDOPTS) != null) {
-			childopts += " " + stormConf.get(Config.TOPOLOGY_WORKER_CHILDOPTS);
+			childopts = ""+conf.get(Config.WORKER_CHILDOPTS+"."+port);
+		}
+		
+		if (stormConf.get(Config.TOPOLOGY_WORKER_CHILDOPTS) != null) {
+			childopts = " " + stormConf.get(Config.TOPOLOGY_WORKER_CHILDOPTS);
+		}
+		
+		if (stormConf.get(Config.TOPOLOGY_WORKER_CHILDOPTS+"."+port) != null) {
+			childopts = " " + stormConf.get(Config.TOPOLOGY_WORKER_CHILDOPTS+"."+port);
 		}
 		
 		String stormhome = System.getProperty("storm.home");
@@ -631,7 +660,7 @@ class SyncProcesses extends ShutdownWork {
 		commandSB.append(" -Dlog4j.configuration=storm.log.properties");
 
 		commandSB.append(" -cp ");
-		commandSB.append(classpath);
+		commandSB.append(classpathBuffer.toString());
 
 		commandSB.append(" com.alipay.bluewhale.core.work.Worker ");
 		commandSB.append(topologyId);

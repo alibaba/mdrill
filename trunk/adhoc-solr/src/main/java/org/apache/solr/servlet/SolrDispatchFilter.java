@@ -51,7 +51,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 
-import com.alimama.mdrill.solr.realtime.HigoRealTimeSync;
 
 
 /**
@@ -132,8 +131,6 @@ public class SolrDispatchFilter implements Filter
       SolrCore core = null;
       String corename = "";
       
-     ReadLock rlock= HigoRealTimeSync.getLock().readLock();
-     rlock.lock();
       try {
         // put the core container in request attribute
         req.setAttribute("org.apache.solr.CoreContainer", cores);
@@ -218,7 +215,6 @@ public class SolrDispatchFilter implements Filter
           core.close();
         }
         
-        rlock.unlock();
       }
     }
 

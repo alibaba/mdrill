@@ -1,17 +1,19 @@
 package com.alimama.mdrill.topology;
 
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import backtype.storm.task.OutputCollector;
 
-import com.alimama.mdrill.topology.utils.SolrStartJettyExcetionCollection;
-import com.alimama.mdrill.utils.UniqConfig;
+import com.alimama.mdrill.solr.realtime.ShardPartion;
+import com.alimama.mdrill.utils.IndexUtils;
 import com.alipay.bluewhale.core.task.StopCheck;
 import com.alipay.bluewhale.core.task.heartbeat.TaskHeartbeatRunable;
 
@@ -22,13 +24,15 @@ public class SolrStart implements StopCheck, SolrStartInterface {
 	private BoltParams params;
 	
 	
-//	public ExecutorService EXECUTE = Executors.newFixedThreadPool(UniqConfig.maxHbTablesParal());
-	
 	public SolrStart(BoltParams params,OutputCollector collector, Configuration conf,
 			String solrhomeBase, String[] tableNames, String diskList,
 			Integer portbase, int taskIndex, String topologyName,
 			Integer taskid, Integer partions) throws Exception {
 		this.params=params;
+		
+		ShardPartion.base=solrhomeBase;
+		ShardPartion.taskIndex=taskIndex;
+		ShardPartion.index=IndexUtils.getHdfsForder(taskIndex);
 		jetty = new SolrStartJetty(this.params,collector, conf, solrhomeBase + "/"
 				+ tableNames[0], diskList, portbase, taskIndex, topologyName,
 				taskid, partions);
@@ -98,23 +102,11 @@ public class SolrStart implements StopCheck, SolrStartInterface {
 		return false;
 	}
 
-//	SolrStartJettyExcetionCollection exception=new SolrStartJettyExcetionCollection();
 	@Override
 	public void heartbeat() throws Exception {
-//		this.exception.checkException();
 		this.jetty.heartbeat();
 		for (final SolrStartTable table : tables) {
 			table.heartbeat();
-//
-//			EXECUTE.submit(new Runnable() {
-//				@Override
-//				public void run() {
-//					try {
-//					} catch (Throwable e) {
-//						SolrStart.this.exception.setException(e);
-//					}
-//				}
-//			});
 		}
 	}
 
@@ -139,6 +131,29 @@ public class SolrStart implements StopCheck, SolrStartInterface {
 		return false;
 	}
 
+	@Override
+	public void setConf(Map stormConf) {
+		jetty.setConf(stormConf);
+		for (SolrStartTable table : tables) {
+			table.setConf(stormConf);
+		}
+	}
+
+	@Override
+	public void setExecute(ThreadPoolExecutor EXECUTE) {
+		jetty.setExecute(EXECUTE);
+		for (SolrStartTable table : tables) {
+			table.setExecute(EXECUTE);
+		}
+	}
+
+	
+	public void checkError(){
+		jetty.checkError();
+		for (SolrStartTable table : tables) {
+			table.checkError();
+		}
+	}
 	
 
 }

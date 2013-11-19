@@ -2,7 +2,6 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.zip.CRC32;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -14,10 +13,14 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.alimama.mdrill.solr.realtime.HigoRealTime;
+
 
 public class NonUpdateHandler extends UpdateHandler{
+	public static Logger LOG = LoggerFactory.getLogger(NonUpdateHandler.class);
+
 	SolrCore core;
 	public NonUpdateHandler(SolrCore core) {
 		super(core);
@@ -60,18 +63,21 @@ public class NonUpdateHandler extends UpdateHandler{
 		    return lst;
 		  }
 
+
 	@Override
 	public int addDoc(AddUpdateCommand cmd) throws IOException {
 		SolrInputDocument doc=cmd.getSolrInputDocument();
-		if(String.valueOf(doc.getFieldValue("higo_uuid")).trim().equals("0"))
+		
+		String partion=String.valueOf(doc.getFieldValue("mdrillPartion"));
+
+		String cmdstr=String.valueOf(doc.getFieldValue("mdrillCmd"));
+		if(cmdstr.equals("sync"))
 		{
-			CRC32 crc32 = new CRC32();
-			crc32.update(java.util.UUID.randomUUID().toString().getBytes());
-			doc.addField("higo_uuid", Long.toString(crc32.getValue()));
+			this.core.getRealTime(partion,true).sync();
+		}else if(cmdstr.equals("syncHdfs")){
+			this.core.getRealTime(partion,true).syncHdfs();
 		}
-		String thedate=String.valueOf(doc.getFieldValue("thedate"));
-		HigoRealTime rt=HigoRealTime.INSTANCE(this.core, thedate);
-		rt.getBinlog().write(doc);
+		this.core.getRealTime(partion,true).addDocument(doc);
 		return 1;
 	}
 

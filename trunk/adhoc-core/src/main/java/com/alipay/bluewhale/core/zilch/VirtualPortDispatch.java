@@ -55,8 +55,8 @@ public class VirtualPortDispatch extends RunnableCallback {
 					ZeroMq.send(virtual_socket, packet.getMessage());
 
 				} else {
-					LOG.info("Received invalid message directed at port "
-							+ packet.getPort() + ". Dropping...");
+					//LOG.info("Received invalid message directed at port "
+					//		+ packet.getPort() + ". Dropping...");
 				}
 			}
 		}

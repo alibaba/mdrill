@@ -81,6 +81,7 @@ public class MdrillRequest {
 			while ((current = bis.read()) != -1) {
 				baf.append((byte) current);
 			}
+			
 
 			text = (new String(baf.toByteArray(), "utf-8")).trim();
 		}
@@ -102,7 +103,7 @@ public class MdrillRequest {
 			for(int j=0;j<this.parser.colsNames.length;j++)
 			{
 				String colname=this.parser.colsNames[j];
-				row.add(j, String.valueOf(rowMap.get(colname)));
+				row.add(j, String.valueOf(rowMap.opt(colname)));
 			}
 			results.add(row);
 		}

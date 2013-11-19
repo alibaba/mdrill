@@ -27,7 +27,7 @@ import java.io.IOException;
 abstract class FormatPostingsDocsConsumer {
   abstract  public boolean reset();
 
-    
+
   abstract FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException;
 
   

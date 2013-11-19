@@ -24,18 +24,16 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
+import org.apache.solr.request.uninverted.GrobalCache;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.cache.Cache;
-import org.apache.lucene.util.cache.SimpleLRUCache;
 
 import java.io.IOException;
 import java.net.URL;
@@ -44,7 +42,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alimama.mdrill.utils.UniqConfig;
 
 public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   public static final AtomicLong numOpens = new AtomicLong();
@@ -52,7 +49,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
-  private String indexDir;
+//  private String indexDir;
 
   private final String name;
   private long openTime = System.currentTimeMillis();
@@ -66,31 +63,138 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private final boolean useFilterForSortedQuery;
   public final boolean enableLazyFieldLoading;
   
-  private Cache<Query,DocSet> filterCache=Cache.synchronizedCache(new SimpleLRUCache<Query,DocSet>(UniqConfig.fqCacheSize()));
-  private Cache<QueryResultKey,DocList> queryResultCache=Cache.synchronizedCache(new SimpleLRUCache<QueryResultKey,DocList>(UniqConfig.fqCacheSize()));
-
+  private String uuid=java.util.UUID.randomUUID().toString();
   
-  	public void SolrCoreClearCache()
-  	{
-  		filterCache=Cache.synchronizedCache(new SimpleLRUCache<Query,DocSet>(UniqConfig.fqCacheSize()));
-  		queryResultCache=Cache.synchronizedCache(new SimpleLRUCache<QueryResultKey,DocList>(UniqConfig.fqCacheSize()));
-  	}
+  private static class QueryVal implements GrobalCache.ILruMemSizeCache{
+	 public DocSet dset;
+	 public DocList dlist;
+	@Override
+	public long memSize() {
+		long memsize=0;
+		if(dset!=null)
+		{
+			memsize+=dset.memSize();
+		}
+		if(dlist!=null)
+		{
+			memsize+=dlist.memSize();
+		}
+		return memsize;
+	}
+	@Override
+	public void LRUclean() {
+		
+	}
+  }
+  
+  private static class QueryKey implements GrobalCache.ILruMemSizeKey{
+	  Query q;
+		public QueryKey(Query q, String key) {
+		super();
+		this.q = q;
+		this.key = key;
+	}
+		String key;
+
+		@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		result = prime * result + ((q == null) ? 0 : q.hashCode());
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		QueryKey other = (QueryKey) obj;
+		if (key == null) {
+			if (other.key != null)
+				return false;
+		} else if (!key.equals(other.key))
+			return false;
+		if (q == null) {
+			if (other.q != null)
+				return false;
+		} else if (!q.equals(other.q))
+			return false;
+		return true;
+	}
+	
+
+  }
+  
+  
+
+  private static class QueryResultKeyCache implements GrobalCache.ILruMemSizeKey{
+	  QueryResultKey q;
+		@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		result = prime * result + ((q == null) ? 0 : q.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		QueryResultKeyCache other = (QueryResultKeyCache) obj;
+		if (key == null) {
+			if (other.key != null)
+				return false;
+		} else if (!key.equals(other.key))
+			return false;
+		if (q == null) {
+			if (other.q != null)
+				return false;
+		} else if (!q.equals(other.q))
+			return false;
+		return true;
+	}
+
+		String key;
+
+	  public QueryResultKeyCache(QueryResultKey q, String key) {
+			this.q = q;
+			this.key = key;
+
+			
+		}
+  }
 
 	public void filterCachePut(Query query, DocSet docset) {
-		filterCache.put(query, docset);
+		QueryKey qk=new QueryKey(query,this.uuid);
+		
+		QueryVal qv =new QueryVal();
+		qv.dset=docset;
+		 GrobalCache.fieldValueCache.put(qk, qv);
 	}
 
 	public DocSet filterCacheGet(Query q) {
-		DocSet answer = filterCache.get(q);
-		if (answer != null) {
-			return answer;
+		
+		QueryKey qk=new QueryKey(q,this.uuid);
+		
+		QueryVal qv =(QueryVal) GrobalCache.fieldValueCache.get(qk);
+		if (qv != null) {
+			return qv.dset;
 		}
 		return null;
 	}
   
   @Override
   public void close() throws IOException {
-	 this.SolrCoreClearCache();
     if (closeReader) reader.decRef();
     numCloses.incrementAndGet();
   }
@@ -117,10 +221,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private Collection<String> storedHighlightFieldNames;
 
   
-  /** Creates a searcher searching the index in the provided directory. */
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, Directory directory, boolean readOnly) throws IOException {
-    this(core, schema,name, core.getIndexReaderFactory().newReader(directory, readOnly), true);
-  }
 
   private static SolrIndexReader wrap(IndexReader r) {
     SolrIndexReader sir;
@@ -154,10 +254,10 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
 
     SolrIndexReader.setSearcher(reader, this);
 
-    if (r.directory() instanceof FSDirectory) {
-      FSDirectory fsDirectory = (FSDirectory) r.directory();
-      indexDir = fsDirectory.getDirectory().getAbsolutePath();
-    }
+//    if (r.directory() instanceof FSDirectory) {
+//      FSDirectory fsDirectory = (FSDirectory) r.directory();
+//      indexDir = fsDirectory.getDirectory().getAbsolutePath();
+//    }
 
     this.closeReader = closeReader;
     setSimilarity(schema.getSimilarity());
@@ -191,9 +291,7 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
     return qr;
   }
 
-  public String getIndexDir() {
-    return indexDir;
-  }
+
 
   static class SetNonLazyFieldSelector implements FieldSelector {
     private Set<String> fieldsToLoad;
@@ -621,17 +719,17 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
     boolean positive = absQ==query;
 
     DocSet first;
-    if (filterCache != null) {
-      first = this.filterCacheGet(absQ);
-      if (first==null) {
-        first = getDocSetNC(absQ,null);
-        this.filterCachePut(absQ,first);
-      }
-      return positive ? first.intersection(filter) : filter.andNot(first);
+
+    first = this.filterCacheGet(absQ);
+    if (first==null) {
+      first = getDocSetNC(absQ,null);
+      this.filterCachePut(absQ,first);
     }
+    return positive ? first.intersection(filter) : filter.andNot(first);
+  
 
     // If there isn't a cache, then do a single filtered query if positive.
-    return positive ? getDocSetNC(absQ,filter) : filter.andNot(getPositiveDocSet(absQ));
+//    return positive ? getDocSetNC(absQ,filter) : filter.andNot(getPositiveDocSet(absQ));
   }
 
 
@@ -746,15 +844,21 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
     // we can try and look up the complete query in the cache.
     // we can't do that if filter!=null though (we don't want to
     // do hashCode() and equals() for a big DocSet).
-    if (queryResultCache != null && cmd.getFilter()==null
+    if ( cmd.getFilter()==null
         && (flags & (NO_CHECK_QCACHE|NO_SET_QCACHE)) != ((NO_CHECK_QCACHE|NO_SET_QCACHE)))
     {
         // all of the current flags can be reused during warming,
         // so set all of them on the cache key.
         key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags);
         if ((flags & NO_CHECK_QCACHE)==0) {
-          superset = queryResultCache.get(key);
-
+        	
+        	QueryResultKeyCache qk=new QueryResultKeyCache(key,this.uuid);
+        	QueryVal qv =(QueryVal) GrobalCache.fieldValueCache.get(qk);
+        	superset=null;
+    		if (qv != null) {
+    			superset=qv.dlist;
+    		}
+        	
           if (superset != null) {
             // check that the cache entry has scores recorded if we need them
             if ((flags & GET_SCORES)==0 || superset.hasScores()) {
@@ -807,7 +911,7 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
 
     // check if we should try and use the filter cache
     boolean useFilterCache=false;
-    if ((flags & (GET_SCORES|NO_CHECK_FILTERCACHE))==0 && useFilterForSortedQuery && cmd.getSort() != null && filterCache != null) {
+    if ((flags & (GET_SCORES|NO_CHECK_FILTERCACHE))==0 && useFilterForSortedQuery && cmd.getSort() != null ) {
       useFilterCache=true;
       SortField[] sfields = cmd.getSort().getSort();
       for (SortField sf : sfields) {
@@ -841,7 +945,7 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
         // the base query and all filters.
         DocSet qDocSet = getDocListAndSetNC(qr,cmd);
         // cache the docSet matching the query w/o filtering
-        if (qDocSet!=null && filterCache!=null && !qr.isPartialResults()) this.filterCachePut(cmd.getQuery(),qDocSet);
+        if (qDocSet!=null && !qr.isPartialResults()) this.filterCachePut(cmd.getQuery(),qDocSet);
       } else {
         getDocListNC(qr,cmd);
         //Parameters: cmd.getQuery(),theFilt,cmd.getSort(),0,supersetMaxDoc,cmd.getFlags(),cmd.getTimeAllowed(),responseHeader);
@@ -854,7 +958,12 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
     // lastly, put the superset in the cache if the size is less than or equal
     // to queryResultMaxDocsCached
     if (key != null && superset.size() <= queryResultMaxDocsCached && !qr.isPartialResults()) {
-      queryResultCache.put(key, superset);
+    	
+    	QueryResultKeyCache qk=new QueryResultKeyCache(key,this.uuid);
+    	QueryVal qv =new QueryVal();
+    	qv.dlist=superset;
+    	
+    	GrobalCache.fieldValueCache.put(qk, qv);
     }
   }
 

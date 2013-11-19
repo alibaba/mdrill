@@ -55,11 +55,13 @@ final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer implem
     // TODO: this is abstraction violation -- ideally this
     // terms writer is not so "invasive", looking for file
     // pointers in its child consumers.
+    docsWriter.reset();
     freqStart = docsWriter.out.getFilePointer();
     if (docsWriter.posWriter.out != null)
       proxStart = docsWriter.posWriter.out.getFilePointer();
 
     parent.skipListWriter.resetSkip();
+
     return docsWriter;
   }
 

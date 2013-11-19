@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.alipay.bluewhale.core.task.acker.Acker;
 import com.alipay.bluewhale.core.task.common.Assignment;
@@ -23,6 +23,7 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.generated.SpoutSpec;
 import backtype.storm.generated.StateSpoutSpec;
 import backtype.storm.generated.StormTopology;
+import backtype.storm.generated.StormTopology._Fields;
 import backtype.storm.generated.StreamInfo;
 import backtype.storm.task.IBolt;
 import backtype.storm.utils.Utils;
@@ -35,6 +36,9 @@ import backtype.storm.utils.Utils;
  *
  */
 public class Common {
+	
+	   static List<String> sysEventFields = StormUtils.mk_list("event");
+
     public static boolean system_id(String id) {
         return Utils.isSystemId(id);
     }
@@ -124,7 +128,7 @@ public class Common {
         return rtn;
     }
 
-    private static void validate_component(Object obj)
+    static void validate_component(Object obj)
             throws InvalidTopologyException {
 
         if (obj instanceof StateSpoutSpec) {
@@ -159,208 +163,208 @@ public class Common {
 
     }
 
-    /**
-     * 检查点 重复的ID Bolt or spout is not system_id componentIDis not systemid
-     * 
-     * @param topology
-     * @throws InvalidTopologyException
-     */
-    public static void validate_ids(StormTopology topology)
-            throws InvalidTopologyException {
-        List<String> list = new ArrayList<String>();
-        for (StormTopology._Fields field : Thrift.STORM_TOPOLOGY_FIELDS) {
-            Object value = topology.getFieldValue(field);
-            if (value != null) {
-                Map<String, Object> obj_map = (Map<String, Object>) value;
-                Set<String> commids = obj_map.keySet();
-                list.addAll(commids);
-
-                for (String id : commids) {
-                    if (system_id(id)) {
-                        throw new InvalidTopologyException(id
-                                + " is not a valid component id");
-                    }
-                }
-
-                for (Object obj : obj_map.values()) {
-                    validate_component(obj);
-                }
-            }
-        }
-
-        List<String> offending = StormUtils.getRepeat(list);
-        if (!offending.isEmpty()) {
-            throw new InvalidTopologyException("Duplicate component ids: "
-                    + offending);
-        }
-
-    }
-
-    private static void validate_component_inputs(Object obj)
-            throws InvalidTopologyException {
-        if (obj instanceof StateSpoutSpec) {
-            StateSpoutSpec spec = (StateSpoutSpec) obj;
-            if (!spec.get_common().get_inputs().isEmpty()) {
-                throw new InvalidTopologyException(
-                        "May not declare inputs for a spout");
-            }
-
-        }
-
-        if (obj instanceof SpoutSpec) {
-            SpoutSpec spec = (SpoutSpec) obj;
-            if (!spec.get_common().get_inputs().isEmpty()) {
-                throw new InvalidTopologyException(
-                        "May not declare inputs for a spout");
-            }
-        }
-    }
-
-    public static void validate_basic(StormTopology topology)
-            throws InvalidTopologyException {
-        validate_ids(topology);
-
-        for (StormTopology._Fields field : Thrift.SPOUT_FIELDS) {
-            Object value = topology.getFieldValue(field);
-            if (value != null) {
-                Map<String, Object> obj_map = (Map<String, Object>) value;
-                for (Object obj : obj_map.values()) {
-                    validate_component_inputs(obj);
-                }
-            }
-
-        }
-
-    }
-
-    public static Map<GlobalStreamId, Grouping> acker_inputs(
-            StormTopology topology) {
-
-        Map<String, Bolt> bolt_ids = topology.get_bolts();
-        Map<String, SpoutSpec> spout_ids = topology.get_spouts();
-
-        Map<GlobalStreamId, Grouping> spout_inputs = new HashMap<GlobalStreamId, Grouping>();
-        for (Entry<String, SpoutSpec> spout : spout_ids.entrySet()) {
-            String id = spout.getKey();
-            GlobalStreamId stream = new GlobalStreamId(id, ACKER_INIT_STREAM_ID);
-            Grouping group = Thrift.mkFieldsGrouping(StormUtils.mk_list("id"));
-            spout_inputs.put(stream, group);
-        }
-
-        Map<GlobalStreamId, Grouping> bolt_inputs = new HashMap<GlobalStreamId, Grouping>();
-        for (Entry<String, Bolt> bolt : bolt_ids.entrySet()) {
-            String id = bolt.getKey();
-
-            GlobalStreamId streamAck = new GlobalStreamId(id,
-                    ACKER_ACK_STREAM_ID);
-            Grouping groupAck = Thrift.mkFieldsGrouping(StormUtils
-                    .mk_list("id"));
-
-            GlobalStreamId streamFail = new GlobalStreamId(id,
-                    ACKER_FAIL_STREAM_ID);
-            Grouping groupFail = Thrift.mkFieldsGrouping(StormUtils
-                    .mk_list("id"));
-
-            bolt_inputs.put(streamAck, groupAck);
-            bolt_inputs.put(streamFail, groupFail);
-        }
-
-        Map<GlobalStreamId, Grouping> allInputs = new HashMap<GlobalStreamId, Grouping>();
-        allInputs.putAll(bolt_inputs);
-        allInputs.putAll(spout_inputs);
-        return allInputs;
-    }
-
-    public static void add_acker(Integer num_tasks, StormTopology ret) {
-        HashMap<String, StreamInfo> outputs = new HashMap<String, StreamInfo>();
-        ArrayList<String> fields = new ArrayList<String>();
-        fields.add("id");
-
-        outputs.put(ACKER_ACK_STREAM_ID, Thrift.directOutputFields(fields));
-        outputs.put(ACKER_FAIL_STREAM_ID, Thrift.directOutputFields(fields));
-
-        IBolt ackerbolt= new Acker();
-        Map<GlobalStreamId, Grouping> inputs=acker_inputs(ret);
-        Bolt acker_bolt = Thrift.mkAckerBolt(inputs, ackerbolt, outputs, num_tasks);
-        for (Entry<String, Bolt> e : ret.get_bolts().entrySet()) {
-            Bolt bolt = e.getValue();
-            ComponentCommon common = bolt.get_common();
-            List<String> ackList = StormUtils.mk_list("id", "ack-val");
-            common.put_to_streams(ACKER_ACK_STREAM_ID,Thrift.outputFields(ackList));
-            
-            List<String> failList = StormUtils.mk_list("id");
-            common.put_to_streams(ACKER_FAIL_STREAM_ID,Thrift.outputFields(failList));
-            bolt.set_common(common);
-        }
-
-        for (Entry<String, SpoutSpec> kv : ret.get_spouts().entrySet()) {
-            SpoutSpec bolt = kv.getValue();
-            ComponentCommon common = bolt.get_common();
-            List<String> initList = StormUtils.mk_list("id", "init-val", "spout-task");
-            common.put_to_streams(ACKER_INIT_STREAM_ID,Thrift.outputFields(initList));
-            
-            GlobalStreamId ack_ack=new GlobalStreamId(ACKER_COMPONENT_ID, ACKER_ACK_STREAM_ID);
-            common.put_to_inputs(ack_ack, Thrift.mkDirectGrouping());
-            
-            GlobalStreamId ack_fail=new GlobalStreamId(ACKER_COMPONENT_ID,ACKER_FAIL_STREAM_ID);
-            common.put_to_inputs(ack_fail,Thrift.mkDirectGrouping());
-        }
-
-        ret.put_to_bolts("__acker", acker_bolt);
-    }
-
-    public static List<Object> all_components(StormTopology topology) {
-        List<Object> rtn = new ArrayList<Object>();
-        for (StormTopology._Fields field : Thrift.STORM_TOPOLOGY_FIELDS) {
-            Object fields = topology.getFieldValue(field);
-            if (fields != null) {
-                rtn.addAll(((Map) fields).values());
-            }
-        }
-        return rtn;
-    }
-    
-    private static List<String> sysEventFields = StormUtils.mk_list("event");
-
-    private static void add_component_system_streams(Object obj)
-    {
-        ComponentCommon common=null;
-        if (obj instanceof StateSpoutSpec) {
-            StateSpoutSpec spec = (StateSpoutSpec) obj;
-            common=spec.get_common();
-        }
-
-        if (obj instanceof SpoutSpec) {
-            SpoutSpec spec = (SpoutSpec) obj;
-            common=spec.get_common();
-        }
-        
-        if (obj instanceof Bolt) {
-            Bolt spec = (Bolt) obj;
-            common=spec.get_common();
-        }
-        
-        if(common!=null)
-        {
-            StreamInfo sinfo=Thrift.outputFields(sysEventFields);
-            common.put_to_streams(SYSTEM_STREAM_ID,sinfo);
-        }
-    }
+ 
     
     public static void add_system_streams(StormTopology topology) {
-        for (Object obj : all_components(topology)) {
-            add_component_system_streams(obj);
+        for (Object obj : Common.all_components(topology)) {
+            Common.add_component_system_streams(obj);
         }
     }
 
     public static StormTopology system_topology(Map storm_conf,StormTopology topology) throws InvalidTopologyException {
-        validate_basic(topology);
+        Common.validate_basic(topology);
         StormTopology ret = topology.deepCopy();
         String key = Config.TOPOLOGY_ACKERS;
         Integer ackercount = StormUtils.parseInt(storm_conf.get(key));
-        add_acker(ackercount, ret);
+        Common.add_acker(ackercount, ret);
         add_system_streams(ret);
         return ret;
     }
+
+	/**
+	 * 检查点 重复的ID Bolt or spout is not system_id componentIDis not systemid
+	 * 
+	 * @param topology
+	 * @throws InvalidTopologyException
+	 */
+	public static void validate_ids(StormTopology topology)
+	        throws InvalidTopologyException {
+	    List<String> list = new ArrayList<String>();
+	    for (StormTopology._Fields field : Thrift.STORM_TOPOLOGY_FIELDS) {
+	        Object value = topology.getFieldValue(field);
+	        if (value != null) {
+	            Map<String, Object> obj_map = (Map<String, Object>) value;
+	            Set<String> commids = obj_map.keySet();
+	            list.addAll(commids);
+	
+	            for (String id : commids) {
+	                if (system_id(id)) {
+	                    throw new InvalidTopologyException(id
+	                            + " is not a valid component id");
+	                }
+	            }
+	
+	            for (Object obj : obj_map.values()) {
+	                validate_component(obj);
+	            }
+	        }
+	    }
+	
+	    List<String> offending = StormUtils.getRepeat(list);
+	    if (!offending.isEmpty()) {
+	        throw new InvalidTopologyException("Duplicate component ids: "
+	                + offending);
+	    }
+	
+	}
+
+	static void validate_component_inputs(Object obj)
+	        throws InvalidTopologyException {
+	    if (obj instanceof StateSpoutSpec) {
+	        StateSpoutSpec spec = (StateSpoutSpec) obj;
+	        if (!spec.get_common().get_inputs().isEmpty()) {
+	            throw new InvalidTopologyException(
+	                    "May not declare inputs for a spout");
+	        }
+	
+	    }
+	
+	    if (obj instanceof SpoutSpec) {
+	        SpoutSpec spec = (SpoutSpec) obj;
+	        if (!spec.get_common().get_inputs().isEmpty()) {
+	            throw new InvalidTopologyException(
+	                    "May not declare inputs for a spout");
+	        }
+	    }
+	}
+
+	public static void validate_basic(StormTopology topology)
+	        throws InvalidTopologyException {
+	    validate_ids(topology);
+	
+	    for (StormTopology._Fields field : Thrift.SPOUT_FIELDS) {
+	        Object value = topology.getFieldValue(field);
+	        if (value != null) {
+	            Map<String, Object> obj_map = (Map<String, Object>) value;
+	            for (Object obj : obj_map.values()) {
+	                validate_component_inputs(obj);
+	            }
+	        }
+	
+	    }
+	
+	}
+
+	public static Map<GlobalStreamId, Grouping> acker_inputs(
+	        StormTopology topology) {
+	
+	    Map<String, Bolt> bolt_ids = topology.get_bolts();
+	    Map<String, SpoutSpec> spout_ids = topology.get_spouts();
+	
+	    Map<GlobalStreamId, Grouping> spout_inputs = new HashMap<GlobalStreamId, Grouping>();
+	    for (Entry<String, SpoutSpec> spout : spout_ids.entrySet()) {
+	        String id = spout.getKey();
+	        GlobalStreamId stream = new GlobalStreamId(id, ACKER_INIT_STREAM_ID);
+	        Grouping group = Thrift.mkFieldsGrouping(StormUtils.mk_list("id"));
+	        spout_inputs.put(stream, group);
+	    }
+	
+	    Map<GlobalStreamId, Grouping> bolt_inputs = new HashMap<GlobalStreamId, Grouping>();
+	    for (Entry<String, Bolt> bolt : bolt_ids.entrySet()) {
+	        String id = bolt.getKey();
+	
+	        GlobalStreamId streamAck = new GlobalStreamId(id,
+	                ACKER_ACK_STREAM_ID);
+	        Grouping groupAck = Thrift.mkFieldsGrouping(StormUtils
+	                .mk_list("id"));
+	
+	        GlobalStreamId streamFail = new GlobalStreamId(id,
+	                ACKER_FAIL_STREAM_ID);
+	        Grouping groupFail = Thrift.mkFieldsGrouping(StormUtils
+	                .mk_list("id"));
+	
+	        bolt_inputs.put(streamAck, groupAck);
+	        bolt_inputs.put(streamFail, groupFail);
+	    }
+	
+	    Map<GlobalStreamId, Grouping> allInputs = new HashMap<GlobalStreamId, Grouping>();
+	    allInputs.putAll(bolt_inputs);
+	    allInputs.putAll(spout_inputs);
+	    return allInputs;
+	}
+
+	public static void add_acker(Integer num_tasks, StormTopology ret) {
+	    HashMap<String, StreamInfo> outputs = new HashMap<String, StreamInfo>();
+	    ArrayList<String> fields = new ArrayList<String>();
+	    fields.add("id");
+	
+	    outputs.put(ACKER_ACK_STREAM_ID, Thrift.directOutputFields(fields));
+	    outputs.put(ACKER_FAIL_STREAM_ID, Thrift.directOutputFields(fields));
+	
+	    IBolt ackerbolt= new Acker();
+	    Map<GlobalStreamId, Grouping> inputs=acker_inputs(ret);
+	    Bolt acker_bolt = Thrift.mkAckerBolt(inputs, ackerbolt, outputs, num_tasks);
+	    for (Entry<String, Bolt> e : ret.get_bolts().entrySet()) {
+	        Bolt bolt = e.getValue();
+	        ComponentCommon common = bolt.get_common();
+	        List<String> ackList = StormUtils.mk_list("id", "ack-val");
+	        common.put_to_streams(ACKER_ACK_STREAM_ID,Thrift.outputFields(ackList));
+	        
+	        List<String> failList = StormUtils.mk_list("id");
+	        common.put_to_streams(ACKER_FAIL_STREAM_ID,Thrift.outputFields(failList));
+	        bolt.set_common(common);
+	    }
+	
+	    for (Entry<String, SpoutSpec> kv : ret.get_spouts().entrySet()) {
+	        SpoutSpec bolt = kv.getValue();
+	        ComponentCommon common = bolt.get_common();
+	        List<String> initList = StormUtils.mk_list("id", "init-val", "spout-task");
+	        common.put_to_streams(ACKER_INIT_STREAM_ID,Thrift.outputFields(initList));
+	        
+	        GlobalStreamId ack_ack=new GlobalStreamId(ACKER_COMPONENT_ID, ACKER_ACK_STREAM_ID);
+	        common.put_to_inputs(ack_ack, Thrift.mkDirectGrouping());
+	        
+	        GlobalStreamId ack_fail=new GlobalStreamId(ACKER_COMPONENT_ID,ACKER_FAIL_STREAM_ID);
+	        common.put_to_inputs(ack_fail,Thrift.mkDirectGrouping());
+	    }
+	
+	    ret.put_to_bolts("__acker", acker_bolt);
+	}
+
+	public static List<Object> all_components(StormTopology topology) {
+	    List<Object> rtn = new ArrayList<Object>();
+	    for (StormTopology._Fields field : Thrift.STORM_TOPOLOGY_FIELDS) {
+	        Object fields = topology.getFieldValue(field);
+	        if (fields != null) {
+	            rtn.addAll(((Map) fields).values());
+	        }
+	    }
+	    return rtn;
+	}
+
+	static void add_component_system_streams(Object obj)
+	{
+	    ComponentCommon common=null;
+	    if (obj instanceof StateSpoutSpec) {
+	        StateSpoutSpec spec = (StateSpoutSpec) obj;
+	        common=spec.get_common();
+	    }
+	
+	    if (obj instanceof SpoutSpec) {
+	        SpoutSpec spec = (SpoutSpec) obj;
+	        common=spec.get_common();
+	    }
+	    
+	    if (obj instanceof Bolt) {
+	        Bolt spec = (Bolt) obj;
+	        common=spec.get_common();
+	    }
+	    
+	    if(common!=null)
+	    {
+	        StreamInfo sinfo=Thrift.outputFields(sysEventFields);
+	        common.put_to_streams(SYSTEM_STREAM_ID,sinfo);
+	    }
+	}
 
 }

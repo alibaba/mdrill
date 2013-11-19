@@ -19,7 +19,13 @@ public class RamWriter {
 
 	public RamWriter() throws IOException {
 		dir = new RAMDirectory();
-		writer = null;
+		writer = new IndexWriter(dir, null,
+				new KeepOnlyLastCommitDeletionPolicy(),
+				MaxFieldLength.UNLIMITED);
+		writer.setUseCompoundFile(false);
+//		writer.setMergeScheduler(new SerialMergeScheduler());
+		writer.setMergeFactor(10);
+		writer.setTermIndexInterval(128);
 		numDocs = 0;
 	}
 
@@ -33,42 +39,34 @@ public class RamWriter {
 
 	public void process(Collection<Document> docs, Analyzer analyzer)
 			throws IOException {
-		if (writer == null) {
-			writer = createWriter();
-		}
 
 		writer.addDocuments(docs, analyzer);
 		numDocs += docs.size();
 	}
 
 	public void process(RamWriter form) throws IOException {
-		if (writer == null) {
-			writer = createWriter();
-		}
 
-		writer.addIndexesNoOptimize(new Directory[] { form.dir });
-		numDocs += form.getNumDocs();
+		if(form.getNumDocs()>0)
+		{
+			writer.addIndexesNoOptimize(new Directory[] { form.dir });
+			numDocs += form.getNumDocs();
+		}
 	}
 
 
 	public void closeWriter()
 			throws IOException {
-		if (writer != null) {
-			
-			writer.optimize();
-			writer.close();
-			writer = null;
-			 
-		}
+		
+		writer.optimize();
+		writer.close();
+		writer = null;
 
 	}
 	
 
 	public void closeDir() {
-		if (this.dir != null) {
-			this.dir.close();
-			this.dir = null;
-		}
+		this.dir.close();
+		this.dir = null;
 	}
 	public long totalSizeInBytes() throws IOException {
 		if (dir == null) {
@@ -81,14 +79,5 @@ public class RamWriter {
 		return size;
 	}
 
-	private IndexWriter createWriter() throws IOException {
-		IndexWriter writer = new IndexWriter(dir, null,
-				new KeepOnlyLastCommitDeletionPolicy(),
-				MaxFieldLength.UNLIMITED);
-		writer.setUseCompoundFile(false);
-		writer.setMergeFactor(10);
-		writer.setTermIndexInterval(16);
-		return writer;
-	}
 
 }

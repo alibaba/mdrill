@@ -51,6 +51,9 @@ public class FilterIndexReader extends IndexReader {
   public static class FilterTermDocs implements TermDocs {
     protected TermDocs in;
 
+    public void debug(StringBuffer buff){
+    	in.debug(buff);
+	}
     public FilterTermDocs(TermDocs in) { this.in = in; }
 
     public void seek(Term term) throws IOException { in.seek(term); }

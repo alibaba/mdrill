@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -21,6 +23,7 @@ import org.apache.hadoop.util.Tool;
 import com.alimama.mdrill.partion.MdrillPartions;
 import com.alimama.mdrill.partion.MdrillPartionsInterface;
 import com.alimama.mdrill.utils.HadoopUtil;
+import com.alimama.mdrill.utils.IndexUtils;
 import com.alimama.mdrill.utils.TryLockFile;
 
 public class JobIndexerPartion extends Configured implements Tool {
@@ -155,6 +158,9 @@ public class JobIndexerPartion extends Configured implements Tool {
 		String split=args[0];
 		String submatch=args[1];
 		Integer parallel=Integer.parseInt(args[2]);
+		String tablemode=args[3];
+		Integer rep=Integer.parseInt(args[4]);
+
 		this.cleanTmp();
 		while(true)
 		{
@@ -196,7 +202,7 @@ public class JobIndexerPartion extends Configured implements Tool {
 					}
 					
 					
-					ret = this.subRun(runPartion.days, runPartion.tmpindexOtherPath.toString(),split,split,parallel);
+					ret = this.subRun(runPartion.days, runPartion.tmpindexOtherPath.toString(),split,submatch,parallel,tablemode,rep);
 					parse.writeStr(new Path(runPartion.tmpindexOtherPath, "vertify"), runPartion.partionvertify);
 				}finally{
 					flock.unlock();
@@ -265,9 +271,45 @@ public class JobIndexerPartion extends Configured implements Tool {
 
 	
 
-	private int subRun(HashSet<String> inputs, String output,String split,String submatch,Integer parallel) throws Exception {
+	private int subRun(HashSet<String> inputs, String output,String split,String submatch,Integer parallel,String tablemode,int rep) throws Exception {
 		Path smallindex = this.parse.smallIndex(output);
-		return MakeIndex.make(fs, solrHome, getConf(), this.filetype, this.inputBase, inputs, submatch, output, smallindex, shards, split,true,"",null,parallel);
+		Configuration conf=this.getConf();
+		conf.set("mdrill.table.mode", tablemode);
+		conf.setInt("dfs.replication", rep);
+		String hdfsPral="1";
+		 Pattern mapiPattern      = Pattern.compile("@sigment:([0-9]+)@");
+		 Matcher mat=mapiPattern.matcher(tablemode);
+         if (mat.find()) {
+             hdfsPral=mat.group(1);
+         }
+		
+		int sigcount=1;
+		try{
+			sigcount=Integer.parseInt(hdfsPral);
+		}catch(Throwable e){}
+		
+		if(sigcount<=1)
+		{
+			return MakeIndex.make(fs, solrHome, conf, this.filetype, this.inputBase, inputs, submatch, output, smallindex, shards, split,true,"",null,parallel);
+		}
+		
+		int rtn=MakeIndex.make(fs, solrHome, conf, this.filetype, this.inputBase, inputs, submatch, output, smallindex, shards*sigcount, split,true,"",null,parallel);
+		if(rtn==0)
+		{
+			Path subdir=new Path(output,"sigment");
+			for(int i=0;i<shards*sigcount;i++)
+			{
+				String dir=IndexUtils.getHdfsForder(i);
+				String sig=IndexUtils.getHdfsForder(i/sigcount);
+				if(fs.exists(new Path(output,dir)))
+				{
+					Path newname=new Path(subdir,sig);
+					fs.mkdirs(newname);
+					fs.rename(new Path(output,dir), new Path(newname,dir));
+				}
+			}
+		}
+		return rtn;
 		
 	}
 }

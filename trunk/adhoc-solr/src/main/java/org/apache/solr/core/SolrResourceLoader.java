@@ -597,6 +597,8 @@ public class SolrResourceLoader implements ResourceLoader
   
   private static AtomicLong cacheFlushKey=new AtomicLong(System.currentTimeMillis());
   
+  
+  
   public static class PartionKey{
 	public String partion;
 

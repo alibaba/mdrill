@@ -601,6 +601,9 @@ public class ParallelReader extends IndexReader {
     protected TermDocs termDocs;
     int buffer;
 
+    public void debug(StringBuffer buff){
+    	termDocs.debug(buff);
+	}
     public ParallelTermDocs(int buffer) {
     	this.buffer=buffer;
     }

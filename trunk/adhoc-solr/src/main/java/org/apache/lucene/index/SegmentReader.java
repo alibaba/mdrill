@@ -38,14 +38,18 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.request.mdrill.MdrillDetail;
+import org.apache.solr.request.mdrill.MdrillDetailFdt;
 import org.apache.solr.request.mdrill.MdrillGroupBy;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 
 
 /**
@@ -583,8 +587,14 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  rtn.setParams(schema,params);
 	  if(params.isdetail)
 	  {
-		  MdrillDetail detail=new MdrillDetail(params.searcher,this, params.params, params.req); 
-		  rtn.setNamelist(detail.get(params.fields, params.base));
+		  if(params.params.getBool("fetchfdt", false))
+		  {
+			  MdrillDetailFdt detail=new MdrillDetailFdt(params.searcher,this, params.params, params.req); 
+			  rtn.setNamelist(detail.get(params.fields, params.base));
+		  }else{
+			  MdrillDetail detail=new MdrillDetail(params.searcher,this, params.params, params.req); 
+			  rtn.setNamelist(detail.get(params.fields, params.base));
+		  }
 	  }else{
 		  MdrillGroupBy groupby=new MdrillGroupBy(params.searcher,this, params.params, params.req);
 		  rtn.setNamelist(groupby.get(params.fields, params.base));
@@ -1038,8 +1048,33 @@ public class SegmentReader extends IndexReader implements Cloneable {
       if(core.dir instanceof FSDirectory){
     	  FSDirectory dddir=(FSDirectory)core.dir;
     	  buffer.append(dddir.getDirectory().getAbsolutePath()).append("@");
+      }else if(core.dir instanceof FileSystemDirectory){
+    	  FileSystemDirectory dddir=(FileSystemDirectory)core.dir;
+    	  buffer.append("@hdfs@"+dddir.directory.toString()).append("@");
+      }
+      else if(core.dir instanceof RAMDirectory){
+    	  RAMDirectory dddir=(RAMDirectory)core.dir;
+    	  buffer.append(dddir.uuid).append("@");
       }else{
-          throw new UnsupportedOperationException();
+    	  buffer.append(core.dir.toString());
+    	  try {
+			String[] list=core.dir.listAll();
+			long size=0l;
+			buffer.append("@");
+			if(list!=null)
+			{
+				buffer.append(list.length);
+
+				for(String s:list)
+				{
+					size+=core.dir.fileLength(s);
+				}
+				
+				buffer.append(size);
+
+			}
+		} catch (IOException e) {
+		}
       }
 	  return buffer.toString();
   }

@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <schema name="example" version="1.4">
   <types>
-   <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-        <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
+   <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true" omitTermFreqAndPositions="true" omitPositions="true" />
+        <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true" omitTermFreqAndPositions="true" />
     <fieldtype name="binary" class="solr.BinaryField"/>
 
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
-    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"  />
-    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"  />
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"  omitTermFreqAndPositions="true" />
+    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0" omitTermFreqAndPositions="true" />
 
-    <fieldType name="tint" class="solr.TrieIntField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
-    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
-    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
-    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
+    <fieldType name="tint" class="solr.TrieIntField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
 
-    <fieldType name="date" class="solr.TrieDateField" omitNorms="true" precisionStep="0" positionIncrementGap="0"  />
-        <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="0"  positionIncrementGap="0"/>
+    <fieldType name="date" class="solr.TrieDateField" omitNorms="true" precisionStep="0" positionIncrementGap="0" omitTermFreqAndPositions="true" />
+        <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="0"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
 
 
     <fieldType name="random" class="solr.RandomSortField" indexed="true" />
 
-    <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+    <fieldType name="text" class="solr.TextField" positionIncrementGap="0" omitNorms="true"  omitTermFreqAndPositions="true"  omitPositions="true">
       <analyzer type="index">
-        <tokenizer class="solr.CJKTokenizerFactory"/>
+        <tokenizer class="solr.ChineseTokenizerFactory"/>
         <!-- in this example, we will only use synonyms at query time
           <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         -->
@@ -42,7 +42,7 @@
         <filter class="solr.SnowballPorterFilterFactory" language="English" protected="protwords.txt"/>
       </analyzer>
       <analyzer type="query">
-        <tokenizer class="solr.CJKTokenizerFactory"/>
+        <tokenizer class="solr.ChineseTokenizerFactory"/>
         <!--<filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
         <filter class="solr.StopFilterFactory"
                 ignoreCase="true"

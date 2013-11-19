@@ -52,6 +52,9 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.MapBackedSet;
 import org.apache.lucene.util.TwoPhaseCommit;
+import org.apache.solr.core.SolrCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -179,6 +182,7 @@ import org.apache.lucene.util.TwoPhaseCommit;
  * keeps track of the last non commit checkpoint.
  */
 public class IndexWriter implements Closeable, TwoPhaseCommit {
+	  public static Logger LOG = LoggerFactory.getLogger(IndexWriter.class);
 
   /**
    * Default value for the write lock timeout (1,000).
@@ -3169,6 +3173,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
       
     } catch (OutOfMemoryError oom) {
+    	LOG.error("OutOfMemoryError",oom);
       handleOOM(oom, "addIndexes(Directory...)");
     }
   }

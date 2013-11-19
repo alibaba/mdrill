@@ -1,7 +1,12 @@
 package com.alimama.mdrill.adhoc;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -13,12 +18,14 @@ import java.util.Arrays;
 import java.util.Date;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.Logger;
 
 import com.alimama.mdrill.utils.HadoopBaseUtils;
 
 
 public class MysqlCallback implements IOffilneDownloadCallBack{
-	
+	private static Logger LOG = Logger.getLogger(MysqlCallback.class);
+
 	public MysqlCallback(MySqlConn m_fpsql) {
 		this.m_fpsql = m_fpsql;
 	}
@@ -200,6 +207,27 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 		}
 	}
 
+	
+	public String  getMD5(byte[] bytes) { 
+        char hexDigits[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' }; 
+        char str[] = new char[16 * 2]; 
+        try { 
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5"); 
+            md.update(bytes); 
+            byte tmp[] = md.digest(); 
+            int k = 0; 
+            for (int i = 0; i < 16; i++) { 
+                byte byte0 = tmp[i]; 
+                str[k++] = hexDigits[byte0 >>> 4 & 0xf]; 
+                str[k++] = hexDigits[byte0 & 0xf]; 
+            } 
+        } catch (Exception e) { 
+        } 
+        return new String(str); 
+    } ;
+    
+     
+  
 	@Override
 	public void finish() {
 		this.setPercent("Stage-"+this.stage+" map = 100.0%, reduce = 100.0%");
@@ -242,26 +270,31 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 						contentw.append("任务名称："+this.jobname+"<br>");
 						DecimalFormat df =new DecimalFormat("0.00");
 					      double f = sizekb*1.0/1024;
-						contentw.append("结果大小：<span style=\"color: #FF0000;font-weight: bold;\">"+(sizekb<=1?"小于1KB":df.format(f)+"MB")+"</span><br>\r\n");
+						contentw.append("结果大小："+(sizekb<=1?"小于1KB":df.format(f)+"MB")+"<br>\r\n");
 						String strurl="http://adhoc.etao.com:9999/downloadoffline.jsp?uuid="+this.getUuid();
-						contentw.append("下载地址：<a href="+strurl+" target=\"_blank\">"+strurl+"</a><br>");
+						contentw.append("下载:"+strurl+"<br>");
 					}else{
 						contentw.append(" <br>");
 						contentw.append("Sorry，任务出错，请与管理员联系 <br>");
 						contentw.append("任务名称："+this.jobname+"<br>");
 						contentw.append("任务ID："+this.uuid+"<br>");
 					}
-					String urlFormat = "http://10.246.155.184:9999/wwnotify.war/mesg?user=%s&subject=%s&msg=%s";
-					String subject= URLEncoder.encode(this.isfail?"adhoc任务执行失败":"adhoc任务执行成功" ,"gbk");
-					String msg = URLEncoder.encode(contentw.toString(),"gbk");
-					String wname=URLEncoder.encode(s ,"gbk");
+					String subject= URLEncoder.encode(this.isfail?"adhoc任务执行失败":"adhoc任务执行成功" ,"utf8");
+					String msg = URLEncoder.encode(contentw.toString(),"utf8");
+					String wname=URLEncoder.encode(s ,"utf8");
 					
-					String urlStr = String.format(urlFormat,wname , subject, msg);
-					debug.append(urlStr+"\r\n");
-					URL url = new URL(urlStr);
-					URLConnection conn = url.openConnection();
-					InputStream inputStream = conn.getInputStream();
-					inputStream.close();
+					StringBuffer urlFormat = new StringBuffer();;
+					urlFormat.append("receiver="+wname);
+					urlFormat.append("&subtitle="+subject);
+					urlFormat.append("&message="+msg);
+					urlFormat.append("&method="+URLEncoder.encode("wang-alert" ,"utf8"));
+					urlFormat.append("&username="+URLEncoder.encode("yannian.mu" ,"utf8"));
+					urlFormat.append("&password="+this.getMD5((new String("yannian.mu@1106"+s)).getBytes("utf8")));
+					urlFormat.append("&charset=utf8");
+
+					
+					debug.append(urlFormat.toString()+"\r\n");
+					Request(urlFormat);
 					
 				} catch (Exception e) {
 				}
@@ -288,11 +321,59 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 			content.append("<tr><td>hadoop任务ID："+this.hadoopjobId+"</tr></td>\r\n");
 		}
 		content.append("</table>");
+		
+		
+		try{
+		StringBuffer urlFormat = new StringBuffer();;
+		urlFormat.append("receiver="+URLEncoder.encode(cols[0] ,"utf8"));
+		urlFormat.append("&subtitle="+URLEncoder.encode(this.isfail?"【adhoc任务执行失败】- "+this.jobname:"【adhoc任务执行成功】- "+this.jobname ,"utf8"));
+		urlFormat.append("&message="+URLEncoder.encode(content.toString() ,"utf8"));
+		urlFormat.append("&method="+URLEncoder.encode("mail" ,"utf8"));
+		urlFormat.append("&username="+URLEncoder.encode("yannian.mu" ,"utf8"));
+		urlFormat.append("&password="+this.getMD5((new String("yannian.mu@1106"+cols[0])).getBytes("utf8")));
+		urlFormat.append("&charset=utf8");
+		
+		
+		debug.append(urlFormat.toString()+"\r\n");
+		
+		Request(urlFormat);
 
-		SendMail send=new SendMail();
-		send.send("adhoc@alipay.com","adhoc",cols[0], cols[0],this.isfail?"【adhoc任务执行失败】- "+this.jobname:"【adhoc任务执行成功】- "+this.jobname,content.toString(),"", "gbk", "172.24.108.36","172.24.108.36","","", 25);
+		} catch (Exception e) {
+		}
+		
+		LOG.info(debug.toString());
+	}
+	
+	public void Request(StringBuffer urlFormat ) throws IOException
+	{
 
+        URL u = new URL("http://mon.alibaba-inc.com/noticenter/send.do");
+        HttpURLConnection con = (HttpURLConnection) u.openConnection();
+        con.setRequestMethod("POST");
+        con.setDoOutput(true);
+        con.setDoInput(true);
+        con.setUseCaches(false);
+        con.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+        OutputStreamWriter osw = new OutputStreamWriter(con.getOutputStream(),"UTF-8");
+        osw.write(urlFormat.toString());
+        osw.flush();
+        osw.close();
+        
+        InputStreamReader urlStream = new InputStreamReader(con.getInputStream(), "utf-8");
+        BufferedReader in = new BufferedReader(urlStream);
+        int bufferlen = 1;
+        char[] buffer = new char[bufferlen];
+        int readBytes = 0;
 
+        while (true) {
+                readBytes = in.read(buffer, 0, bufferlen);
+                if (readBytes < 0) {
+                        break;
+                }
+          }
+        in.close();
+        urlStream.close();
+        con.disconnect();
 	}
 
 	@Override

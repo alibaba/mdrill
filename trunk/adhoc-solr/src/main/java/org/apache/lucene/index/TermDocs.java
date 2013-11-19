@@ -43,6 +43,8 @@ public interface TermDocs extends Closeable {
   /** Returns the current document number.  <p> This is invalid until {@link
    #next()} is called for the first time.*/
   int doc();
+  
+  void debug(StringBuffer buff);
 
   /** Returns the frequency of the term within the current document.  <p> This
    is invalid until {@link #next()} is called for the first time.*/

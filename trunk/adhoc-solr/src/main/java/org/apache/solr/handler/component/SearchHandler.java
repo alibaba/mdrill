@@ -139,9 +139,23 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
         {
        	  params.set(ShardParams.SHARDS,rb.subShards[i]);
     	  params.set(FacetParams.IS_SUB_SHARDS, true);
-    	  params.set(FacetParams.FACET_CROSS_OFFSET, 0);
-    	  int maxlimit=MdrillGroupBy.MAX_CROSS_ROWS;
-    	  params.set(FacetParams.FACET_CROSS_LIMIT, maxlimit);
+    	  
+    	  
+    	  if(params.getBool("fetchfdt", false))
+		  {
+        	 int offset=params.getInt(FacetParams.FACET_CROSS_OFFSET,0);
+        	 int limit=params.getInt(FacetParams.FACET_CROSS_LIMIT,0);
+        	 params.remove(FacetParams.FACET_CROSS_OFFSET);
+             params.remove(FacetParams.FACET_CROSS_LIMIT);
+             params.set(FacetParams.FACET_CROSS_OFFSET,  0);
+         	params.set(FacetParams.FACET_CROSS_LIMIT,  offset+limit);
+		  }else{
+			  params.set(FacetParams.FACET_CROSS_OFFSET, 0);
+	    	  int maxlimit=MdrillGroupBy.MAX_CROSS_ROWS;
+	    	  params.set(FacetParams.FACET_CROSS_LIMIT, maxlimit); 
+		  }
+    	  
+    	  
         }
         params.remove(CommonParams.QT);
         comm.submit(sreq, shard, params,depth);

@@ -601,9 +601,9 @@ public class CommonsHttpSolrServer extends SolrServer
    * @see #_maxRetries
    */
   public void setMaxRetries( int maxRetries ) {
-    if (maxRetries > 1) { 
-      log.warn("CommonsHttpSolrServer: maximum Retries " + maxRetries + " > 1. Maximum recommended retries is 1.");
-    }
+//    if (maxRetries > 1) { 
+//      log.warn("CommonsHttpSolrServer: maximum Retries " + maxRetries + " > 1. Maximum recommended retries is 1.");
+//    }
     _maxRetries = maxRetries;
   }
 

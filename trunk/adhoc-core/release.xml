@@ -31,6 +31,7 @@
 				<include>com.alimama.dw:adhoc-web</include>
 				<include>com.alimama.dw:adhoc-jdbc</include>
 				<include>com.alimama.dw:adhoc-public</include>
+				<include>com.alimama.dw:adhoc-internal</include>
 			</includes>
 			<binaries>
 				<outputDirectory>adhoc-core/lib/</outputDirectory>

@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alimama.mdrill.buffer.BlockBufferInput;
+import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
@@ -206,6 +207,18 @@ public class TermInfosReader implements Closeable {
 					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),absPath+"@"+quickTisTxt);
 					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),absPath+"@"+quickTisVal);
 		    	  }
+		    }else if(directory instanceof FileSystemDirectory)
+		      {
+		    	FileSystemDirectory dddir=(FileSystemDirectory)directory;
+		    	  String absPath=dddir.directory.toString();
+		    	  
+		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),absPath+"@"+quickTis);
+		    		
+				  if(quicktisInput.isQuickTxtMode.get())
+		    	  {
+					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),absPath+"@"+quickTisTxt);
+					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),absPath+"@"+quickTisVal);
+		    	  }
 		    }else{
 			    	quicktisInput.quicktisInput=directory.openInput(quickTis, readBufferSize);
 	
@@ -254,7 +267,13 @@ public class TermInfosReader implements Closeable {
     	  String absPath=dddir.getDirectory().getAbsolutePath();
     	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),absPath+"@"+filename);
     	  tiiInput=directory.openInput(indexFileName, readBufferSize); 
-    }else{
+    }if(directory instanceof FileSystemDirectory)
+    {
+    	FileSystemDirectory dddir=(FileSystemDirectory)directory;
+  	  String absPath=dddir.directory.toString();
+  	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),absPath+"@"+filename);
+  	  tiiInput=directory.openInput(indexFileName, readBufferSize); 
+  }else{
     	  tisInput=directory.openInput(filename,readBufferSize);
           tiiInput=directory.openInput(indexFileName, readBufferSize); 
       }

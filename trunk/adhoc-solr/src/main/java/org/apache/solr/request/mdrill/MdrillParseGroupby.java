@@ -1,6 +1,7 @@
 package org.apache.solr.request.mdrill;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.PriorityQueue;
@@ -14,7 +15,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.compare.GroupbyRow;
-import org.apache.solr.request.compare.MergerGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.ShardGroupByGroupbyRowCompare;
 import org.apache.solr.request.compare.ShardGroupByTermNumCompare;
 import org.apache.solr.request.join.HigoJoinInvert;
@@ -177,15 +177,15 @@ public class MdrillParseGroupby {
 		
 		private GroupListCache.GroupList makePreGroup(String g)
 		{
-			String[] values = EncodeUtils.decode(g.split(UniqConfig.GroupJoinString()));
-			GroupListCache.GroupList group=GroupListCache.GroupList.INSTANCE(groupListCache, values.length);
+			String[] values = EncodeUtils.decode(g.split(UniqConfig.GroupJoinString(),-1));
+			GroupListCache.GroupList group=GroupListCache.GroupList.INSTANCE(groupListCache, ufs.length);
 			group.reset();
 			for (int i:ufs.listIndex) {
 				UnvertFile uf=ufs.cols[i];
 				try {
 					group.list[i]=uf.uif.getTermNum(uf.ti,values[i],uf.filetype);
 				} catch (Throwable e) {
-					LOG.error("makePreGroup",e);
+					LOG.error("makePreGroup,g="+g+",values="+Arrays.toString(values),e);
 					group.list[i]=uf.uif.getNullTm();
 				}
 			}

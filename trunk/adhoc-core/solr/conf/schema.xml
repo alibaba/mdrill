@@ -21,9 +21,9 @@
 
     <fieldType name="random" class="solr.RandomSortField" indexed="true" />
 
-    <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+    <fieldType name="text" class="solr.TextField" positionIncrementGap="100" omitNorms="true" omitTermFreqAndPositions="true" >
       <analyzer type="index">
-        <tokenizer class="solr.CJKTokenizerFactory"/>
+        <tokenizer class="solr.ChineseTokenizerFactory"/>
         <!-- in this example, we will only use synonyms at query time
           <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
         -->
