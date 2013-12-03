@@ -8,7 +8,6 @@ import java.util.HashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,6 +28,7 @@ public class FileSystemDirectory extends Directory {
     public final Path directory;
     private final int ioFileBufferSize;
     private boolean isAllowMove=false;
+    
     
     private HashMap<String,Path> links=new HashMap<String,Path>();
 
@@ -290,23 +290,16 @@ public class FileSystemDirectory extends Directory {
     public String toString() {
 	return this.getClass().getName() + "@" + directory;
     }
+    
+  
 
     private class FileSystemIndexInput extends BufferedIndexInput {
 
-	// shared by clones
-	private class Descriptor {
-	    public final FSDataInputStream in;
-	    public long position; // cache of in.getPos()
-
-	    public Descriptor(Path file, int ioFileBufferSize)
-		    throws IOException {
-		this.in = fs.open(file, ioFileBufferSize);
-	    }
-	}
+	
 
 	private final Path filePath; // for debugging
 	private final Descriptor descriptor;
-	private final long length;
+	private long length=-1;
 	private boolean isOpen;
 	private boolean isClone;
 	
@@ -316,15 +309,7 @@ public class FileSystemDirectory extends Directory {
         public FileSystemIndexInput(final Path path, final int ioFileBufferSize)
 	        throws IOException {
 	    filePath = path;
-	    long t1=System.currentTimeMillis();
-	    descriptor = new Descriptor(path, ioFileBufferSize);
-	    length = fs.getFileStatus(path).getLen();
-	    long t2=System.currentTimeMillis();
-	    long tl=t2-t1;
-	    if(tl>100)
-	    {
-	    	logger.info("fs.open "+path.getName()+" timetaken "+tl);
-	    }
+	    descriptor = new Descriptor(fs,path, ioFileBufferSize);
 	    isOpen = true;
 	}
 
@@ -333,17 +318,17 @@ public class FileSystemDirectory extends Directory {
 		long t1=System.currentTimeMillis();
 	    synchronized (descriptor) {
 		long position = getFilePointer();
-		if (position != descriptor.position) {
-		    descriptor.in.seek(position);
-		    descriptor.position = position;
+		if (position != descriptor.Positon()) {
+		    descriptor.Stream().seek(position);
+		    descriptor.setPositon(position);
 		}
 		int total = 0;
 		do {
-		    int i = descriptor.in.read(b, offset + total, len - total);
+		    int i = descriptor.Stream().read(b, offset + total, len - total);
 		    if (i == -1) {
 			throw new IOException("Read past EOF");
 		    }
-		    descriptor.position += i;
+		    descriptor.addPositon(i);
 		    total += i;
 		} while (total < len);
 	    }
@@ -361,15 +346,15 @@ public class FileSystemDirectory extends Directory {
 		    	tlSum=0;
 		    }
 	    }
-	    
-	    
 	}
 
 	public void close() throws IOException {
     	logger.info("close "+this.filePath.getName()+" tlSum="+tlSum+",tlCount="+tlCount);
 	    if (!isClone) {
 		if (isOpen) {
-		    descriptor.in.close();
+		    synchronized (descriptor) {
+		    	descriptor.close();
+		    }
 		    isOpen = false;
 		} else {
 		    throw new IOException("Index file " + filePath   + " already closed");
@@ -378,6 +363,15 @@ public class FileSystemDirectory extends Directory {
 	}
 
 	public long length() {
+		if(length<0)
+		{
+			try {
+				length = fs.getFileStatus(this.filePath).getLen();
+			} catch (IOException e) {
+    			logger.error("getFileStatus "+filePath.getName()+" timetaken ",e);
+
+			}
+		}
 	    return length;
 	}
 

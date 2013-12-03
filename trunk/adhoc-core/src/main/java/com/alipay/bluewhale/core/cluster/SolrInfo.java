@@ -17,6 +17,14 @@ public class SolrInfo implements Serializable{
 			super();
 			this.cnt = cnt;
 		}
+		
+		public boolean isTimeout()
+		{
+			Long nowtimes=(new Date()).getTime();
+			
+			return nowtimes-times>1000l*3600*6;
+
+		}
 		Long times=(new Date()).getTime();
 		@Override
 		public String toString() {

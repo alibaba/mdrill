@@ -416,15 +416,24 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 				LOG.info("higolog table end:" + this.tablename);
 				
 				
+				String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
+				
+				boolean ishdfsmode=false;
+				if(tablemode.indexOf("@hdfs@")>=0)
+				{
+					ishdfsmode=true;
+				}
+				
 				hb();
 				while(true)
 		    	{
 					sleep();
 		    		
-		    		if(!hbInterval.heartBeatInterval())
+		    		if(!hbInterval.heartBeatInterval(ishdfsmode))
 		    		{
 		    		    continue ;
 		    		}
+		    		
 		    		
 		    		hb();
 		    	}

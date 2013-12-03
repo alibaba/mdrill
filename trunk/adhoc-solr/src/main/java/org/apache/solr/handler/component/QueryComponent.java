@@ -113,28 +113,36 @@ public class QueryComponent extends SearchComponent
       
     if(params.getBool("fetchfdt", false))
 	  {
-    	//TODO QUICK TOP N
-    	ArrayList<Query> qlist=new ArrayList<Query>();
-    	List<Query> list=rb.getFilters();
-    	if(list!=null)
-    	{
-    		for(Query q:list)
-    		{
-    			qlist.add(q);
-    		}
-    	}
-		qlist.add(rb.getQuery());
-
-    	
-    	BooleanQuery query=new BooleanQuery();
-    	for(Query q:qlist)
-    	{
-    		query.add(q, BooleanClause.Occur.MUST);
-    	}
-    	
-    	FdtMdrillCollector coll=new FdtMdrillCollector(searcher.maxDoc());
-    	searcher.ScoreFind(query, null,coll);
-    	result.setDocSet(new BitDocSet(coll.getBits()));
+    	 String crcget=params.get("mdrill.crc.key.get",null);
+	   	  if(crcget!=null)
+	   	  {
+	   		  result.setDocSet(new BitDocSet());
+	   	  }else{
+		    	//TODO QUICK TOP N
+		    	ArrayList<Query> qlist=new ArrayList<Query>();
+		    	List<Query> list=rb.getFilters();
+		    	if(list!=null)
+		    	{
+		    		for(Query q:list)
+		    		{
+		    			qlist.add(q);
+		    		}
+		    	}
+				qlist.add(rb.getQuery());
+		
+		    	
+		    	BooleanQuery query=new BooleanQuery();
+		    	for(Query q:qlist)
+		    	{
+		    		query.add(q, BooleanClause.Occur.MUST);
+		    	}
+		    	int offset = params.getInt(FacetParams.FACET_CROSS_OFFSET, 0);
+				int limit = params.getInt(FacetParams.FACET_CROSS_LIMIT, 100);
+				int limit_offset=offset+limit;
+		    	FdtMdrillCollector coll=new FdtMdrillCollector(limit_offset+2,searcher.maxDoc());
+		    	searcher.ScoreFind(query, null,coll);
+		    	result.setDocSet(new BitDocSet(coll.getBits()));
+	   	  }
     	
 	  }else{
 		  searcher.search(result,cmd);

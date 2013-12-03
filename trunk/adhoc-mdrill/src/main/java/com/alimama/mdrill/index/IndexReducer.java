@@ -11,7 +11,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.TermInfosWriter;
-import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +39,8 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
     RamWriter ramMerger=null;
 	boolean isNotFdtMode=true;
 
+    private String[] fields = null;
+
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
 		super.setup(context);
@@ -48,6 +49,30 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 
 		Configuration conf = context.getConfiguration();
 		isNotFdtMode=conf.get("mdrill.table.mode","").indexOf("@hdfs@")<0;
+		
+		String fieldStrs = context.getConfiguration().get("higo.index.fields");
+
+		String custfields=context.getConfiguration().get("higo.column.custfields","");
+		
+		if(custfields==null||custfields.isEmpty())
+		{
+			String[] fieldslist = fieldStrs.split(",");
+			this.fields = new String[fieldslist.length];
+		
+			for (int i = 0; i < fieldslist.length; i++) {
+			    String[] fieldSchema = fieldslist[i].split(":");
+			    String fieldName = fieldSchema[0].trim().toLowerCase();
+			    this.fields[i] = fieldName;
+			}
+		}else{
+			String[] fieldslist = custfields.split(",");
+			this.fields = new String[fieldslist.length];
+		
+			for (int i = 0; i < fieldslist.length; i++) {
+			    this.fields[i] = fieldslist[i];
+			}
+		}
+
 		
 		if(!isNotFdtMode)
 		{
@@ -59,7 +84,6 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 		this.doclistcache=new DocumentList();
 		this.ramMerger = new RamWriter();
 
-		String fieldStrs = conf.get("higo.index.fields");
 		String[] fieldslist = fieldStrs.split(",");
 		this.documentConverter = new DocumentConverter(fieldslist,"solrconfig.xml", "schema.xml");
 		shardWriter = this.initShardWriter(context);
@@ -156,7 +180,7 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 			{
 				break ;
 			}
-			doclistcache.add(iterator.next());
+			doclistcache.add(iterator.next(),this.fields);
 			if(!doclistcache.isoversize())
 			{
 				continue;

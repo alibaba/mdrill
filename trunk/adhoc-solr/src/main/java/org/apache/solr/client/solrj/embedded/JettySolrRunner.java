@@ -188,7 +188,7 @@ public class JettySolrRunner
 				}
 
 				
-				if(day!=null&&!day.isEmpty())
+				if(day!=null&&!day.isEmpty()&&!day.equals(newestPartion))
 				{
 					query.addFilterQuery("thedate:"+day);
 				}

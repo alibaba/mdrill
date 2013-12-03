@@ -1581,6 +1581,10 @@ public static OperateType parseOperateType(int operate)
 				   	
 				   	JSONObject jo = new JSONObject();
 				   	String groupValues = row.getKey().getKey();
+				   	if(groupValues==null)
+				   	{
+				   		continue;
+				   	}
 				   	String[] values =  EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString(),-1));
 				   	int valuesoffset=2;
 				   	for(int j =0;j<(values.length-valuesoffset)&&j<showFields.size();j++){

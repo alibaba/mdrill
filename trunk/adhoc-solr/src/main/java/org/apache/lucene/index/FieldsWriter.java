@@ -19,17 +19,24 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.store.DataOutput.ByteIndexInput;
 import org.apache.lucene.util.IOUtils;
 
-final class FieldsWriter {
+import com.alimama.mdrill.fdtBlockCompress.FdtCompressIndexInput;
+import com.alimama.mdrill.fdtBlockCompress.FdtCompressIndexOutput;
+
+public class FieldsWriter {
+    private static final Log LOG = LogFactory.getLog(FieldsWriter.class);
+
   static final int FIELD_IS_TOKENIZED = 1 << 0;
   static final int FIELD_IS_BINARY = 1 << 1;
 
@@ -73,6 +80,8 @@ final class FieldsWriter {
   private String segment;
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
+  
+  
 
   FieldsWriter(Directory directory, String segment, FieldInfos fn) throws IOException {
     this.directory = directory;
@@ -81,11 +90,22 @@ final class FieldsWriter {
 
     boolean success = false;
     try {
-      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_EXTENSION));
+
+    	IndexOutput fdt = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_EXTENSION));
       indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION));
 
-      fieldsStream.writeInt(FORMAT_CURRENT);
-      indexStream.writeInt(FORMAT_CURRENT);
+      if(FieldsWriterCompress.isFdtCompress()&&!(directory instanceof RAMDirectory))
+      {
+          indexStream.writeInt(FieldsWriterCompress.FORMAT_CURRENT);
+          fieldsStream=new FdtCompressIndexOutput(fdt,1024*512);
+          fieldsStream.writeInt(FieldsWriterCompress.FORMAT_CURRENT);
+
+      }else{
+          fdt.writeInt(FORMAT_CURRENT);
+          indexStream.writeInt(FORMAT_CURRENT);
+          fieldsStream=fdt;
+          fieldsStream.writeInt(FieldsWriterCompress.FORMAT_CURRENT);
+      }
 
       success = true;
     } finally {
@@ -202,21 +222,51 @@ final class FieldsWriter {
     }
   }
 
-  /** Bulk write a contiguous series of documents.  The
-   *  lengths array is the length (in bytes) of each raw
-   *  document.  The stream IndexInput is the
-   *  fieldsStream from which we should bulk-copy all
-   *  bytes. */
-  final void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
-    long position = fieldsStream.getFilePointer();
-    long start = position;
-    for(int i=0;i<numDocs;i++) {
-      indexStream.writeLong(position);
-      position += lengths[i];
-    }
-    fieldsStream.copyBytes(stream, position-start);
-    assert fieldsStream.getFilePointer() == position;
-  }
+  final void addRawDocuments(final IndexInput stream, long[] lengthsstart,long[] lengthsend, int numDocs) throws IOException {
+	  if(stream instanceof FdtCompressIndexInput)
+	  {
+		  FdtCompressIndexInput inputstream=(FdtCompressIndexInput)stream;
+		    for(int i=0;i<numDocs;i++) {
+			  long position = fieldsStream.getFilePointer();
+		      indexStream.writeLong(position);
+//		      LOG.info("addRawDocuments 1 "+position+","+lengthsstart[i]+","+lengthsend[i]);
+		      inputstream.writeToPos(fieldsStream,lengthsend[i]);
+		    }
+		  return ;
+	  }
+	  
+	  if(fieldsStream instanceof FdtCompressIndexOutput)
+	  {
+		    for(int i=0;i<numDocs;i++) {
+				  long position = fieldsStream.getFilePointer();
+			      indexStream.writeLong(position);
+//			      LOG.info("addRawDocuments 2 "+position+","+lengthsstart[i]+","+lengthsend[i]);
+			      long end=lengthsend[i];
+			      if(end==-1)
+			      {
+			    	  end=stream.length();
+			      }
+				  fieldsStream.copyBytes(stream, end-lengthsstart[i]);
+		    }
+		  
+		  return ;
+	  }
+	  
+	    long position = fieldsStream.getFilePointer();
+	    long start = position;
+	    for(int i=0;i<numDocs;i++) {
+	      indexStream.writeLong(position);
+//	      LOG.info("addRawDocuments 3 "+position+","+lengthsstart[i]+","+lengthsend[i]);
+
+	      long end=lengthsend[i];
+	      if(end==-1)
+	      {
+	    	  end=stream.length();
+	      }
+	      position += end-lengthsstart[i];
+	    }
+	    fieldsStream.copyBytes(stream, position-start);
+	  }
 
   final void addDocument(Document doc) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
@@ -228,7 +278,6 @@ final class FieldsWriter {
           storedCount++;
     }
     fieldsStream.writeVInt(storedCount);
-
 
     for (Fieldable field : fields) {
       if (field.isStored())

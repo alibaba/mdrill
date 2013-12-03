@@ -162,6 +162,8 @@ final class SegmentMerger {
 
   private SegmentReader[] matchingSegmentReaders;
   private int[] rawDocLengths;
+  private long[] rawDocStarts;
+  private long[] rawDocEnds;
   private int[] rawDocLengths2;
   private int matchedCount;
 
@@ -202,6 +204,8 @@ final class SegmentMerger {
 
     // Used for bulk-reading raw bytes for stored fields
     rawDocLengths = new int[MAX_RAW_MERGE_DOCS];
+    rawDocStarts = new long[MAX_RAW_MERGE_DOCS];
+    rawDocEnds = new long[MAX_RAW_MERGE_DOCS];
     rawDocLengths2 = new int[MAX_RAW_MERGE_DOCS];
   }
 
@@ -305,8 +309,8 @@ final class SegmentMerger {
           }
         } while(numDocs < MAX_RAW_MERGE_DOCS);
         
-        IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, start, numDocs);
-        fieldsWriter.addRawDocuments(stream, rawDocLengths, numDocs);
+        IndexInput stream = matchingFieldsReader.rawDocs(rawDocStarts,rawDocEnds, start, numDocs);
+        fieldsWriter.addRawDocuments(stream, rawDocStarts,rawDocEnds, numDocs);
         docCount += numDocs;
         checkAbort.work(300 * numDocs);
       }
@@ -336,8 +340,8 @@ final class SegmentMerger {
       // We can bulk-copy because the fieldInfos are "congruent"
       while (docCount < maxDoc) {
         int len = Math.min(MAX_RAW_MERGE_DOCS, maxDoc - docCount);
-        IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, docCount, len);
-        fieldsWriter.addRawDocuments(stream, rawDocLengths, len);
+        IndexInput stream = matchingFieldsReader.rawDocs(rawDocStarts,rawDocEnds, docCount, len);
+        fieldsWriter.addRawDocuments(stream, rawDocStarts,rawDocEnds, len);
         docCount += len;
         checkAbort.work(300 * len);
       }

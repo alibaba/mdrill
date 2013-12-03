@@ -286,7 +286,7 @@ public class ThedateListener extends PartionListener{
 		for(Entry<String, ShardCount> e:map.entrySet())
 		{
 			ShardCount sc=e.getValue();
-			if(sc.cnt>0)
+			if(sc.cnt>0&&!sc.isTimeout())
 			{
 				list.add(new shardCountDayCmp(e.getKey(), sc,isdesc));
 			}

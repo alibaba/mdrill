@@ -1,9 +1,10 @@
 package com.alimama.mdrill.index;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.zip.CRC32;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
@@ -33,11 +34,16 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
     private Integer Index=(int) (Math.random()*10000);
     
     private String uniqfield="";
+    private int uniqfieldIndex=-1;
     private boolean isuniqcheck=false;
+    
+    private int thedateIndex=-1;
 
     @Override
     public void setup(Context context) throws IOException, InterruptedException {
 		super.setup(context);
+		
+	
 		
 		TaskID taskId = context.getTaskAttemptID().getTaskID();
 		this.Index = taskId.getId();
@@ -74,8 +80,21 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 			    String[] fieldSchema = fieldslist[i].split(":");
 			    String fieldName = fieldSchema[0].trim().toLowerCase();
 			    String type = fieldSchema[1];
-			    this.isStore[i] = Boolean.valueOf(fieldSchema[3]);
 			    this.fields[i] = fieldName;
+
+			    if(this.fields[i].equals("thedate"))
+			    {
+			    	thedateIndex=i;
+			    }
+			    
+			    if(this.isuniqcheck)
+			    {
+			    	if(this.fields[i].equals(this.uniqfield))
+			    	{
+			    		uniqfieldIndex=i;
+			    	}
+			    }
+			    this.isStore[i] = Boolean.valueOf(fieldSchema[3]);
 			    this.isDate[i] = type.equalsIgnoreCase("tdate");
 			    this.isString[i] = type.equalsIgnoreCase("string");
 			}
@@ -89,6 +108,17 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 			for (int i = 0; i < fieldslist.length; i++) {
 			    this.isStore[i] = Boolean.valueOf(false);
 			    this.fields[i] = fieldslist[i];
+			    if(this.fields[i].equals("thedate"))
+			    {
+			    	thedateIndex=i;
+			    }
+			    if(this.isuniqcheck)
+			    {
+			    	if(this.fields[i].equals(this.uniqfield))
+			    	{
+			    		uniqfieldIndex=i;
+			    	}
+			    }
 			    this.isDate[i]= false;
 			    this.isString[i] = true;
 			}
@@ -97,6 +127,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 
     protected void cleanup(Context context) throws IOException,
 	    InterruptedException {
+     	
     }
     
     private String parseDefault(String input)
@@ -148,31 +179,30 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
     		return false;
     	}
 
-    	HashMap<String, String> res = new HashMap<String, String>(fields.length);
+    	String[] res =new String[fields.length];
     	for (int i = 0; i < fields.length; i++) {
     	    String fieldName = fields[i];
     	    String string =(i<values.length)?values[i]:null;
     	    String val=parseDefault(string);
 
 			if (this.isDate[i]) {
-				res.put(fieldName, TdateFormat.ensureTdate(val, fieldName));
+				res[i]=TdateFormat.ensureTdate(val, fieldName);
 			}else if(val!=null){
-				res.put(fieldName,val);
+				res[i]=val;
 			}else if(this.isString[i]){
-				res.put(fieldName,"_");
+				res[i]="_";
 			}
     	}
     	
-    	if(usedthedate)
+    	if(usedthedate&&thedateIndex>0)
     	{	
     		if(thedate!=null)
     		{
-    			res.put("thedate", thedate);//从文件的路径中获取
+    			res[thedateIndex]=thedate;
     		}
-    		
-	    	res.put("thedate", String.valueOf(res.get("thedate")).replaceAll("-", "").replaceAll("_", ""));
-	    	
-	    	if(res.get("thedate").length()!=8)
+			res[thedateIndex]=String.valueOf(res[thedateIndex]).replaceAll("-", "").replaceAll("_", "");
+
+	    	if(res[thedateIndex]==null||res[thedateIndex].length()!=8)
 	    	{
 	    		if(debuglines<100)
 	    		{
@@ -182,30 +212,25 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 	    		context.getCounter("higo", "skiprecords").increment(1);
 	    	}
 	    	
-	    	context.getCounter("higo", "dayrecord_"+String.valueOf(res.get("thedate"))).increment(1);
-    	
-	    	CRC32 crc32 = new CRC32();
-			crc32.update(java.util.UUID.randomUUID().toString().getBytes());
-	    	res.put("higo_uuid", Long.toString(crc32.getValue()));
-    	
+	    	context.getCounter("higo", "dayrecord_"+String.valueOf(res[thedateIndex])).increment(1);
     	}
     	
     	
     	if(printlines<10)
 		{
     		printlines++;
-    		System.out.println("res: " + res.toString()   + " arrays,"+Arrays.toString(values));
+    		System.out.println("res:"+Arrays.toString(values));
 		}
     	
-	    context.write(new PairWriteable(this.Index++), new DocumentMap(res));
-
     	
-    	if(this.isuniqcheck&&res.containsKey(this.uniqfield))
+    	context.write(new PairWriteable(this.Index++), new DocumentMap(res));
+    	
+    	if(this.isuniqcheck&&uniqfieldIndex>0&&res[uniqfieldIndex]!=null)
     	{
-    		String notempty=res.get(this.uniqfield);
+    		String notempty=res[uniqfieldIndex];
     		if(notempty.length()>0&&!notempty.equals("_"))
     		{
-    	    context.write(new PairWriteable(new Text("uniq_"+notempty)), new DocumentMap());
+    			context.write(new PairWriteable(new Text("uniq_"+notempty)), new DocumentMap());
     		}
     	}
     	

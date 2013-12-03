@@ -87,7 +87,7 @@ public abstract class DataOutput {
   protected final int[] buffer_compress=new int[BLOGK_SIZE_COMPRESS];
   private int uptopos_compress=0;
   private int uptopos_compress_record=0;
-  private boolean allowblock_compress=false;
+  private int allowblock_compress=0;
   public void resetBlockMode()
   {
       this.uptopos_compress=0;
@@ -96,9 +96,9 @@ public abstract class DataOutput {
   }
   
   
-  public void setUsedBlock()
+  public void setUsedBlock(int type)
   {
-	  allowblock_compress=true;
+	  allowblock_compress=type;
   }
   public void writeCompressblock(int v,int i) throws IOException {
 	 this.uptopos_compress_record+=i;
@@ -135,7 +135,7 @@ public abstract class DataOutput {
 	  {
 		  return ;
 	  }
-	  if(!this.allowblock_compress||this.uptopos_compress_record<BLOGK_SIZE_USED_COMPRESS)
+	  if(this.allowblock_compress==0||this.uptopos_compress_record<BLOGK_SIZE_USED_COMPRESS)
 	  {
 		  for(int i=0;i<uptopos_compress;i++) {
 		        this.writeVInt(buffer_compress[i]);
@@ -167,19 +167,19 @@ public abstract class DataOutput {
 	      if(type!=0)
 	      {
 		      if(type==1){
-		    	  if(printindex_compress_repeat++<1000)
-			      {
-			    	  System.out.println("##RepeatCompress##"+repeat.index+"@"+uptopos_compress);
-			      }
+//		    	  if(printindex_compress_repeat++<1000)
+//			      {
+//			    	  System.out.println("##RepeatCompress##"+repeat.index+"@"+uptopos_compress);
+//			      }
 		          this.writeVInt((repeat.index<<2)+type);
 			      for(int i=0;i<repeat.index;i++) {
 			        this.writeVInt(repeat.bytes[i]);
 			      }
 		      }else{
-		    	   if(printindex_compress++<1000)
-		    	   {
-		    	    	  System.out.println("##PForDelta##"+compresslen+"@"+uptopos_compress);
-		    	   }
+//		    	   if(printindex_compress++<1000)
+//		    	   {
+//		    	    	  System.out.println("##PForDelta##"+compresslen+"@"+uptopos_compress);
+//		    	   }
 		    	      this.writeVInt((repeat.index<<2)+type);
 			      this.writeVInt(compresslen);
 			      for(int i=0;i<compresslen;i++) {

@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.request.uninverted.UnInvertedField;
 import org.slf4j.Logger;
@@ -45,21 +46,24 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
   long freqStart;
   FieldInfo fieldInfo;
   
-  
-  
-  private boolean currentIsUseCompress=true;
+  private int compressType=0;
 
-
-
-FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter parent) throws IOException {
+  FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter parent) throws IOException {
     this.parent = parent;
+    skipInterval = parent.parent.termsOut.skipInterval;
+
     out = parent.parent.dir.createOutput(IndexFileNames.segmentFileName(parent.parent.segment, IndexFileNames.FREQ_EXTENSION));
-    this.currentIsUseCompress=true;//IndexWriterConfig.IsCompressFrq();
-    out.writeVInt(this.currentIsUseCompress?1:0);
+    if(skipInterval>=(Integer.MAX_VALUE-10000))
+    {
+    	this.compressType=1;
+
+    }else{
+    	this.compressType=0;
+    }
+    out.writeVInt(this.compressType);//1:noskipcompress 0:nocompress
     boolean success = false;
     try {
       totalNumDocs = parent.parent.totalNumDocs;
-      skipInterval = parent.parent.termsOut.skipInterval;
       skipListWriter = parent.parent.skipListWriter;
       skipListWriter.setFreqOutput(out);
       
@@ -154,11 +158,7 @@ FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter pare
 
 @Override
 public boolean reset() {
-	if(this.currentIsUseCompress)
-	{
-		this.out.setUsedBlock();
-	}
-	
+	this.out.setUsedBlock(this.compressType);
 	this.out.resetBlockMode();
 	return true;
 }

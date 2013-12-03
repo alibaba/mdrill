@@ -18,6 +18,8 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
@@ -66,6 +68,22 @@ public class RAMOutputStream extends IndexOutput {
       pos = nextPos;
     }
   }
+  
+  public void writeTo(OutputStream out) throws IOException {
+	    flush();
+	    final long end = file.length;
+	    long pos = 0;
+	    int buffer = 0;
+	    while (pos < end) {
+	      int length = BUFFER_SIZE;
+	      long nextPos = pos + length;
+	      if (nextPos > end) {                        // at the last buffer
+	        length = (int)(end - pos);
+	      }
+	      out.write(file.getBuffer(buffer++),0, length);
+	      pos = nextPos;
+	    }
+	  }
 
   /** Resets this to an empty file. */
   public void reset() {

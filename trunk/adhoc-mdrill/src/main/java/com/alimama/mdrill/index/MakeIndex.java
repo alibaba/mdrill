@@ -193,10 +193,8 @@ public class MakeIndex {
 		conf.set("higo.input.base", inputBase);
 		
 		
-		
 		conf.setBoolean("higo.column.userthedate", usedthedate);
-		conf.set("io.sort.mb", "80");
-		conf.set("mapred.reduce.slowstart.completed.maps", "0.01");
+		//conf.set("mapred.reduce.slowstart.completed.maps", "0.01");
 		conf.set("higo.index.fields", fields);
 		job.setPartitionerClass(PairPartion.class) ;
 
@@ -284,7 +282,10 @@ public class MakeIndex {
 		String hadoopConfDir = (String) stormconf.get("hadoop.conf.dir");
 		String opts=(String) stormconf.get("hadoop.java.opts");
 		Configuration conf=new Configuration();
-		conf.set("mapred.child.java.opts", opts);
+		if(opts!=null)
+		{
+			conf.set("mapred.child.java.opts", opts);
+		}
 		HadoopUtil.grabConfiguration(hadoopConfDir, conf);
 		return conf;
 	    }

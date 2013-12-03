@@ -6,15 +6,16 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.OpenBitSet;
 
-import com.alimama.mdrill.utils.UniqConfig;
 
 public class FdtMdrillCollector implements IndexSearcher.MdrillCollector{
 	OpenBitSet bits;
+	int limit;
 	public OpenBitSet getBits() {
 		return bits;
 	}
 
-	public FdtMdrillCollector( int maxDoc) {
+	public FdtMdrillCollector( int limit ,int maxDoc) {
+		this.limit=limit;
 		bits = new OpenBitSet(maxDoc);
 	}
 	int base;
@@ -27,7 +28,7 @@ public class FdtMdrillCollector implements IndexSearcher.MdrillCollector{
 	
 	@Override
 	public boolean isstop() throws IOException {
-		return cnt>UniqConfig.defaultCrossMaxLimit();
+		return cnt>this.limit;
 	}
 	
 	@Override

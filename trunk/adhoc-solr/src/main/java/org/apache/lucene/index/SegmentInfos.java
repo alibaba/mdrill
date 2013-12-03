@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -25,6 +27,8 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
+
+import com.alimama.mdrill.hdfsDirectory.Descriptor;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,6 +51,7 @@ import java.util.Set;
  * @lucene.experimental
  */
 public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
+    private static final Log logger = LogFactory.getLog(SegmentInfos.class);
 
   /** The file format version, a negative number. */
   /* Works since counter, the old 1st entry, is always >= 0 */
@@ -690,6 +695,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           long genB = -1;
           for(int i=0;i<defaultGenFileRetryCount;i++) {
             IndexInput genInput = null;
+            
+            if(!directory.fileExists(IndexFileNames.SEGMENTS_GEN))
+            {
+            	 if (infoStream != null) {
+                     message("segments.gen open: FileNotFoundException "+IndexFileNames.SEGMENTS_GEN );
+                   }
+                   break;
+            }
             try {
               genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN);
             } catch (FileNotFoundException e) {
@@ -718,7 +731,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
                     break;
                   }
                 }
-              } catch (IOException err2) {
+              } catch (FileNotFoundException err2) {
+                  if (infoStream != null) {
+                    message("segments.gen open: FileNotFoundException " + err2);
+                  }
+                  break;
+                
+              }
+              catch (IOException err2) {
                 // will retry
               } finally {
                 genInput.close();
@@ -990,10 +1010,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
         genOutput.close();
       }
     } catch (ThreadInterruptedException t) {
+    	logger.info("sigment error ",t);
       throw t;
     } catch (Throwable t) {
-      // It's OK if we fail to write this file since it's
-      // used only as one of the retry fallbacks.
+    	logger.info("sigment error ",t);
+
     }
   }
 

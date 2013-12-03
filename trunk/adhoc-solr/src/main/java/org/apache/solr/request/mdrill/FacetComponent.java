@@ -94,6 +94,34 @@ public class  FacetComponent extends SearchComponent
   private Object getResult(boolean isdetail,SolrIndexSearcher searcher,SolrParams params,SolrQueryRequest req,String[] fields, DocSet base)throws Exception 
 	{
 	  String crcget=params.get("mdrill.crc.key.get",null);
+
+	  if(crcget!=null&&params.getBool("fetchfdt", false))
+	  {
+		  SolrIndexReader reader=searcher.getReader();
+			IndexReader.InvertParams invparam=new IndexReader.InvertParams();
+			invparam.searcher=searcher;
+			invparam.params=params;
+			invparam.fields=fields;
+			invparam.base=base;
+			invparam.req=req;
+			invparam.isdetail=isdetail;
+			IndexReader.InvertResult result=reader.invertScan(searcher.getSchema(), invparam);
+			ArrayList<NamedList> resultlist=result.getResult();
+			
+			Map<Long,String> crcvalue=new HashMap<Long,String>();
+			
+			for(NamedList nl:resultlist)
+			{
+				
+				crcvalue.putAll((Map<? extends Long, ? extends String>) nl.get("fdtcre"));
+				
+			}
+			
+			return crcvalue;
+
+	  }
+	  
+	  
 	  if(crcget!=null)
 	  {
 			ConcurrentHashMap<Long,String> cache=MdrillUtils.CRC_CACHE_SIZE.remove(crcget);
@@ -121,6 +149,7 @@ public class  FacetComponent extends SearchComponent
 
 			return crcvalue;
 	  }
+	  
 	  
 		SolrIndexReader reader=searcher.getReader();
 		IndexReader.InvertParams invparam=new IndexReader.InvertParams();

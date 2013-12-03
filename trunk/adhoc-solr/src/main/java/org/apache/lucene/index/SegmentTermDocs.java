@@ -55,7 +55,7 @@ public class SegmentTermDocs implements TermDocs {
   
   protected boolean currentFieldStoresPayloads;
   protected IndexOptions indexOptions;
-  boolean isfrqCompress=false;
+  int isfrqCompress=0;
   
   ReadCompress compress;
   protected SegmentTermDocs(SegmentReader parent,int buffer) {
@@ -82,7 +82,7 @@ public class SegmentTermDocs implements TermDocs {
     }
     
     try {
-    	isfrqCompress=this.freqStream.readVInt()==1?true:false;
+    	isfrqCompress=this.freqStream.readVInt();
     } catch (IOException e) {
     }
     
@@ -149,9 +149,9 @@ public class SegmentTermDocs implements TermDocs {
 		protected int[] buffer = new int[0];
 		int pos = 0;
 
-		boolean isfrqCompress = false;
+		int isfrqCompress = 0;
 
-		public void setCompressMode(boolean isfrqCompress) {
+		public void setCompressMode(int isfrqCompress) {
 			this.isfrqCompress = isfrqCompress;
 		}
 
@@ -161,11 +161,8 @@ public class SegmentTermDocs implements TermDocs {
 		}
 
 
-		public int readCompressblock(int skipInterval,int df) throws IOException {
-			
-			int blocksize=Math.min(skipInterval, df);
-			
-			if (!this.isfrqCompress || blocksize < DataOutput.BLOGK_SIZE_USED_COMPRESS) {
+		public int readCompressblock(int df) throws IOException {
+			if (this.isfrqCompress==0 || df < DataOutput.BLOGK_SIZE_USED_COMPRESS) {
 				return stream.readVInt();
 			}
 			while (pos >= buffer.length) {
@@ -241,7 +238,7 @@ public class SegmentTermDocs implements TermDocs {
       if (count == df)
         return false;
 	    
-	final int docCode =  this.compress.readCompressblock(this.skipInterval,this.df);
+	final int docCode =  this.compress.readCompressblock(this.df);
       
       if (indexOptions == IndexOptions.DOCS_ONLY) {
         doc += docCode;
@@ -251,7 +248,7 @@ public class SegmentTermDocs implements TermDocs {
         if ((docCode & 1) != 0)       // if low bit is set
           freq = 1;         // freq is one
         else
-          freq = this.compress.readCompressblock(this.skipInterval,this.df);     // else read freq
+          freq = this.compress.readCompressblock(this.df);     // else read freq
       }
       
       count++;
@@ -273,12 +270,12 @@ public class SegmentTermDocs implements TermDocs {
       int i = 0;
       while (i < length && count < df) {
         // manually inlined call to next() for speed
-        final int docCode =  this.compress.readCompressblock(this.skipInterval,this.df);
+        final int docCode =  this.compress.readCompressblock(this.df);
         doc += docCode >>> 1;       // shift off low bit
         if ((docCode & 1) != 0)       // if low bit is set
           freq = 1;         // freq is one
         else
-          freq = this.compress.readCompressblock(this.skipInterval,this.df);     // else read freq
+          freq = this.compress.readCompressblock(this.df);     // else read freq
         count++;
 
         if (deletedDocs == null || !deletedDocs.get(doc)) {
@@ -295,7 +292,7 @@ public class SegmentTermDocs implements TermDocs {
     int i = 0;
     while (i < length && count < df) {
       // manually inlined call to next() for speed
-      doc +=   this.compress.readCompressblock(this.skipInterval,this.df);       
+      doc +=   this.compress.readCompressblock(this.df);       
       count++;
 
       if (deletedDocs == null || !deletedDocs.get(doc)) {

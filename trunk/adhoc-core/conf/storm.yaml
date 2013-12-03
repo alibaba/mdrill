@@ -12,14 +12,14 @@
  
 ####hadoop配置####
  hadoop.conf.dir: "/home/taobao/config"
- hadoop.java.opts: "-Xmx1024m"
+ hadoop.java.opts: "-Xmx1536m"
  
 ####蓝鲸各种心跳间隔配置####
  nimbus.task.timeout.secs: 30
  task.heartbeat.frequency.secs: 6
  nimbus.supervisor.timeout.secs: 120
  supervisor.heartbeat.frequency.secs: 10
- nimbus.monitor.freq.secs: 20
+ nimbus.monitor.freq.secs: 60
  supervisor.worker.timeout.secs: 200
  supervisor.monitor.frequency.secs: 20
  worker.heartbeat.frequency.secs: 10
@@ -115,9 +115,10 @@
  higo.partion.type.ods_allpv_ad_d: "day"
  
  
+ 
  #-------------hdfs mode-----------------
- higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:5@blocksize:1073741824@" 
- higo.index.parallel.ods_allpv_ad_d: 30
+ higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:15@blocksize:1073741824@iosortmb:256@" 
+ higo.index.parallel.ods_allpv_ad_d: 40
  
 
 ####以下为adhoc项目专用，跟mdrill无关，不启动UI的话可忽略####

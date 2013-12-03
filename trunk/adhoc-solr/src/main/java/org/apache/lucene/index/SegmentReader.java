@@ -1041,6 +1041,27 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return core.freqStream;
   }
   
+  public String getSigmentUniqKey()
+  {
+	  StringBuffer buffer=new StringBuffer();
+	  buffer.append(si.name).append("@");
+	  if(core.dir instanceof FSDirectory){
+    	  FSDirectory dddir=(FSDirectory)core.dir;
+    	  buffer.append(dddir.getDirectory().getAbsolutePath()).append("@");
+      }else if(core.dir instanceof FileSystemDirectory){
+    	  FileSystemDirectory dddir=(FileSystemDirectory)core.dir;
+    	  buffer.append("@hdfs@"+dddir.directory.toString()).append("@");
+      }
+      else if(core.dir instanceof RAMDirectory){
+    	  RAMDirectory dddir=(RAMDirectory)core.dir;
+    	  buffer.append(dddir.uuid).append("@");
+      }else{
+    	  buffer.append(core.dir.toString());
+      }
+	  
+	  return buffer.toString();
+  }
+  
   public String getStringCacheKey(){
 	  StringBuffer buffer=new StringBuffer();
 	  buffer.append(si.docCount).append("@");

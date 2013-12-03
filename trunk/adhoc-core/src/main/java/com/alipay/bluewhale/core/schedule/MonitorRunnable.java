@@ -17,7 +17,7 @@ import com.alipay.bluewhale.core.utils.PathUtils;
 import com.esotericsoftware.minlog.Log;
 
 public class MonitorRunnable implements Runnable {
-	private static Logger LOG = Logger.getLogger(Supervisor.class);
+	private static Logger LOG = Logger.getLogger(MonitorRunnable.class);
 
 	private NimbusData data;
 

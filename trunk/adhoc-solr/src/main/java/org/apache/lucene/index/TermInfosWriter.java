@@ -74,7 +74,7 @@ public final class TermInfosWriter implements Closeable {
 	  //如果是全文检索模式，为了提升跳跃的效率，该值不宜设置的太大，其他模式设置的DataOutput.BLOGK_SIZE_COMPRESS,能有比较好的压缩比
 	  SKIP_INTERVAL=i;
   }
-  int skipInterval = DataOutput.BLOGK_SIZE_COMPRESS;
+  int skipInterval = Integer.MAX_VALUE;
   
   int maxSkipLevels = 10;
 
@@ -110,7 +110,7 @@ public final class TermInfosWriter implements Closeable {
 
   private void initialize(Directory directory, String segment, FieldInfos fis,
                           int interval, boolean isi) throws IOException {
-	skipInterval=SKIP_INTERVAL<(Integer.MAX_VALUE-1000)?SKIP_INTERVAL:DataOutput.BLOGK_SIZE_COMPRESS;
+	skipInterval=SKIP_INTERVAL<(Integer.MAX_VALUE-1000)?SKIP_INTERVAL:Integer.MAX_VALUE;
     indexInterval = interval;
     fieldInfos = fis;
     isIndex = isi;

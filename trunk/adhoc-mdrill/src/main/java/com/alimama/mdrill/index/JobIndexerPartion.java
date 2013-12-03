@@ -276,12 +276,22 @@ public class JobIndexerPartion extends Configured implements Tool {
 		Configuration conf=this.getConf();
 		conf.set("mdrill.table.mode", tablemode);
 		conf.setInt("dfs.replication", rep);
-		String hdfsPral="1";
-		 Pattern mapiPattern      = Pattern.compile("@sigment:([0-9]+)@");
+		
+		 conf.set("io.sort.mb", "80");
+		 Pattern mapiPattern      = Pattern.compile("@iosortmb:([0-9]+)@");
 		 Matcher mat=mapiPattern.matcher(tablemode);
          if (mat.find()) {
-             hdfsPral=mat.group(1);
+     		conf.set("io.sort.mb", mat.group(1));
          }
+		
+		String hdfsPral = "1";
+		mapiPattern = Pattern.compile("@sigment:([0-9]+)@");
+		mat = mapiPattern.matcher(tablemode);
+		if (mat.find()) {
+			hdfsPral = mat.group(1);
+		}
+         
+         
 		
 		int sigcount=1;
 		try{
