@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 
 import org.apache.solr.common.SolrInputDocument;
@@ -23,6 +25,11 @@ public class DocumentConverter {
 	    InputSource is = new InputSource(solrConfig.getResourceLoader().openSchema(schema));
 	    this.schema =new IndexSchema(solrConfig, "solrconfig",is);
 	    TermInfosWriter.setSchema(this.schema);
+	}
+	
+	public Analyzer getAnalyzer()
+	{
+		return this.schema.getAnalyzer();
 	}
 	
 	public DocumentConverter(String[] fields,String config,String schema) {

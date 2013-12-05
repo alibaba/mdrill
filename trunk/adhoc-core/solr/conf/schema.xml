@@ -1,38 +1,39 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <schema name="example" version="1.4">
   <types>
-   <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-        <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
+   <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true" omitTermFreqAndPositions="true" omitPositions="true" />
+        <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true" omitTermFreqAndPositions="true" />
     <fieldtype name="binary" class="solr.BinaryField"/>
 
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
-    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"  />
-    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"  />
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"  omitTermFreqAndPositions="true" />
+    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0" omitTermFreqAndPositions="true" />
 
-    <fieldType name="tint" class="solr.TrieIntField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
-    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
-    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
-    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true"  positionIncrementGap="0"/>
+    <fieldType name="tint" class="solr.TrieIntField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
 
-    <fieldType name="date" class="solr.TrieDateField" omitNorms="true" precisionStep="0" positionIncrementGap="0"  />
-        <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="0"  positionIncrementGap="0"/>
+    <fieldType name="date" class="solr.TrieDateField" omitNorms="true" precisionStep="0" positionIncrementGap="0" omitTermFreqAndPositions="true" />
+        <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="0"  positionIncrementGap="0" omitTermFreqAndPositions="true" />
 
 
     <fieldType name="random" class="solr.RandomSortField" indexed="true" />
 
-    <fieldType name="text" class="solr.TextField" positionIncrementGap="100" omitNorms="true" omitTermFreqAndPositions="true" >
+
+    <fieldType name="text" class="solr.TextField" positionIncrementGap="0" omitNorms="true"  omitTermFreqAndPositions="true"  omitPositions="true">
       <analyzer type="index">
-        <tokenizer class="solr.ChineseTokenizerFactory"/>
-        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <!--filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/-->
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.SnowballPorterFilterFactory" language="English" protected="protwords.txt"/>
+        <!--filter class="solr.SnowballPorterFilterFactory" language="English" protected="protwords.txt"/-->
       </analyzer>
       <analyzer type="query">
-          <tokenizer class="solr.ChineseTokenizerFactory"/>
-        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
+       <tokenizer class="solr.StandardTokenizerFactory"/>
+        <!--filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/-->
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.SnowballPorterFilterFactory" language="English" protected="protwords.txt"/>
+        <!--filter class="solr.SnowballPorterFilterFactory" language="English" protected="protwords.txt"/-->
       </analyzer>
     </fieldType>
    
@@ -68,179 +69,85 @@
 
 
   <fields>
-  	
-<field name="thedate" type="string" indexed="true" stored="true"/>
-<field name="member_id" type="string" indexed="true" stored="true"/>
-<field name="bu_id" type="tlong" indexed="true" stored="true"/>
-<field name="bu_name" type="string" indexed="true" stored="true"/>
-<field name="business_role" type="string" indexed="true" stored="true"/>
-<field name="city" type="string" indexed="true" stored="true"/>
-<field name="company_name" type="string" indexed="true" stored="true"/>
-<field name="manufacturing_type" type="string" indexed="true" stored="true"/>
-<field name="pinlei_id" type="tlong" indexed="true" stored="true"/>
-<field name="pinlei_name" type="string" indexed="true" stored="true"/>
-<field name="sex" type="string" indexed="true" stored="true"/>
-<field name="site_reg_dt" type="string" indexed="true" stored="true"/>
-<field name="std_category_name1" type="string" indexed="true" stored="true"/>
-<field name="p4p_cust_id" type="tlong" indexed="true" stored="true"/>
-<field name="province_name" type="string" indexed="true" stored="true"/>
-<field name="tp_type" type="string" indexed="true" stored="true"/>
-<field name="dm_service_level" type="string" indexed="true" stored="true"/>
-<field name="capital_name" type="string" indexed="true" stored="true"/>
-<field name="city_name" type="string" indexed="true" stored="true"/>
-<field name="leads_sales" type="string" indexed="true" stored="true"/>
-<field name="leads_team" type="string" indexed="true" stored="true"/>
-<field name="resign_leads_sales" type="string" indexed="true" stored="true"/>
-<field name="resign_leads_team" type="string" indexed="true" stored="true"/>
-<field name="accredittime" type="string" indexed="true" stored="true"/>
-<field name="b2b_cust_type" type="string" indexed="true" stored="true"/>
-<field name="cust_real_level" type="string" indexed="true" stored="true"/>
-<field name="cust_max_level" type="string" indexed="true" stored="true"/>
-<field name="cust_score" type="tdouble" indexed="true" stored="true"/>
-<field name="max_p4p_daily_max_cost" type="tdouble" indexed="true" stored="true"/>
-<field name="min_p4p_daily_max_cost" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_account_balance_td_001" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_account_balance_td_002" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_account_balance_td_003" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_charge_amt_1d_001" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_charge_amt_1d_002" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_charge_amt_td_003" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_charge_amt_td_004" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_charge_cnt_cm_003" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_charge_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_charge_cnt_td_002" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_charge_cnt_td_004" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_daily_max_cost" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_first_charge_time_td_001" type="string" indexed="true" stored="true"/>
-<field name="p4p_first_cost_time_td_001" type="string" indexed="true" stored="true"/>
-<field name="p4p_first_cost_time_td_002" type="string" indexed="true" stored="true"/>
-<field name="p4p_first_cost_time_td_003" type="string" indexed="true" stored="true"/>
-<field name="p4p_left_d_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_own_day_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_own_day_cnt_td_002" type="tlong" indexed="true" stored="true"/>
-<field name="last_charge_time_td_002" type="string" indexed="true" stored="true"/>
-<field name="balance" type="tdouble" indexed="true" stored="true"/>
-<field name="over_draft_value" type="tdouble" indexed="true" stored="true"/>
-<field name="king_unpay_amt" type="tdouble" indexed="true" stored="true"/>
-<field name="king_pay_amt" type="tdouble" indexed="true" stored="true"/>
-<field name="exchange_daycnt" type="tlong" indexed="true" stored="true"/>
-<field name="site_login_d_cnt_1m_001" type="tlong" indexed="true" stored="true"/>
-<field name="spv_cnt_1m_009" type="tlong" indexed="true" stored="true"/>
-<field name="visit_d_cnt_1m_006" type="tlong" indexed="true" stored="true"/>
-<field name="last_visit_dt_td_001" type="string" indexed="true" stored="true"/>
-<field name="post_saleoffer_d_cnt_1w_003" type="tlong" indexed="true" stored="true"/>
-<field name="repost_saleoffer_d_cnt_1w_005" type="tlong" indexed="true" stored="true"/>
-<field name="atm_login_d_cnt_sd_003" type="tlong" indexed="true" stored="true"/>
-<field name="last_atm_login_ts_td_001" type="string" indexed="true" stored="true"/>
-<field name="visit_d_cnt_1w_001" type="tlong" indexed="true" stored="true"/>
-<field name="wp_decoration_score" type="tlong" indexed="true" stored="true"/>
-<field name="wp_total_score" type="tlong" indexed="true" stored="true"/>
-<field name="dpv_cnt_1d_007" type="tlong" indexed="true" stored="true"/>
-<field name="dpv_cnt_1d_008" type="tlong" indexed="true" stored="true"/>
-<field name="pv_cnt_1d_001" type="tlong" indexed="true" stored="true"/>
-<field name="pv_cnt_1m_020" type="tlong" indexed="true" stored="true"/>
-<field name="expose_cnt_1m_001" type="tlong" indexed="true" stored="true"/>
-<field name="expose_cnt_1m_002" type="tlong" indexed="true" stored="true"/>
-<field name="fb_cnt_1d_017" type="tlong" indexed="true" stored="true"/>
-<field name="fb_member_cnt_1d_004" type="tlong" indexed="true" stored="true"/>
-<field name="adgroup_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="adgroup_cnt_td_002" type="tlong" indexed="true" stored="true"/>
-<field name="bp_cust_status" type="string" indexed="true" stored="true"/>
-<field name="last_kw_time_td_001" type="string" indexed="true" stored="true"/>
-<field name="last_trad_time_td_001" type="string" indexed="true" stored="true"/>
-<field name="p4p_accredit_time" type="string" indexed="true" stored="true"/>
-<field name="p4p_champ_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_cust_ol_reason" type="string" indexed="true" stored="true"/>
-<field name="p4p_cust_ol_state" type="string" indexed="true" stored="true"/>
-<field name="p4p_kw_avg_price" type="string" indexed="true" stored="true"/>
-<field name="p4p_kw_cnt_1d_004" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_kw_cnt_1d_005" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_kw_cnt_1d_008" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_kw_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_kw_cnt_td_006" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_kw_max_price" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_kw_min_price" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_offer_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_offer_cnt_td_005" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_offline_reason_1d_001" type="string" indexed="true" stored="true"/>
-<field name="p4p_offline_time_1d_001" type="string" indexed="true" stored="true"/>
-<field name="p4p_online_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_kw_cnt" type="tlong" indexed="true" stored="true"/>
-<field name="adver_cnt_1d_001" type="tlong" indexed="true" stored="true"/>
-<field name="adver_cnt_1d_002" type="tlong" indexed="true" stored="true"/>
-<field name="adver_cnt_1d_003" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_0cost_day_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_click_cnt_1d_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_click_cnt_1d_002" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_click_cnt_1d_003" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_click_cnt_1d_004" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_click_cnt_1d_006" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_001" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_002" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_003" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_004" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_005" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_006" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_008" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_009" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_010" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1d_019" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_1m_017" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_md_018" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_amt_td_011" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_cost_day_cnt_td_001" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_fb_cnt_1d_002" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_fb_cnt_1d_007" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_fb_cnt_1d_008" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_fb_cnt_1d_009" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_fb_cnt_1d_012" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_fb_cnt_1d_013" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_fb_cost_1w_001" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_offer_cnt_1d_006" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_offer_cnt_1d_007" type="tlong" indexed="true" stored="true"/>
-<field name="p4p_ppc_1d_001" type="tdouble" indexed="true" stored="true"/>
-<field name="p4p_ppc_1d_002" type="tdouble" indexed="true" stored="true"/>
-<field name="continue_cost_day_cnt" type="tlong" indexed="true" stored="true"/>
-<field name="cost_day_cnt" type="tlong" indexed="true" stored="true"/>
-<field name="degrade_days" type="tlong" indexed="true" stored="true"/>
-<field name="next_7d_invalid_offer_cnt" type="tlong" indexed="true" stored="true"/>
-<field name="sumfinclkamt_tmonth" type="tdouble" indexed="true" stored="true"/>
-<field name="create_ord_amt_1d_004" type="tdouble" indexed="true" stored="true"/>
-<field name="create_ord_cnt_1d_004" type="tlong" indexed="true" stored="true"/>
-<field name="create_ord_offer_qty_1d_004" type="tlong" indexed="true" stored="true"/>
-<field name="pay_ord_amt_1d_004" type="tdouble" indexed="true" stored="true"/>
-<field name="pay_ord_cnt_1d_004" type="tlong" indexed="true" stored="true"/>
-<field name="pay_ord_amt_1m_009" type="tdouble" indexed="true" stored="true"/>
-<field name="pay_ord_cnt_1m_009" type="tlong" indexed="true" stored="true"/>
-<field name="create_ord_amt_1d_007" type="tdouble" indexed="true" stored="true"/>
-<field name="create_ord_cnt_1d_007" type="tlong" indexed="true" stored="true"/>
-<field name="create_ord_offer_qty_1d_007" type="tlong" indexed="true" stored="true"/>
-<field name="pay_ord_amt_1d_007" type="tdouble" indexed="true" stored="true"/>
-<field name="pay_ord_cnt_1d_007" type="tlong" indexed="true" stored="true"/>
-<field name="gmt_auth_approved" type="string" indexed="true" stored="true"/>
-<field name="member_level" type="string" indexed="true" stored="true"/>
-<field name="std_category_lvl1_name1" type="string" indexed="true" stored="true"/>
-<field name="std_category_lvl2_name1" type="string" indexed="true" stored="true"/>
-<field name="saleoffer_cnt_td_004" type="tlong" indexed="true" stored="true"/>
-<field name="saleoffer_cnt_td_005" type="tlong" indexed="true" stored="true"/>
-<field name="std_buy_cat_lvl1_name1" type="string" indexed="true" stored="true"/>
-<field name="std_buy_cat_lv2_name1" type="string" indexed="true" stored="true"/>
-<field name="std_buy_cat_name1" type="string" indexed="true" stored="true"/>
-<field name="std_buy_bu_name1" type="string" indexed="true" stored="true"/>
-<field name="std_buy_pinlei_name1" type="string" indexed="true" stored="true"/>
-<field name="saler_td_medal_level" type="string" indexed="true" stored="true"/>
-<field name="member_reg_site" type="string" indexed="true" stored="true"/>
-<field name="tp_service_y_cnt" type="tlong" indexed="true" stored="true"/>
-<field name="trust_service_year" type="tlong" indexed="true" stored="true"/>
-<field name="certify_num" type="tlong" indexed="true" stored="true"/>
-<field name="certify_score" type="tlong" indexed="true" stored="true"/>
-<field name="is_alipay_bind" type="string" indexed="true" stored="true"/>
-<field name="is_company" type="string" indexed="true" stored="true"/>
-<field name="is_p4p_exchange" type="string" indexed="true" stored="true"/>
-<field name="is_p4p_gift" type="string" indexed="true" stored="true"/>
-<field name="is_tp" type="string" indexed="true" stored="true"/>
-<field name="is_golden" type="string" indexed="true" stored="true"/>
-<field name="is_his_tp" type="string" indexed="true" stored="true"/>
+
+<field name="version" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="pvtimestamp" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="pvtime" type="tdate" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="pid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="processpath" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="ip" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="provinceid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="cityid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="province" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="city" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="acookie" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="sessionid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="cgsessionid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="viewtype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="subviewtype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="abtag" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="useragent" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="wangwangid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="refpid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="refcreativeid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adzonecategory" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adzonetype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="currentpagenum" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adsnumperpage" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="rewritequery" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="rawquery_pid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_ip" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_keyword" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="rawquery_catid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_count" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_offset" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_propertyid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_frontcatid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_refpid" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="rawquery_location" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="rawquery_gprice" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="rawquery_sort" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="serviceid" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="bidwordid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="creativeid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adgroupid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="campaignid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="thirdpartyid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="custid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="bidword" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="producttype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="subproducttype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adprice" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adhighestprice" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adrelativeposition" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="matchtype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="queryid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adcategory" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="adcategoryconfidence" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adsource" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adboardtype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="adpropertytag" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="adscoretag" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="adabsoluteposition" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rewritematchlevel" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rewritematchtype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rewritequerytype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rewritekeytype" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rewritesearchcontent" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="rewritesearchweight" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rewriterankinfo" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="matchscope_b" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="matchscope_s" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="directionaldimension" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="redstring" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="bonustag" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="layoutid" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="rawquery_clk1" type="text" indexed="true" stored="true"  omitTermFreqAndPositions="true" multiValued="true" />
+<field name="filtercode" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="filterflag" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+<field name="thedate" type="string" indexed="true" stored="true"  omitTermFreqAndPositions="true" />
+
 <field name="higo_uuid" type="tlong" indexed="true" stored="true"/>
 
     <dynamicField name="*_s"  type="string"  indexed="true"  stored="false"/>
@@ -254,6 +161,6 @@
     <dynamicField name="*_p" type="payloads" indexed="true"  stored="false"/>
   </fields>
   <uniqueKey>higo_uuid</uniqueKey>
-  <solrQueryParser defaultOperator="OR"/>
+  <solrQueryParser defaultOperator="AND"/>
 
 </schema>

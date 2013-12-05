@@ -56,6 +56,10 @@ public class Descriptor {
 	    	{
 	    		long t1=System.currentTimeMillis();
 	    		this.in = fs.open(file, ioFileBufferSize);
+	    		if(this.position>0)
+	    		{
+	    			this.in.seek(this.position);
+	    		}
 	    		RamDirector.put(this.uuid, this);
 	    		long t2=System.currentTimeMillis();
 	    		long tl=t2-t1;

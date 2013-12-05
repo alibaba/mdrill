@@ -1,7 +1,11 @@
 package com.alimama.mdrill.index;
  
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Iterator;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -10,9 +14,18 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.TermInfosWriter;
+import org.apache.lucene.util.Version;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import com.alimama.mdrill.index.utils.DocumentConverter;
 import com.alimama.mdrill.index.utils.DocumentList;
@@ -89,11 +102,37 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 		shardWriter = this.initShardWriter(context);
 
 		try {
-			this.analyzer = JobIndexPublic.setAnalyzer(conf);
+			this.analyzer = this.documentConverter .getAnalyzer();JobIndexPublic.setAnalyzer(conf);
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
 
+	}
+	
+	public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException, ClassNotFoundException {
+		
+		IndexSchema schema=null;
+		SolrConfig solrConfig = new SolrConfig("E:\\一淘svn\\higo\\trunk\\adhoc-core\\solr\\conf\\solrconfig.xml");
+	    InputSource is = new InputSource(solrConfig.getResourceLoader().openSchema("E:\\一淘svn\\higo\\trunk\\adhoc-core\\solr\\conf\\schema.xml"));
+	    schema =new IndexSchema(solrConfig, "solrconfig",is);
+		String s = "Ab94aa4CdDbd34dfde082ed1b4c4d0c505b69";
+
+		StringReader sr = new StringReader(s);
+//		Analyzer analyzer =new StandardAnalyzer((Version) Enum.valueOf((Class) Class.forName("org.apache.lucene.util.Version"),	Version.LUCENE_35.name()));
+		Analyzer analyzer = schema.getAnalyzer();//JobIndexPublic.setAnalyzer(conf);
+		TokenStream tk=analyzer.tokenStream("rawquery", sr);
+
+		boolean hasnext = tk.incrementToken();
+
+		while(hasnext){
+
+			TermAttribute ta = tk.getAttribute(TermAttribute.class);
+
+		  System.out.println(ta.term());
+
+		  hasnext = tk.incrementToken();
+
+		}
 	}
 
     protected void cleanup(Context context) throws IOException,	InterruptedException {
@@ -125,7 +164,9 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 				lfs.delete(new Path(localtmpath),true);
 			}
 
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 
 		heartBeater.cancelHeartBeat();
 		heartBeater.interrupt();

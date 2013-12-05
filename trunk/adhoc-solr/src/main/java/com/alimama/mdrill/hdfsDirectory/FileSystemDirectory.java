@@ -326,7 +326,7 @@ public class FileSystemDirectory extends Directory {
 		do {
 		    int i = descriptor.Stream().read(b, offset + total, len - total);
 		    if (i == -1) {
-			throw new IOException("Read past EOF");
+		    	throw new IOException("Read past EOF");
 		    }
 		    descriptor.addPositon(i);
 		    total += i;

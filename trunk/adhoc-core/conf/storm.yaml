@@ -113,6 +113,14 @@
  higo.partion.type.rpt_seller_all_m_single: "single"
  higo.partion.type.rpt_seller_all_m_dir: "dir@thedate"
  higo.partion.type.ods_allpv_ad_d: "day"
+ higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_1: "day"
+ higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_1: "@nonzipout@" 
+ higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_2: "day"
+ higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_2: "@nonzipout@" 
+ higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: "day"
+ higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: "@nonzipout@" 
+ 
+
  
  
  

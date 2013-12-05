@@ -692,11 +692,13 @@ public static OperateType parseOperateType(int operate)
 				if(isNotIn){
 					sb.append("-");
 				}
-                sb.append(key);
+				String joinchar="";
+				sb.append(key);
                 sb.append(":(");
                 for(String v : listStrs){
+                    sb.append(joinchar);
                     sb.append(TdateFormat.transformSolrMetacharactorNoLike(v));
-                    sb.append(" ");
+                    joinchar=" OR ";
                 }
                 sb.append(")");
                 return sb.toString();

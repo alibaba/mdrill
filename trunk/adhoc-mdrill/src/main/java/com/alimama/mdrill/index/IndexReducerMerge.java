@@ -27,12 +27,14 @@ public class IndexReducerMerge extends
 	public DocumentConverter documentConverter;
 	
 	boolean isNotFdtMode=true;
+	boolean isNotZip=false;
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
 		super.setup(context);
 		Configuration conf = context.getConfiguration();
 		isNotFdtMode=conf.get("mdrill.table.mode","").indexOf("@hdfs@")<0;
-		
+		isNotZip=conf.get("mdrill.table.mode","").indexOf("@nonzipout@")>=0;
+
 		if(!isNotFdtMode)
 		{
 			TermInfosWriter.setSkipInterVal(16);
@@ -57,7 +59,7 @@ public class IndexReducerMerge extends
 			
 			Configuration conf = context.getConfiguration();
 			FileSystem fs = FileSystem.get(conf);
-			if(isNotFdtMode)
+			if(isNotFdtMode&&!isNotZip)
 			{
 				ZipUtils.zip(fs, tmpath, fs, tmpathzip);
 				
@@ -71,7 +73,8 @@ public class IndexReducerMerge extends
 				}
 			}
 
-		} catch (Exception e) {
+		} catch (Throwable e) {
+			throw new IOException(e);
 		}
 
 		heartBeater.cancelHeartBeat();

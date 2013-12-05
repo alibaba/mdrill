@@ -28,6 +28,7 @@ import com.alimama.mdrill.adhoc.MySqlConn;
 import com.alimama.mdrill.adhoc.MysqlCallback;
 import com.alimama.mdrill.adhoc.MysqlInfo;
 import com.alimama.mdrill.adhoc.OfflineDownload;
+import com.alimama.mdrill.json.JSONArray;
 import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetPartions;
 import com.alimama.mdrill.partion.GetShards;
@@ -178,10 +179,41 @@ public class AdhocOfflineService {
 		if (projectName.equals("st_tanx_x_core_gateway")) {
 			hpart="ds";
 		}
-		
-		
-		
 		queryStr = WebServiceParams.query(queryStr);
+
+		
+		if (projectName.equals("fact_wirelesspv_clickcosteffect1_app_adhoc_d_1")) {
+			projectName="fact_wirelesspv_clickcosteffect1_app_adhoc_d";
+			JSONArray jsonStr=new JSONArray(queryStr.trim());
+			JSONObject obj=new JSONObject();
+			obj.put("key", "app_type");
+			obj.put("operate", "1");
+			obj.put("value", "1");
+			jsonStr.put(obj);
+			queryStr = WebServiceParams.query(jsonStr.toString());
+		}
+		if (projectName.equals("fact_wirelesspv_clickcosteffect1_app_adhoc_d_2")) {
+			projectName="fact_wirelesspv_clickcosteffect1_app_adhoc_d";
+			JSONArray jsonStr=new JSONArray(queryStr.trim());
+			JSONObject obj=new JSONObject();
+			obj.put("key", "app_type");
+			obj.put("operate", "1");
+			obj.put("value", "2");
+			jsonStr.put(obj);
+			queryStr = WebServiceParams.query(jsonStr.toString());
+		}
+		if (projectName.equals("fact_wirelesspv_clickcosteffect1_app_adhoc_d_3")) {
+			projectName="fact_wirelesspv_clickcosteffect1_app_adhoc_d";
+			JSONArray jsonStr=new JSONArray(queryStr.trim());
+			JSONObject obj=new JSONObject();
+			obj.put("key", "app_type");
+			obj.put("operate", "1");
+			obj.put("value", "3");
+			jsonStr.put(obj);
+			queryStr = WebServiceParams.query(jsonStr.toString());
+		}
+		
+		
 	
 	
 		TablePartion part = GetPartions.partion(projectName);
@@ -195,6 +227,10 @@ public class AdhocOfflineService {
 		LinkedHashMap<String, String> filetypeMap = MdrillService.readFieldsFromSchemaXml(part.name);
 		ArrayList<String> fqList = WebServiceParams.fqListHive(false,hpart,queryStr, shard,
 				isPartionByPt, filetypeMap,null,null,null);
+		
+		
+		
+		
 		StringBuffer sqlWhere =AdhocWebServiceParams.makeWhere(fqList);
 	
 	

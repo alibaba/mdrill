@@ -33,7 +33,6 @@ public class TimeCacheMapLru<K, V> implements Serializable{
 
 			@Override
 			protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-		    	synchronized(_lock) {
 					boolean rtn= size() > lursize;
 					if(rtn)
 					{
@@ -43,7 +42,6 @@ public class TimeCacheMapLru<K, V> implements Serializable{
 	                     }
 					}
 					return rtn;
-		    	}
 			}
 		};
     }
