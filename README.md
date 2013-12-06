@@ -28,7 +28,7 @@
 <h1>资源列表</h1>
 <ul>
 <li><a href="https://github.com/alibaba/mdrill/wiki/info" target="_blank">mdrill介绍</a></li>
-<li><a href="http://yunpan.cn/QUxDtVgzEjUdW" target="_blank">mdrill介绍PPT</a></li>
+<li><a href="http://yunpan.cn/QUDeVwrMQPjc4" target="_blank">mdrill介绍PPT</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
 <li><a href="https://github.com/alibaba/mdrill/wiki/plan" target="_blank">版本开发计划</a></li>
