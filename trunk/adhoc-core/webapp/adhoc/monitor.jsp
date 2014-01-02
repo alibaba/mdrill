@@ -38,7 +38,9 @@
     					out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">日期</th>"); 
     					out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">数据集</th>");
     					out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">有效PV</th>");
-    					out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">UV</th>"); 
+    			    out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">有效UV</th>"); 
+
+    					out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">访问列表</th>"); 
     				} 
     				thedateHasData = true;  
     				out.println("<tr>");
@@ -46,6 +48,8 @@
 					out.println("<td bordercolor=\"#000000\">" + moduleInfo.getModuleName() + "</td>");
 					out.println("<td bordercolor=\"#000000\">" + moduleInfo.getQueryCnt() + "</td>");
 					out.println("<td bordercolor=\"#000000\">" + moduleInfo.getUv() + "</td>");
+					out.println("<td bordercolor=\"#000000\" style=\"text-align:left\">" + moduleInfo.getNicklist() + "</td>");
+					
 					out.println("</tr>");
 					shownTableTitles = true;
 				}
@@ -73,11 +77,15 @@
 						out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">日期</th>");
 						out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">用户名</th>");
 						out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">有效PV</th>");
+						out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">部门</th>");
 					} 
 					out.println("<tr>");
 					out.println("<td bordercolor=\"#000000\">" + dayUserPv.getQueryDay() + "</td>");
 					out.println("<td bordercolor=\"#000000\">" + dayUserPv.getNick() + "</td>");
 					out.println("<td bordercolor=\"#000000\">" + dayUserPv.getQueryCnt() + "</td>");
+					out.println("<td bordercolor=\"#000000\" style=\"text-align:left\">" + dayUserPv.getDepartment() + "</td>");
+
+					
 					out.println("</tr>");
 					shownTableTitles = true;
 					thedateHasData = true;
@@ -103,11 +111,13 @@
     			out.println("<table bordercolor=\"#000000\">");
     			out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">用户</th>");
 				out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">有效PV</th>");
+				out.println("<th bgcolor=\"B4E3ED\" bordercolor=\"#000000\">部门</th>");
 			}
 			for(TotalUserPv totalUserPv : totalUserPvList ) {
 				out.println("<tr>");
 				out.println("<td bordercolor=\"#000000\">" + totalUserPv.getNick() + "</td>");
 				out.println("<td bordercolor=\"#000000\">" + totalUserPv.getQueryCnt() + "</td>");
+				out.println("<td bordercolor=\"#000000\" style=\"text-align:left\">" + totalUserPv.getDepartment() + "</td>");
 				out.println("</tr>");
 				shownTableTitles = true;
 			}

@@ -45,6 +45,11 @@
     - 6712
     - 6713
     - 6714
+    - 6715
+    - 6716
+    - 6717
+    - 6718
+    - 6719
     - 6601
  #----启动的shard的数，每个shard为一个solr实例，结合cpu个数和内存进行配置，10台48G内存配置60----
  higo.shards.count: 60
@@ -59,17 +64,40 @@
  #------格式 冗余号:域名:分配的任务序号----
  higo.fixed.shards.1: "0:tiansuan1.kgb.cm4:0,1,2,3,4"
  higo.fixed.shards.2: "0:tiansuan2.kgb.cm4:5,6,7,8,9"
- higo.fixed.shards.3: "0:adhoc2.kgb.cm6:10,11,12,13,14"
- higo.fixed.shards.4: "0:adhoc3.kgb.cm6:15,16,17,18,19"
- higo.fixed.shards.5: "0:adhoc4.kgb.cm6:20,21,22,23,24"
+ higo.fixed.shards.3: "0:adhoc2.kgb.cm6:10,11,12,13,14,44"
+ higo.fixed.shards.4: "0:adhoc3.kgb.cm6:15,16,17,18,19,45"
+ higo.fixed.shards.5: "0:adhoc4.kgb.cm6:20,21,22,23,24,46"
  higo.fixed.shards.6: "0:adhoc5.kgb.cm6:25,26,27,28,29,30"
  higo.fixed.shards.7: "0:adhoc6.kgb.cm6:31,32,33,34,35,36"
- higo.fixed.shards.8: "0:adhoc7.kgb.cm6:37,38,39,40,41"
- higo.fixed.shards.9: "0:adhoc8.kgb.cm6:42,43,44,45,46,47"
- higo.fixed.shards.10: "0:adhoc1.kgb.cm6:48,49,50,51,52,53"
+ higo.fixed.shards.8: "0:adhoc7.kgb.cm6:37,38,39,40,41,42"
+ higo.fixed.shards.9: "0:adhoc1.kgb.cm6:48,49,50,51,52,53"
+ #higo.fixed.shards.9: "0:adhoc8.kgb.cm6:42,43,44,45,46,47"
+ higo.fixed.shards.10: "0:adhocbak.kgb.cm6:54,55,56,57,58,59,47,43"
  
- #----剩余的shard没有配置，会均匀的分配到剩余的机器上----
- #higo.fixed.shards.11: "0:adhocbak.kgb.cm6:54,55,56,57,58,59"
+ #----binlog记录的位置，默认为local如果hdfs稳定可以写hdfs----
+ higo.realtime.binlog: "local"
+ 
+ #----从tt实时导入到mdrill----
+ higo.mode.p4p_pv2: "@realtime@"
+ higo.partion.type.p4p_pv2: "day"
+ p4p_pv2-log: "p4p_pv2"
+ p4p_pv2-subid: "1226132513ZWOWEH3B"
+ p4p_pv2-accesskey: "2ac04eb8-b3a4-4fb3-ab89-e8a689501b37"
+ p4p_pv2-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.p4p_pv2"
+ p4p_pv2-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ p4p_pv2-commitbatch: 5000
+ p4p_pv2-commitbuffer: 10000
+ p4p_pv2-spoutbuffer: 10000
+ p4p_pv2-boltbuffer: 10000
+ p4p_pv2-mode: "local"
+ p4p_pv2-timeoutSpout: 240
+ p4p_pv2-timeoutBolt: 60
+ p4p_pv2-timeoutCommit: 30
+ 
+ #----数据导入命令  ./bluewhale jar ./mdrill.jar com.alimama.quanjingmonitor.mdrillImport.Topology p4p_pv2topology  p4p_pv2 20131229084400 8 1024 ----
+ 
+ 
+
  
  #----如果higo.shards.replication: 2，higo.shards.count: 30的额外配置参考----
  #higo.fixed.shards.1: "0:tiansuan1.kgb.cm4:0,1,2,3,4"
@@ -89,7 +117,7 @@
  #----分配给merger server的端口，建议每台机器分配一个merger server----
  higo.merge.ports: "6601,6602,6603,6604,6605,6606,6607,6608,6609,6610"
  #----启动的merger server的worker数量，建议根据机器数量设定----
- higo.mergeServer.count: 11
+ higo.mergeServer.count: 10
  #----分配给实时数据源的端口，该功能在开发中，预留接口----
  higo.realtime.ports: "6501,6502,6503,6504,6505,6506,6507,6508,6509,6510"
  #----启动实时数据源的worker数量,预留接口----
@@ -125,7 +153,7 @@
  
  
  #-------------hdfs mode-----------------
- higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:15@blocksize:1073741824@iosortmb:256@" 
+ higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:15@blocksize:1073741824@iosortmb:256@igDataChange@" 
  higo.index.parallel.ods_allpv_ad_d: 40
  
 

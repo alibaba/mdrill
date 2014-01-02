@@ -25,7 +25,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,11 +52,6 @@ import org.apache.solr.servlet.cache.Method;
 
 
 
-/**
- * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
- *
- * @since solr 1.2
- */
 public class SolrDispatchFilter implements Filter
 {
   final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
@@ -74,7 +68,7 @@ public class SolrDispatchFilter implements Filter
     log.info("SolrDispatchFilter.init()");
 
     boolean abortOnConfigurationError = true;
-    CoreContainer.Initializer init = createInitializer();
+    CoreContainer.Initializer init = new CoreContainer.Initializer();
     try {
 
       this.cores = init.initialize();
@@ -104,10 +98,6 @@ public class SolrDispatchFilter implements Filter
     log.info("SolrDispatchFilter.init() done");
   }
 
-  /** Method to override to change how CoreContainer initialization is performed. */
-  protected CoreContainer.Initializer createInitializer() {
-    return new CoreContainer.Initializer();
-  }
   
   public void destroy() {
     if (cores != null) {

@@ -32,13 +32,11 @@ http://10.246.42.76:1210/solr/rpt_p4padhoc_cust/select/?shards=10.246.42.76%3A12
  */
 public class SolrStartSingle {
 	public static void main(String[] args) throws Exception {
-		LinkFSDirectory.setRealTime(true);
 		SolrCore.setSearchCacheSize(32);
 		String hdfsconf="/home/taobao/config";
 		HadoopUtil.setHdfsConfDir(hdfsconf);
     	LinkFSDirectory.setHdfsConfDir(hdfsconf);
     	HigoJoinUtils.setHdfsConfDir(hdfsconf);
-    	
     	
     	ShardPartion.base="/group/tbdp-etao-adhoc/p4padhoc/tabletest";
 		ShardPartion.taskIndex=1;

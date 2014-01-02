@@ -6,4 +6,5 @@ public class BoltParams implements java.io.Serializable{
     public  int replication;
     public  int replicationindex;
     public String compname="";
+    public String binlog="local";
 }

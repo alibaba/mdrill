@@ -4,14 +4,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.TimerTask;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,6 +20,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.LinkFSDirectory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
 
@@ -44,7 +43,7 @@ import com.alipay.bluewhale.core.utils.StormUtils;
 import com.alipay.bluewhale.core.work.Worker;
 
 
-public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
+public class SolrStartTable implements StopCheck, SolrStartInterface {
 	private static Logger LOG = Logger.getLogger(SolrStartTable.class);
 	private Configuration conf;
 	private String solrhome;
@@ -55,30 +54,21 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	private OutputCollector collector;
 	private SolrStartJetty solrservice;
 	private boolean isMergeServer = false;
-	public ExecutorService EXECUTE2 = new ThreadPoolExecutor(1, 1,
-            3600*6, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>());
 
-	ThreadPoolExecutor EXECUTE =null;
+	ShardThread EXECUTE =null;
 
 	@Override
-	public void setExecute(ThreadPoolExecutor EXECUTE) {
+	public void setExecute(ShardThread EXECUTE) {
 		this.EXECUTE=EXECUTE;
-		
 	}
 	
 	
-	private boolean isRealTime=false;
 	private AtomicInteger copy2indexFailTimes=new AtomicInteger(0);
 
 	private TablePartion part;
 	private StatListenerInterface partstat;
 	private MdrillPartionsInterface mdrillpartion;
-    public void setRealTime(boolean isRealTime) {
-		this.isRealTime = isRealTime;
-		LinkFSDirectory.setRealTime(isRealTime);
-
-	}
+  
 	public void setMergeServer(boolean isMergeServer) {
 		this.isMergeServer = isMergeServer;
 	}
@@ -89,6 +79,8 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	@Override
 	public void setConf(Map stormConf) {
 		this.stormConf=stormConf;
+		String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
+		SolrCore.setTablemode(this.tablename, tablemode);
 	}
 	public SolrStartTable(	BoltParams params,OutputCollector collector, Configuration conf,
 			String solrhome, String diskList, int taskIndex, String tblName,
@@ -144,6 +136,8 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		this.localTmpPath = new Path(this.solrservice.getLocalTmpPath(this.tablename), "./higotmp");
 		
 	}
+	
+	private AtomicBoolean initSolrConfig=new AtomicBoolean(false);
 
 	private void validate() throws IOException {
 		try {
@@ -176,17 +170,43 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 				lfs.mkdirs(new Path(confpath, "complete"));
 			}
 		}
+		initSolrConfig.set(true);
 		return ischange;
 	}
-
-	private void syncPartion(String key, Path hdfspartion) throws IOException {
+	
+	private String getTableMode()
+	{
 		String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
+		return tablemode;
+	}
+	
+	private boolean isrealtime(String tablemode)
+	{
+		boolean isrealtime=false;
+		if(tablemode.indexOf("@realtime@")>=0)
+		{
+			isrealtime=true;
+		}
 		
+		return isrealtime;
+	}
+	
+	private boolean ishdfsmode(String tablemode)
+	{
 		boolean ishdfsmode=false;
 		if(tablemode.indexOf("@hdfs@")>=0)
 		{
 			ishdfsmode=true;
 		}
+		
+		return ishdfsmode;
+	}
+
+	private void syncPartion(String key, Path hdfspartion) throws IOException {
+		String tablemode=this.getTableMode();
+		boolean ishdfsmode=this.ishdfsmode(tablemode);
+		boolean isrealtime=this.isrealtime(tablemode);
+	
 		
 		
 		Path localPartionWork = new Path(localIndexPath, key);
@@ -196,6 +216,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		
 		Path realtime=new Path(hdfsPartionShardPath,"realtime");
 		Path localrealtime=new Path(localPartionWork,"realtime");
+
 		Path indexlinks=new Path(localPartionWork,"indexLinks");
 
 		if(ishdfsmode)
@@ -224,46 +245,9 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			}catch(Throwable e){
 				isnotrealtime=true;
 			}
-			if(!isnotrealtime&&(fs.exists(realtime)||lfs.exists(localrealtime)))
+			if(!isnotrealtime&&(isrealtime||fs.exists(realtime)||lfs.exists(localrealtime)))
 			{
-				////实时模式， 暂时使用单个硬盘
-				boolean iscopy = false;
-				if(IndexUtils.readReadTimeTs(lfs, localrealtime)<IndexUtils.readReadTimeTs(fs, realtime))
-				{
-					iscopy=IndexUtils.copyToLocal(fs, lfs, realtime,localrealtime,new Path(localPartionWork, "higotmp/"+tablename + "/" + this.params.compname + "_" + this.taskIndex ),true);
-					if(!iscopy)
-					{
-						copy2indexFailTimes.incrementAndGet();
-					}
-				}
-				
-				if(iscopy||!lfs.exists(indexlinks))
-				{
-					if(lfs.exists(localPartionWork))
-					{
-						FileStatus[] list=lfs.listStatus(localPartionWork);
-						if(list!=null)
-						{
-							for(FileStatus s:list)
-							{
-								if(!s.getPath().getName().equals("realtime"))
-								{
-									lfs.delete(s.getPath(),true);
-								}
-							}
-						}
-					}
-					FSDataOutputStream outlinks = lfs.create(indexlinks);
-					FileStatus[] sublist=this.lfs.listStatus(localrealtime);
-					if(sublist!=null)
-					{
-						for(FileStatus f:sublist)
-						{
-							outlinks.write((new String(f.getPath().toString()	+ "\r\n")).getBytes());
-						}
-					}
-					outlinks.close();
-				}
+				//TODO nothing
 			}else//离线模式
 			{
 				boolean iscopy = false;
@@ -383,6 +367,7 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			boolean ischange = ischangeIndex || ischangeSolr;
 			return ischange;
 		} catch (Throwable e) {
+			initSolrConfig.set(true);
 			LOG.error(StormUtils.stringify_error(e));
 			return false;
 		}
@@ -390,75 +375,92 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 
     AtomicBoolean isInit=new AtomicBoolean(false);
 	public void start() throws Exception {
-		statcollect.setLastTime(System.currentTimeMillis());
 		statcollect.setStat(ShardsState.INIT);
 		this.zkHeatbeat();
-		LOG.info("higolog table begin:" + this.tablename);
-		new Thread(this).start();
-	}
-	
-	public void run() {
-			try {
-				rsyncExecute exe=new rsyncExecute(this,true);
-    	    	EXECUTE2.submit(exe);
-    	    	while(!exe.isfinish()&&!statcollect.isTimeout(1200l*1000))
-    	    	{
-    	    		Thread.sleep(1000l);
-    	    	}
-    	    	
-    	    	if(statcollect.isTimeout(1200l*1000))
-    	    	{
-    				statcollect.setLastTime(System.currentTimeMillis());
-    	    	}
-				
-				this.startService();
-    			isInit.set(true);
-				LOG.info("higolog table end:" + this.tablename);
-				
-				
-				String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
-				
-				boolean ishdfsmode=false;
-				if(tablemode.indexOf("@hdfs@")>=0)
-				{
-					ishdfsmode=true;
-				}
-				
-				hb();
-				while(true)
-		    	{
-					sleep();
-		    		
-		    		if(!hbInterval.heartBeatInterval(ishdfsmode))
-		    		{
-		    		    continue ;
-		    		}
-		    		
-		    		
-		    		hb();
-		    	}
-				
-			} catch (Throwable er) {
-				this.runException(er);
+
+		TimerTask task=new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					synchronized (isInit) {
+						 if(!isInit.get())
+						 {
+
+								LOG.info("higolog table begin:" + SolrStartTable.this.tablename);
+								statcollect.setLastTime(System.currentTimeMillis());
+
+								rsyncExecute exe=new rsyncExecute(SolrStartTable.this,true);
+								EXECUTE.EXECUTE_HDFS.submit(exe);
+				    	    	while(!exe.isfinish()&&!statcollect.isTimeout(1200l*1000))
+				    	    	{
+				    	    		Thread.sleep(1000l);
+				    	    	}
+				    	    	while(!initSolrConfig.get())
+				    	    	{
+				    	    		Thread.sleep(1000l);
+				    	    	}
+				    	    	
+				    	    	if(statcollect.isTimeout(1200l*1000))
+				    	    	{
+				    				statcollect.setLastTime(System.currentTimeMillis());
+				    	    	}
+								
+				    	    	SolrStartTable.this.startService();
+				    			isInit.set(true);
+
+								LOG.info("higolog table end:" + SolrStartTable.this.tablename);
+					    		hb();
+					    		return ;
+						 }
+					}
+					 
+					 String tablemode=String.valueOf(SolrStartTable.this.stormConf.get("higo.mode."+SolrStartTable.this.tablename));
+						
+						boolean ishdfsmode=false;
+						if(tablemode.indexOf("@hdfs@")>=0)
+						{
+							ishdfsmode=true;
+						}
+						
+						
+						if(!hbInterval.heartBeatInterval(ishdfsmode))
+			    		{
+			    		    return  ;
+			    		}
+			    		
+			    		
+			    		hb();
+				} catch (Throwable ex) {
+					LOG.error("hb",ex);
+					try{
+						SolrStartTable.this.runException(ex);
+					}catch (Throwable eee) {}
+				}				
 			}
+			
+		};
+		taskList.add(task);
+		EXECUTE.TIMER.schedule(task, 10000l, 10000l);
+		
 	}
 	
-	private void hb()
+	hbExecute lasthb=null;
+	private synchronized void hb()
 	{
-		hbExecute exec=new hbExecute(this);
-    	EXECUTE.submit(exec);
-    	while(!exec.isfinish())
-    	{
-    		this.sleep();
-    	}
+		
+		if(!initSolrConfig.get())
+		{
+			return ;
+		}
+		if(lasthb==null||lasthb.isfinish())
+		{
+			hbExecute exec=new hbExecute(this);
+	    	EXECUTE.EXECUTE.submit(exec);
+	    	lasthb=exec;
+		}
+		
 	}
 	
-	private void sleep()
-	{
-		try {
-			Thread.sleep(10000l);
-		} catch (InterruptedException e) {}
-	}
 	
 	private void runException(Throwable e)
 	{
@@ -472,11 +474,19 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	private SolrStartJettyExcetionCollection errorCollect=new SolrStartJettyExcetionCollection();
 	private SolrStartJettyStat statcollect=new SolrStartJettyStat();
 
+	ArrayList<TimerTask> taskList=new ArrayList<TimerTask>();
+
 	public void stop() throws Exception {
 
+		for(TimerTask t:taskList){
+    		t.cancel();
+    	}
+    	EXECUTE.TIMER.purge();
 		statcollect.setStat(ShardsState.UINIT);
 		this.zkHeatbeat();
 		this.stopService();
+		
+		
 	
 	}
 
@@ -502,17 +512,13 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 
 	private Interval hbInterval=new Interval();;
 
-
-	 public void checkError()
-	    {
-			errorCollect.checkException();
-	    }
+	public void checkError() {
+		errorCollect.checkException();
+	}
 
 	public void heartbeat() throws Exception {
-
-		
 		rsyncExecute exe=new rsyncExecute(this,false);
-    	EXECUTE2.submit(exe);
+		EXECUTE.EXECUTE_HDFS.submit(exe);
     	while(!exe.isfinish()&&!statcollect.isTimeout(900l*1000))
     	{
     		Thread.sleep(1000l);
@@ -529,10 +535,12 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 				this.startService();
 			}
 		} else {
+			statcollect.setLastTime(System.currentTimeMillis());
+
 			this.stopService();
 
 			exe=new rsyncExecute(this,false);
-	    	EXECUTE2.submit(exe);
+			EXECUTE.EXECUTE_HDFS.submit(exe);
 	    	while(!statcollect.isTimeout(900l*1000))
 	    	{
 	    		Thread.sleep(1000l);
@@ -560,8 +568,6 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 		this.solrservice.setRestart();
 	}
 	
-
-
 	private synchronized void zkHeatbeat() {
 		try {
 			String hdfsforder = (this.isMergeServer) ? "mergerServer"
@@ -569,8 +575,11 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			Integer bindport = this.getBindPort();
 			Long hbtime = statcollect.getLastTime();
 			
+			String tablemode=this.getTableMode();
+			boolean isrealtime=this.isrealtime(tablemode);
+			
 			HashMap<String, ShardCount> daystat=this.partstat.getExtaCount();
-			SolrInfo info = new SolrInfo(this.params.replication,this.params.replicationindex,this.taskIndex,this.isRealTime,localSolrPath.toString(),
+			SolrInfo info = new SolrInfo(this.params.replication,this.params.replicationindex,this.taskIndex,isrealtime,localSolrPath.toString(),
 					hdfsIndexpath.toString(), hdfsforder, bindport, 
 					statcollect.getStat(), this.partstat.getPartioncount(),daystat, statcollect.getSetupTime(),
 					hbtime, this.isMergeServer);
@@ -583,8 +592,6 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 			errorCollect.setException(e);
 		}
 	}
-
-	
 	
 	private void checkSolr() {
 		if (!this.solrservice.isService()) {
@@ -658,17 +665,12 @@ public class SolrStartTable implements Runnable, StopCheck, SolrStartInterface {
 	    	
 	    }
 	 
-	 
-
-	    public static class hbExecute implements Runnable{
+	 public static class hbExecute implements Runnable{
 	    	private SolrStartTable obj;
 			private AtomicBoolean isfinish=new AtomicBoolean(false);
 	    	public hbExecute(SolrStartTable obj) {
 				this.obj = obj;
 			}
-
-
-			
 
 			@Override
 			public void run() {

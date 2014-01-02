@@ -2,7 +2,9 @@ package com.alimama.mdrill.index.utils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.zip.CRC32;
@@ -52,7 +54,10 @@ public class DocumentMap  implements Writable
 		{
 			if(in.readBoolean())
 			{
-				data[i]=in.readUTF();
+				int len=in.readInt();
+				byte[] bytes=new byte[len];
+				in.readFully(bytes);
+				data[i]=new String(bytes,"utf8");
 			}else{
 				data[i]=null;
 			}
@@ -70,9 +75,14 @@ public class DocumentMap  implements Writable
 				out.writeBoolean(false);
 			}else{
 				out.writeBoolean(true);
-				out.writeUTF(data[i]);
+				byte[] arr=data[i].getBytes("utf8");
+				out.writeInt(arr.length);
+				out.write(arr);
 			}
 		}
     }
+	
+	
+	
 
 	}

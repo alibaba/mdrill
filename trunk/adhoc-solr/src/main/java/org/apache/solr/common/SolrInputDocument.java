@@ -34,7 +34,18 @@ import java.util.Set;
  */
 public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<SolrInputField>, Serializable
 {
-  private final Map<String,SolrInputField> _fields;
+	
+	
+	public long txid=0;
+  public long getTxid() {
+		return txid;
+	}
+
+	public void setTxid(long txid) {
+		this.txid = txid;
+	}
+
+private final Map<String,SolrInputField> _fields;
   private float _documentBoost = 1.0f;
 
   public SolrInputDocument() {

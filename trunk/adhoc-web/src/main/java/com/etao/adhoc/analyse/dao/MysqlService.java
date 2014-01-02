@@ -118,7 +118,7 @@ public class MysqlService {
 	}
 	
 	public ModuleInfo[] getModuleInfos(String queryDay) {
-		String sql = "SELECT sum(query_cnt) as query_cnt,sum(uv) as uv,module_name FROM module_info" +
+		String sql = "SELECT sum(query_cnt) as query_cnt,sum(uv) as uv,module_name,nicklist FROM module_info" +
 				" WHERE queryday=? " +
 				" group by module_name order by module_name ";
 		PreparedStatement pstmt=null;
@@ -134,6 +134,7 @@ public class MysqlService {
 				moduleInfo.setQueryCnt(rs.getInt(1));
 				moduleInfo.setUv(rs.getInt(2));
 				moduleInfo.setModuleName(rs.getString(3));
+				moduleInfo.setNicklist(rs.getString(4));
 				list.add(moduleInfo);
 
 			}
@@ -178,9 +179,12 @@ public class MysqlService {
 		return startDay;
 	}
 	public List<TotalUserPv> getTotalTopUsers(int length) {
-		String sql = "SELECT nick,query_cnt FROM total_user_pv" +
+		String sql = "select a.nick as nick,a.query_cnt as query_cnt, b.department as department" +
+				" from (" +
+				"SELECT nick,query_cnt FROM total_user_pv" +
 				" ORDER BY query_cnt" +
-				" DESC LIMIT ?";
+				" DESC LIMIT ?" +
+				") a left join user_info b on (a.nick=b.nick) ORDER BY a.query_cnt desc";
 		List<TotalUserPv> totalUserPvList = null;
 		PreparedStatement pstmt=null;
 		try {
@@ -194,6 +198,7 @@ public class MysqlService {
 				TotalUserPv totalUserPv = new TotalUserPv();
 				totalUserPv.setNick(rs.getString(1));
 				totalUserPv.setQueryCnt(rs.getInt(2));
+				totalUserPv.setDepartment(String.valueOf(rs.getString(3)));
 				totalUserPvList.add(totalUserPv);
 			}
 			LOG.info(pstmt.toString());
@@ -211,10 +216,15 @@ public class MysqlService {
 		return totalUserPvList;
 	}
 	public List<DayUserPv> getDayTopUsers(String queryDay,int length) {
-		String sql = "SELECT nick,query_cnt FROM day_user_pv " +
+		String sql = "select a.nick as nick,a.query_cnt as query_cnt, b.department as department" +
+				" from (" +
+				"" +
+				"SELECT nick,query_cnt FROM day_user_pv " +
 				" WHERE queryday = ?" +
 				" ORDER BY query_cnt" +
-				" DESC LIMIT ?";
+				" DESC LIMIT ?" +
+				"" +
+				") a left join user_info b on (a.nick=b.nick) ORDER BY a.query_cnt desc";
 		List<DayUserPv> dayUserPvList = null;
 		PreparedStatement pstmt=null;
 		try {
@@ -230,6 +240,7 @@ public class MysqlService {
 				dayUserPv.setQueryDay(queryDay);
 				dayUserPv.setNick(rs.getString(1));
 				dayUserPv.setQueryCnt(rs.getInt(2));
+				dayUserPv.setDepartment(String.valueOf(rs.getString(3)));
 				dayUserPvList.add(dayUserPv);
 			}
 			LOG.info(pstmt.toString());
@@ -286,12 +297,14 @@ public class MysqlService {
 	public void calModuleInfo(String queryDay){
 		String sqldelete = "DELETE FROM module_info WHERE queryday='"+queryDay+"'";
 		
-		String sql = "INSERT INTO module_info(queryday,module_name,query_cnt,uv) " +
-				" SELECT ? AS queryday, set_name ,COUNT(*) AS query_cnt,COUNT(distinct nick) AS uv " +
+		String sql = "INSERT INTO module_info(queryday,module_name,query_cnt,uv,nicklist) " +
+		        "select ? AS queryday,set_name,sum(query_cnt) AS query_cnt,COUNT(distinct nick) AS uv,GROUP_CONCAT(CONCAT(nick,':',query_cnt)  order by query_cnt desc)  from ( "+
+				" SELECT  set_name,nick ,COUNT(*) AS query_cnt " +
 				" FROM query_log " +
 				" WHERE DATE_FORMAT(query_date,?)=? " +
 				" AND nick NOT IN (SELECT nick FROM dev_nicks) " +
-				" GROUP BY queryday,set_name";
+				" GROUP BY set_name,nick ) a GROUP BY queryday,set_name" +
+				"";
 		PreparedStatement pstmt=null;
 		try {
 			Connection conn = DriverManager.getConnection(url, username, password);
@@ -316,6 +329,8 @@ public class MysqlService {
 			LOG.error(debugsql,e);
 		}
 	}
+	
+	
 	public void calDayUserPv(String queryDay) {
 		String sqldelete = "DELETE FROM day_user_pv WHERE queryday='"+queryDay+"'";
 

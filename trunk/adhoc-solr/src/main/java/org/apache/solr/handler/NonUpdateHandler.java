@@ -73,7 +73,7 @@ public class NonUpdateHandler extends UpdateHandler{
 		String cmdstr=String.valueOf(doc.getFieldValue("mdrillCmd"));
 		if(cmdstr.equals("sync"))
 		{
-			this.core.getRealTime(partion,true).sync();
+			this.core.getRealTime(partion,true).syncLocal();
 		}else if(cmdstr.equals("syncHdfs")){
 			this.core.getRealTime(partion,true).syncHdfs();
 		}

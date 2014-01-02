@@ -14,46 +14,52 @@ public class UniqConfig {
 		return 30;
 	}
 	
-	
-	public static int RealTimeLocalMergerInterval()
-	{
-		return 3600;
-	}
 	public static int RealTimeLocalFlush()
 	{
-		return 300;
+		return 1200;
 	}
-	
 	
 	public static int RealTimeDoclistFlush()
 	{
-		return 10;
+		return 30;
 	}
 	public static int RealTimeDoclistBuffer()
 	{
-		return 1024;
+		return 5000;
 	}
 	
 
 	public static int RealTimeHdfsFlush()
 	{
-		return 3600*6;
+		return 3600*4;
+	}
+	
+	
+	public static long logRollIntervel()
+	{
+		return 1000l;
+	}
+	
+	public static long logRollTimelen()
+	{
+		return 1000l*300;
 	}
 	
 	public static int RealTimeDelete()
 	{
-		return 3600;
+		return 3600*8;
 	}
 	
-	public static int RealTimeRam2localFactory()
+	public static int RealTimeMaxIndexCount()
+	{
+		return 10;
+	}
+	
+	public static int RealTimeMergeFactor()
 	{
 		return 6;
 	}
 	
-	public static int RealTimeLocalMergerFactory()
-	{
-		return 3;
-	}
 	
 	static long buffersize=1024l*1024*10;
 	public static long RealTimeBufferSize()
@@ -61,7 +67,7 @@ public class UniqConfig {
 		return buffersize;
 	}
 	
-	static long ramsize=1024l*1024*100;
+	static long ramsize=1024l*1024*200;
 	public static long RealTimeRamSize()
 	{
 		return ramsize;

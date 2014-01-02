@@ -30,10 +30,8 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LinkFSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.cache.Cache;
-import org.apache.lucene.util.cache.SimpleLRUCache;
 import org.apache.lucene.util.cache.SimpleMapCache;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -47,12 +45,9 @@ import org.apache.solr.request.mdrill.FacetComponent;
 import org.apache.solr.response.*;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
+
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
@@ -61,7 +56,6 @@ import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
@@ -69,7 +63,6 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 
@@ -684,7 +677,20 @@ public final class SolrCore implements SolrInfoMBean {
   public static final LinkedList<RefCounted<SolrIndexSearcher>> clearlist=new LinkedList<RefCounted<SolrIndexSearcher>>();
 
 
-  public static void setSearchCacheSize(int cacheSize) {
+  public static String binglogType="hdfs";
+  public static String getBinglogType() {
+	return binglogType;
+}
+
+
+
+public static void setBinglogType(String binglogType) {
+	SolrCore.binglogType = binglogType;
+}
+
+
+
+public static void setSearchCacheSize(int cacheSize) {
 		SolrCore.cacheSize = cacheSize;
   }
   
@@ -806,7 +812,7 @@ public final class SolrCore implements SolrInfoMBean {
 		
 	}
 	
-	private static Cache<PartionKey,ReadOnlyDirectory> realtime =(new SimpleMapCache<PartionKey, ReadOnlyDirectory>(
+	private static Cache<PartionKey,ReadOnlyDirectory> forReadOnlyDir =(new SimpleMapCache<PartionKey, ReadOnlyDirectory>(
 			new LinkedHashMap<PartionKey, ReadOnlyDirectory>(
 					(int) Math.ceil(16 / 0.75f) + 1,
 					0.75f, true) {
@@ -818,18 +824,39 @@ public final class SolrCore implements SolrInfoMBean {
 					return rtn;
 				}
 			}));
-	private static Cache<PartionKey,RealTimeDirectory> realtime_forwrite =(new SimpleMapCache<PartionKey, RealTimeDirectory>(
+	
+	private static Cache<PartionKey,RealTimeDirectory> forRealTimeDir =(new SimpleMapCache<PartionKey, RealTimeDirectory>(
 			new LinkedHashMap<PartionKey, RealTimeDirectory>(
-					(int) Math.ceil(4 / 0.75f) + 1,
+					(int) Math.ceil(16 / 0.75f) + 1,
 					0.75f, true) {
 				private static final long serialVersionUID = 1L;
 
 				@Override
 				protected boolean removeEldestEntry(Map.Entry<PartionKey, RealTimeDirectory> eldest) {
-					boolean rtn= size() > 4;
+					boolean rtn= size() > 16;
 					if(rtn)
 					{
 						eldest.getValue().syncHdfs();
+						eldest.getValue().close();
+					}
+					return rtn;
+				}
+			}));
+	
+	
+	private static Cache<PartionKey,RealTimeDirectory> forWriteDir =(new SimpleMapCache<PartionKey, RealTimeDirectory>(
+			new LinkedHashMap<PartionKey, RealTimeDirectory>(
+					(int) Math.ceil(8 / 0.75f) + 1,
+					0.75f, true) {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				protected boolean removeEldestEntry(Map.Entry<PartionKey, RealTimeDirectory> eldest) {
+					boolean rtn= size() > 8;
+					if(rtn)
+					{
+						eldest.getValue().syncHdfs();
+						eldest.getValue().close();
 					}
 					return rtn;
 				}
@@ -837,56 +864,93 @@ public final class SolrCore implements SolrInfoMBean {
 
 
 	
+	public static ConcurrentHashMap<String, String> tablemode=new ConcurrentHashMap<String, String>();
+	
+	public static String getTablemode(String table) {
+		return tablemode.get(table);
+	}
+
+
+
+	public static void setTablemode(String tablename,String tablemode) {
+		SolrCore.tablemode.put(tablename, tablemode);
+	}
 	
 	
+
+	
+	private MdrillDirectory getForWrite(String partion, boolean forwrite)
+			throws IOException {
+
+		String corename = this.getName();
+		if (corename == null) {
+			corename = "";
+		}
+		PartionKey p = new PartionKey(corename, partion);
+
+		boolean isWritePool = false;
+		synchronized (forRealTimeDir) {
+
+			RealTimeDirectory rtn = forRealTimeDir.remove(p);
+			if (forwrite) {
+				isWritePool = true;
+				if (rtn == null) {
+					rtn = forWriteDir.remove(p);
+				}
+			} else {
+				if (rtn == null) {
+					rtn = forWriteDir.remove(p);
+					if (rtn != null) {
+						isWritePool = true;
+					}
+				}
+			}
+
+			if (rtn == null) {
+
+				File f = new File(getDataDir(), partion);
+				rtn = new RealTimeDirectory(f, HadoopUtil.hadoopConfDir,
+						ShardPartion
+								.getHdfsRealtimePath(p.tablename, p.partion)
+								.toString(),this,p);
+			}
+
+			if (isWritePool) {
+				forWriteDir.put(p, rtn);
+			} else {
+				forRealTimeDir.put(p, rtn);
+			}
+			rtn.setCore(this);
+			rtn.setPartion(p);
+
+			return rtn;
+		}
+	}
+
+
 	public MdrillDirectory getRealTime(String partion,boolean forwrite) throws IOException
 	{
+		
 		String corename=this.getName();
 		if(corename==null)
 		{
 			corename="";
 		}
+		
+		boolean isrealtime=forwrite||String.valueOf(getTablemode(corename)).indexOf("@realtime@")>=0;
+		
 		PartionKey p=new PartionKey(corename, partion);
-		MdrillDirectory rtdir=null;
-		synchronized (realtime) {
-			rtdir=realtime.get(p);
-			if(rtdir!=null)
-			{
-				if(forwrite)
-				{
-					File f = new File(getDataDir(), partion);
-					realtime_forwrite.put(p, new RealTimeDirectory(f , HadoopUtil.hadoopConfDir, ShardPartion.getHdfsRealtimePath(p.tablename,p.partion).toString()));
-					realtime.remove(p);
-				}
-				rtdir.setPartion(p);
-				rtdir.setCore(this);
-				return rtdir;
+		
+		if(isrealtime)
+		{
+			synchronized (forReadOnlyDir) {
+				forReadOnlyDir.remove(p);
 			}
-			rtdir=realtime_forwrite.get(p);
-			if(rtdir!=null)
-			{
-				rtdir.setCore(this);
-				rtdir.setPartion(p);
-				return rtdir;
-			}
+			return getForWrite(partion,forwrite);
 		}
 		
-		synchronized (realtime) {
-			rtdir=realtime.get(p);
-			if(rtdir!=null)
-			{
-				if(forwrite)
-				{
-					File f = new File(getDataDir(), partion);
-
-					realtime_forwrite.put(p, new RealTimeDirectory(f , HadoopUtil.hadoopConfDir, ShardPartion.getHdfsRealtimePath(p.tablename,p.partion).toString()));
-					realtime.remove(p);
-				}
-				rtdir.setCore(this);
-				rtdir.setPartion(p);
-				return rtdir;
-			}
-			rtdir=realtime_forwrite.get(p);
+		synchronized (forReadOnlyDir) {
+			MdrillDirectory rtdir=forReadOnlyDir.get(p);
 			if(rtdir!=null)
 			{
 				rtdir.setCore(this);
@@ -895,17 +959,9 @@ public final class SolrCore implements SolrInfoMBean {
 			}
 			
 			File f = new File(getDataDir(), partion);
-			if(forwrite)
-			{
-				RealTimeDirectory ddd=new RealTimeDirectory(f , HadoopUtil.hadoopConfDir, ShardPartion.getHdfsRealtimePath(p.tablename,p.partion).toString());
-				rtdir=ddd;
-				realtime_forwrite.put(p, ddd);
-			}else{
-				ReadOnlyDirectory ddd=new ReadOnlyDirectory(f , HadoopUtil.hadoopConfDir, ShardPartion.getHdfsRealtimePath(p.tablename,p.partion).toString());
-				rtdir=ddd;
-				realtime.put(p, ddd);
-			}
-			
+			ReadOnlyDirectory ddd=new ReadOnlyDirectory(f , HadoopUtil.hadoopConfDir, ShardPartion.getHdfsRealtimePath(p.tablename,p.partion).toString());
+			rtdir=ddd;
+			forReadOnlyDir.put(p, ddd);
 			rtdir.setCore(this);
 			rtdir.setPartion(p);
 			return rtdir;

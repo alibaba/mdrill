@@ -15,6 +15,6 @@ public interface MdrillDirectory {
 	public  List<Directory> getForSearch();
 	public  void addDocument(SolrInputDocument doc) throws CorruptIndexException, LockObtainFailedException, IOException;
 	public void setCore(SolrCore core);
-	void sync();
+	void syncLocal();
 	void syncHdfs();
 }

@@ -46,11 +46,7 @@ import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.log.Logger;
 import org.mortbay.thread.QueuedThreadPool;
 
-/**
- * Run solr using jetty
- * 
- * @since solr 1.3
- */
+
 public class JettySolrRunner 
 {
 
@@ -67,15 +63,14 @@ public class JettySolrRunner
   private void init( String context, int port )
   {
     System.setProperty("org.mortbay.jetty.Request.maxFormContentSize", "9000000");
+    System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", "9000000");
+
     this.context = context;
     server = new Server(  );    
    
     QueuedThreadPool threads=new QueuedThreadPool(512);
     threads.setDaemon(true);
-//    org.mortbay.thread.concurrent.ThreadPool threads=new org.mortbay.thread.concurrent.ThreadPool();
-//    threads.setCorePoolSize(512);
-//    threads.setMaximumPoolSize(512);
-    
+
     SelectChannelConnector conn=new SelectChannelConnector();
     conn.setPort(port);
     conn.setLowResourcesConnections(10240);
@@ -88,7 +83,6 @@ public class JettySolrRunner
     // Initialize the servlets
     Context root = new Context( server, context, Context.SESSIONS );
     
-    // for some reason, there must be a servlet for this to get applied
     root.addServlet( Servlet404.class, "/*" );
     dispatchFilter = root.addFilter( SolrDispatchFilter.class, "*", Handler.REQUEST );
   }
@@ -165,7 +159,6 @@ public class JettySolrRunner
 	public Long checkSolrRecord(String context, String newestPartion,String day)
 			throws MalformedURLException, SolrServerException {
 		
-
 		SolrServerException error = new SolrServerException("checkSolrRecord");
 		for (int i = 0; i < 3; i++) {
 			try {

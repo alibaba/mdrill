@@ -274,6 +274,9 @@ public class MdrillMain {
 				.get("higo.solr.ports.begin"));
 
 		String hdfsSolrDir = (String) stormconf.get("higo.table.path");
+		
+		String realtimebinlog = String.valueOf(stormconf.get("higo.realtime.binlog"));
+		
 
 		String topologyName = "adhoc";
 
@@ -313,7 +316,9 @@ public class MdrillMain {
 		paramsMs.compname="merge_0";
 		paramsMs.replication=1;
 		paramsMs.replicationindex=0;
-		ShardsBolt ms = new ShardsBolt(paramsMs,false, hadoopConfDir, hdfsSolrDir,
+		paramsMs.binlog=realtimebinlog;
+		
+		ShardsBolt ms = new ShardsBolt(paramsMs, hadoopConfDir, hdfsSolrDir,
 				tableName, localWorkDirList, portbase + shards*replication + 100, 0,
 				partions, topologyName);
 
@@ -325,8 +330,10 @@ public class MdrillMain {
 			paramsShard.replication=replication;
 			paramsShard.replicationindex=i;
 			paramsShard.compname="shard_"+i;
+			paramsShard.binlog=realtimebinlog;
 
-			ShardsBolt solr = new ShardsBolt(paramsShard,false, hadoopConfDir, hdfsSolrDir,
+
+			ShardsBolt solr = new ShardsBolt(paramsShard, hadoopConfDir, hdfsSolrDir,
 					tableName, localWorkDirList, portbase+shards*i, shards, partions,
 					topologyName);
 			builder.setBolt("shard@"+i, solr, shards).allGrouping("heartbeat");

@@ -106,6 +106,18 @@ public class GetShards {
 			random++;
 			return list.get(index);
 		}
+		
+		public boolean containsIp(String ip)
+		{
+			for(String s:list)
+			{
+				if(s.indexOf(ip)>=0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
 	}
 	
     public static ShardsList[] get(String tableName,boolean isMs) throws Exception
@@ -121,7 +133,7 @@ public class GetShards {
 					continue;
 				}
 				
-				if((info.times+1000l*600)<nowtime)
+				if((info.times+1000l*3600)<nowtime)
 				{
 					continue;
 				}

@@ -74,11 +74,17 @@ public class TTReader
 
 				try {
 					Object e = parser.parse(str);
-					stat.valid++;
-					entries.add(e);
+					if(e!=null)
+					{
+						stat.valid++;
+						entries.add(e);
+					}else{
+						stat.invalid++;
+						stat.debugError(str);
+					}
 				} catch (InvalidEntryException iee) {
 					stat.invalid++;
-					stat.debugError(str, iee);
+					stat.debugError(str);
 
 				}
 			}
@@ -152,7 +158,7 @@ public class TTReader
 	
 	        try{
 	            Date curTime;
-	            SimpleDateFormat formatDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	            SimpleDateFormat formatDate = new SimpleDateFormat("yyyyMMddHHmmss");
 	            Object startTime = config.get(confPrefix + "-start-time");
 	            if (startTime == null)
 	            {
@@ -261,7 +267,7 @@ public class TTReader
 	    invalid = 0;
 	}
 	
-	public void debugError(String s,Throwable e)
+	public void debugError(String s)
 	{
 		debuglines++;
 

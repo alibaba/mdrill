@@ -41,7 +41,10 @@ public class Descriptor {
 	    
 	    private FileSystem fs;
 	    private int ioFileBufferSize;
+	    long index=0;
 
+	    private long tlSum=0;
+		private long tlCount=0;
 	    public Descriptor(FileSystem fs,Path _file, int ioFileBufferSize)
 		    throws IOException {
 	    	this.position=0l;
@@ -49,7 +52,24 @@ public class Descriptor {
 	    	this.fs=fs;
 	    	this.ioFileBufferSize=ioFileBufferSize;
 	    }
-	    long index=0;
+	    
+	    public void Stat(long tl,long tl2,int len)
+	    {
+	    	tlSum+=tl;
+	  	    tlCount+=1;
+	  	  tlSum+=tl;
+		    tlCount+=1;
+		    if(tl2>100||tlCount%1000==0)
+		    {
+		    	logger.info("readInternal "+this.file.getName()+" timetaken="+tl+"@"+tl2+",tlSum="+tlSum+",tlCount="+tlCount+",len="+len);
+		    	if(tlSum>10000000)
+			    {
+			    	tlCount=0;
+			    	tlSum=0;
+			    }
+		    }
+	    }
+	    
 	    public FSDataInputStream Stream() throws IOException
 	    {
 	    	if(this.in==null)
@@ -70,10 +90,10 @@ public class Descriptor {
 
 	    	}
 	    	
-	    	index++;
-	    	if(index>100)
+	    	if(index++>10)
 	    	{
 	    		RamDirector.put(this.uuid, this);
+	    		index=0;
 	    	}
 			
 			return this.in;
@@ -100,6 +120,10 @@ public class Descriptor {
 	    	if(this.in!=null)
 	    	{
 	    		this.in.close();
+	    		
+	        	logger.info("close "+this.file.getName()+" tlSum="+tlSum+",tlCount="+tlCount);
+	        	tlCount=0;
+		    	tlSum=0;
 	    		this.in=null;
 	    	}
 	    }

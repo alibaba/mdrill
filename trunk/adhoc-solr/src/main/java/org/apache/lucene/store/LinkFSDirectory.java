@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,11 +30,17 @@ import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 import com.alimama.mdrill.utils.HadoopUtil;
 public abstract class LinkFSDirectory extends FSDirectory {
 	
-	public static FSDirectory open(File path) throws IOException {
+	public static LinkFSDirectory open(File path) throws IOException {
 		return open(path, null);
 	}
+	
+	public static LinkFSDirectory open(File path,boolean isallowmove) throws IOException {
+		LinkFSDirectory rtn= open(path, null);
+		rtn.setAllowLinks(isallowmove);
+		return rtn;
+	}
 
-	public static FSDirectory open(File path, LockFactory lockFactory)
+	public static LinkFSDirectory open(File path, LockFactory lockFactory)
 			throws IOException {
 		if ((Constants.WINDOWS || Constants.SUN_OS || Constants.LINUX)
 				&& Constants.JRE_IS_64BIT && MMapDirectory.UNMAP_SUPPORTED) {
@@ -68,15 +73,7 @@ public abstract class LinkFSDirectory extends FSDirectory {
 	}
 	private static Cache<String,Object> localLock=Cache.synchronizedCache(new SimpleLRUCache<String,Object>(10240));
 	private static Object maplock=new Object();
-  private static AtomicBoolean isRealTime=new AtomicBoolean(false);
-
-    public static void setRealTime(boolean isRealTime) {
-    	LinkFSDirectory.isRealTime.set(isRealTime);
-	}
-    
-    public static boolean isRealTime() {
-    	return LinkFSDirectory.isRealTime.get();
-    }
+  
 	public static Directory readOnlyOpen(File path, LockFactory lockFactory) throws IOException
 	{
 		Object lock=new Object();

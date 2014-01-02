@@ -62,6 +62,8 @@
  higo.fixed.shards.3: "0:bo2.sds.cm6:2"
  higo.fixed.shards.4: "0:bo3.sds.cm6:3"
  
+ #----binlog记录的位置，默认为local如果hdfs稳定可以写hdfs----
+ higo.realtime.binlog: "local"
  
  #----分配给merger server的端口，建议每台机器分配一个merger server----
  higo.merge.ports: "6601,6602,6603,6604,6605,6606,6607,6608,6609,6610"
@@ -85,6 +87,12 @@
  higo.solr.ports.begin: 51110
  #----mdrill分区方式，目前支持default,day,month,single，default是将一个月分成3个区,single意味着没有分区-----
  higo.partion.type: "day"
+ 
+ higo.mode.quanjingmointor_host: "@realtime@"
+ higo.mode.quanjingmointor_pid: "@realtime@"
+ higo.mode.quanjingmointor_access: "@realtime@"
+ higo.mode.quanjingmointor_click: "@realtime@"
+ 
 
 ####以下为adhoc项目专用，跟mdrill无关，不启动UI的话可忽略####
  higo.ui.conf.dir: "/home/taobao/bluewhale/ui16/alimama/adhoc-core/webapp"

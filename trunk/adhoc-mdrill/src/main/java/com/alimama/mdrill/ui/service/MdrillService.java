@@ -148,13 +148,21 @@ public class MdrillService {
 	}
 	public synchronized static String insert(String projectName,Collection<SolrInputDocument> docs,FlushType tp)
 	throws Exception {
-		return insert(projectName, docs,null, tp);
+		return insert(projectName, docs,false,null, tp);
 	}
 	
-	public synchronized static String insert(String projectName,Collection<SolrInputDocument> docs,ShardsList[] coresfortest,FlushType tp)
+	public synchronized static String insertLocal(String projectName,Collection<SolrInputDocument> docs,FlushType tp)
+	throws Exception {
+		return insert(projectName, docs,true,null, tp);
+	}
+	
+	private static String localip=null;
+	public synchronized static String insert(String projectName,Collection<SolrInputDocument> docs,boolean islocal,ShardsList[] coresfortest,FlushType tp)
 			throws Exception {
-		
-		
+		if(localip==null)
+		{
+			localip = java.net.InetAddress.getLocalHost().getHostAddress();
+		}
 		
 		TablePartion part = GetPartions.partion(projectName);
 		MdrillPartionsInterface drillpart=MdrillPartions.INSTANCE(part.parttype);
@@ -162,37 +170,29 @@ public class MdrillService {
 		ShardsList[] cores = coresfortest;
 
 		if (cores == null) {
-			
 			cores = GetShards.get(part.name, false);
-			
-			Map stormconf = Utils.readStormConfig();
 			for(int i=0;i<10;i++)
 			{
-				if(cores.length!=StormUtils.parseInt(stormconf.get("higo.shards.count")))
+				if(cores==null||cores.length<=0)
 				{
 					if(i>5)
 					{
-						if(cores.length<=(StormUtils.parseInt(stormconf.get("higo.shards.count"))/2))
-						{
-							throw new Exception("core.size="+cores.length);
-						}else{
-							break;
-						}
+						throw new Exception("core.size<=0");
 					}
 					SolrInfoList infolist=GetShards.getSolrInfoList(part.name);
 			    	infolist.run();
 					cores = GetShards.get(part.name, false);
 					LOG.info("core.size="+cores.length);
-					
 					Thread.sleep(1000);
 				}else{
 					break;
 				}
 			}
 		}
+
 		for(SolrInputDocument doc:docs)
 		{
-			doc.addField("mdrill_uuid", uuid());
+			doc.setField("mdrill_uuid", uuid());
 			if(!doc.containsKey("mdrillPartion"))
 			{
 				String partion=drillpart.InsertPartion(doc);
@@ -221,9 +221,28 @@ public class MdrillService {
 
 		JSONObject rtn = new JSONObject();
 	
-		if(tp.equals(FlushType.buffer))
+		if(tp==null||tp.equals(FlushType.buffer))
 		{
-			ShardsList write = cores[(int) (index % cores.length)];
+			ShardsList write =null;
+			if(islocal)
+			{
+				ArrayList<ShardsList> list=new ArrayList<GetShards.ShardsList>(cores.length);
+				for(ShardsList shard:cores)
+				{
+					if(shard.containsIp(localip))
+					{
+						list.add(shard);
+					}
+				}
+				if(list.size()>0)
+				{
+					write =list.get((int) (index %list.size()));
+				}
+			}
+			if(write==null)
+			{
+				write = cores[(int) (index % cores.length)];
+			}
 	
 			for (String s : write.list) {
 				String url = "http://" + s + "/solr/" + projectName;
@@ -289,7 +308,7 @@ public class MdrillService {
 			docs.add(doc);
 		}
 		
-		return insert(projectName, docs, coresfortest,FlushType.buffer);
+		return insert(projectName, docs,false, coresfortest,FlushType.buffer);
 
 	}
 

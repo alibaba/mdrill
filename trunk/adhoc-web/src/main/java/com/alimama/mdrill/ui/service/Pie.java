@@ -29,6 +29,35 @@ public class Pie {
 		}
 		return groupbyFields;
 	}
+	
+	public static String parseStatList(String projectName, String queryStr,	String fl, String groupby,String dimvalue) throws JSONException, SQLException
+	{
+		JSONObject jsonObj = new JSONObject();
+		ArrayList<String> StatFields=new ArrayList<String>();
+		ArrayList<String> StatFieldsDisplay=new ArrayList<String>();
+		HashMap<String,ArrayList<String>> namelist=AdhocWebServiceParams.parseFieldToNames(fl, groupby, dimvalue, null);
+		ArrayList<String> namelistread=namelist.get("namelist");
+		ArrayList<String> showFields = namelist.get("field");
+		StatFields.add("count(*)");
+		StatFieldsDisplay.add("计数(*)");
+		for(int i=0;i<showFields.size()&&i<namelistread.size();i++){
+			String showfield=showFields.get(i);
+			String showfieldDisplay=namelistread.get(i);
+			StateField showfielda=WebServiceParams.parseStat(showfield);
+			if(showfielda.isstat)
+			{
+				StatFields.add(showfield);
+				StatFieldsDisplay.add(showfieldDisplay);
+
+			}
+		}
+		jsonObj.put("stats", StatFields);
+		jsonObj.put("statsShow", StatFieldsDisplay);
+
+		jsonObj.put("project", projectName);
+		return jsonObj.toString();
+	}
+	
 	public static String parseStat(String projectName, String queryStr,	String fl, String groupby,String dimvalue) throws JSONException, SQLException
 	{
 		JSONObject jsonObj = new JSONObject();
@@ -57,10 +86,17 @@ public class Pie {
 		
 		return jsonObj.toString();
 	}
-	
 	public static String result(String projectName, 
 			String startStr, String rowsStr, String queryStr, 
 			String fl, String groupby, String sort, String order,JspWriter out)
+			throws Exception
+			{
+			return result(projectName, startStr, rowsStr, queryStr, fl, groupby, sort, order, "Y", out);
+			}
+		
+	public static String result(String projectName, 
+			String startStr, String rowsStr, String queryStr, 
+			String fl, String groupby, String sort, String order,String showOther,JspWriter out)
 			throws Exception {
 		   MdrillService.HeartBeat hb=new MdrillService.HeartBeat(out);
 			new Thread(hb).start();
@@ -111,21 +147,24 @@ public class Pie {
 
 			}
 			
-			String rtnother= MdrillService.result(projectName, null, startStr,rowsStr, filterother.toString(), null, flvalue, null, sort, order, null, null);
-			JSONObject jsonObjother = new JSONObject(rtnother);
-			if(jsonObjother.getString("code").equals("1"))
+			if("Y".equals(showOther))
 			{
-				JSONArray listother=jsonObjother.getJSONObject("data").getJSONArray("docs");
-				for(int i=0;i<listother.length();i++)
+				String rtnother= MdrillService.result(projectName, null, startStr,rowsStr, filterother.toString(), null, flvalue, null, sort, order, null, null);
+				JSONObject jsonObjother = new JSONObject(rtnother);
+				if(jsonObjother.getString("code").equals("1"))
 				{
-					JSONObject item=listother.getJSONObject(i);
-					Double d=Double.parseDouble(item.getString(flvalue));
-					if(d>0)
+					JSONArray listother=jsonObjother.getJSONObject("data").getJSONArray("docs");
+					for(int i=0;i<listother.length();i++)
 					{
-					JSONObject newitem=new JSONObject();
-					newitem.put("label", "其他");
-					newitem.put("data",d );
-					data.add(newitem);
+						JSONObject item=listother.getJSONObject(i);
+						Double d=Double.parseDouble(item.getString(flvalue));
+						if(d>0)
+						{
+						JSONObject newitem=new JSONObject();
+						newitem.put("label", "其他");
+						newitem.put("data",d );
+						data.add(newitem);
+						}
 					}
 				}
 			}

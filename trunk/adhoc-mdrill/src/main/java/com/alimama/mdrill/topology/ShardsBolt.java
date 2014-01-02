@@ -3,9 +3,6 @@ package com.alimama.mdrill.topology;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -31,92 +28,80 @@ public class ShardsBolt implements IRichBolt{
     private Integer portbase; 
     private String storePath;
     private String tablename;
-    Integer shards;
-    private  OutputCollector collector;
+    private Integer shards;
+    private OutputCollector collector;
     private Integer partions;
     private String topologyName;
-    private boolean isRealTime=false;
-    BoltParams params;
-    public ShardsBolt(BoltParams params,boolean isRealTime,String hadoopConfPath,String solrhome,String tablename,String storePath,Integer portbase,Integer shards,Integer partions,String topologyName)
+    private BoltParams params;
+    public ShardsBolt(BoltParams params,String hadoopConfPath,String solrhome,String tablename,String storePath,Integer portbase,Integer shards,Integer partions,String topologyName)
     {
-    this.params=params;
-	this.hadoopConfPath=hadoopConfPath;
-	this.solrhome=solrhome;
-	this.storePath=storePath;
-	this.portbase=portbase;
-	this.tablename=tablename;
-	this.shards=shards;
-	this.partions=partions;
-	this.topologyName=topologyName;
-	this.isRealTime=isRealTime;
+	    this.params=params;
+		this.hadoopConfPath=hadoopConfPath;
+		this.solrhome=solrhome;
+		this.storePath=storePath;
+		this.portbase=portbase;
+		this.tablename=tablename;
+		this.shards=shards;
+		this.partions=partions;
+		this.topologyName=topologyName;
     }
     
     private SolrStartInterface solr=null;
-	ThreadPoolExecutor EXECUTE =null;
+    ShardThread EXECUTE =null;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context,
-            OutputCollector collector) {
-	this.collector=collector;
-	this.EXECUTE= new ThreadPoolExecutor(3, 3,1800l, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-	try {
-	    this.conf=new Configuration();
-	    HadoopUtil.grabConfiguration(this.hadoopConfPath, this.conf);
-	    int hashcode=this.tablename.hashCode()%10000;
-	    if(hashcode<0)
-	    {
-		hashcode*=-1;
-	    }
-	    Integer taskIndex=context.getThisTaskIndex();
-	    
-	    this.solr=new SolrStart(this.params,collector, conf, solrhome, tablename.split(","), storePath, this.portbase, taskIndex, this.topologyName, context.getThisTaskId(), this.partions);
-	    this.solr.setExecute(this.EXECUTE);
-	    this.solr.setConfigDir(this.hadoopConfPath);
-	    this.solr.setConf(stormConf);
-	    this.solr.setRealTime(this.isRealTime);
-	    this.solr.setMergeServer(!this.isRealTime&&taskIndex>=this.shards);
-	    this.solr.start();
-        } catch (RuntimeException e1) {
-            LOG.error(StormUtils.stringify_error(e1));
-            this.collector.reportError(e1);
-            this.solr.unregister();
-	    throw new RuntimeException(e1);
-        }
-	catch (Exception e) {
-	    LOG.error(StormUtils.stringify_error(e));
-            this.collector.reportError(e);
-            this.solr.unregister();
-	    throw new RuntimeException(e);
-        }
-    }
-    
-    @Override
-    public void execute(Tuple input) {
-	List<Object> data = StormUtils.mk_list((Object) System.currentTimeMillis());
-        this.collector.emit(data);
-	try {
-	    this.solr.checkError();
-        } catch (Throwable e1) {
-            LOG.error(StormUtils.stringify_error(e1));
-            this.solr.unregister();
-            this.collector.reportError(e1);
-            throw new RuntimeException(e1);
-        }
-	
-	this.collector.ack(input);
-	
-    }
+			OutputCollector collector) {
+		this.collector = collector;
+		this.EXECUTE = new ShardThread();
+		try {
+			this.conf = new Configuration();
+			HadoopUtil.grabConfiguration(this.hadoopConfPath, this.conf);
+			Integer taskIndex = context.getThisTaskIndex();
+			this.solr = new SolrStart(this.params, collector, conf, solrhome,
+					tablename.split(","), storePath, this.portbase, taskIndex,
+					this.topologyName, context.getThisTaskId(), this.partions);
+			this.solr.setExecute(this.EXECUTE);
+			this.solr.setConfigDir(this.hadoopConfPath);
+			this.solr.setConf(stormConf);
+			this.solr.setMergeServer(taskIndex >= this.shards);
+			this.solr.start();
+		} catch (Throwable e1) {
+			LOG.error(StormUtils.stringify_error(e1));
+			this.collector.reportError(e1);
+			this.solr.unregister();
+			throw new RuntimeException(e1);
+		}
 
-    @Override
-    public void cleanup() {
-	try {
-	    this.solr.stop();
-        } catch (Exception e) {
-            LOG.error(StormUtils.stringify_error(e));
-            this.solr.unregister();
-            throw new RuntimeException(e);
-        }
-    }
+	}
+    
+	@Override
+	public void execute(Tuple input) {
+		List<Object> data = StormUtils.mk_list((Object) System.currentTimeMillis());
+		this.collector.emit(data);
+		try {
+			this.solr.checkError();
+		} catch (Throwable e1) {
+			LOG.error(StormUtils.stringify_error(e1));
+			this.solr.unregister();
+			this.collector.reportError(e1);
+			throw new RuntimeException(e1);
+		}
+
+		this.collector.ack(input);
+
+	}
+
+	@Override
+	public void cleanup() {
+		try {
+			this.solr.stop();
+		} catch (Throwable e) {
+			LOG.error(StormUtils.stringify_error(e));
+			this.solr.unregister();
+			throw new RuntimeException(e);
+		}
+	}
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {

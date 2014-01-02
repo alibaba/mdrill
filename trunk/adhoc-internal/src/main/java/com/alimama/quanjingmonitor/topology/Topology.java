@@ -23,6 +23,15 @@ public class Topology {
 		conf.setMessageTimeoutSecs(60);
 		conf.setNumWorkers(workescount);
 		conf.setNumAckers(4);
+		
+		if(args.length>0)
+		{
+			conf.put("pv-spout-start-time", args[0]);
+			conf.put("click-spout-start-time", args[0]);
+			conf.put("access-spout-start-time", args[0]);
+
+		}
+		
 		TopologyBuilder builder = new TopologyBuilder();
 		builder.setSpout("pvmap", new PvSpout("pv-spout"), 48);
 		builder.setBolt("reduce", new SumReduceBolt("pv"), 16).fieldsGrouping("pvmap", new Fields("key") );

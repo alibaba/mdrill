@@ -98,14 +98,14 @@ public class JobIndexerPartion extends Configured implements Tool {
 		return rtn;
 	}
 	
-	public HashMap<String,String> getVertify(HashMap<String,HashSet<String>> partions) throws Exception
-	{
-		HashMap<String,String> vertifyset=this.mdrillpartion.indexVertify(partions, shards, startday, dayDelay, maxRunDays);
-		return vertifyset;
-	}
+//	public HashMap<String,String> getVertify(HashMap<String,HashSet<String>> partions) throws Exception
+//	{
+//		HashMap<String,String> vertifyset=this.mdrillpartion.indexVertify(partions, shards, startday, dayDelay, maxRunDays);
+//		return vertifyset;
+//	}
 	
 
-	public String getCurrentVertify(String partion,HashSet<String> partionDays,String submatch) throws Exception
+	public String getCurrentVertify(String partion,HashSet<String> partionDays,String submatch,String tablemode) throws Exception
 	{
 		HashMap<String,HashSet<String>> partions=new HashMap<String, HashSet<String>>();
 		partions.put(partion, partionDays);
@@ -131,6 +131,11 @@ public class JobIndexerPartion extends Configured implements Tool {
 			long lasttimes=p.getModificationTime();
 			mintime=Math.min(mintime, lasttimes);
 			maxtime=Math.max(maxtime, lasttimes);
+		}
+		
+		if(tablemode.indexOf("@igDataChange@")>=0)
+		{
+			return "partionV"+MdrillPartions.PARTION_VERSION+"@001@"+partion + "@" + shards + "@"+ partionDays.size()+"@"+partionDays.hashCode()+"@0@0@0@0";
 		}
 				
 		return partionvertify+"@"+dusize+"@"+pathlist.size()+"@"+parseDate(mintime)+"@"+parseDate(maxtime);
@@ -170,12 +175,15 @@ public class JobIndexerPartion extends Configured implements Tool {
 			{
 				String partion=e.getKey();
 				HashSet<String> days=e.getValue();
-				String currentvertify = this.getCurrentVertify(partion, days,submatch);
+				String currentvertify = this.getCurrentVertify(partion, days,submatch,tablemode);
 				
 				Path indexOtherPath = new Path(this.index, partion);
 				Path tmpindexOtherPath = new Path(this.workDir, partion);
 				Path otherveritify=new Path(indexOtherPath, "vertify");
-				if (!currentvertify.equals(parse.readFirstLineStr(otherveritify))) {
+				String lastVertify=parse.readFirstLineStr(otherveritify);
+				System.out.println("11111111 vertify:>>>last>>>"+lastVertify+">>current>>"+currentvertify+"<<<<");
+
+				if (!currentvertify.equals(lastVertify)) {
 					if (days.size() > 0) {
 						runPartion=new rebuildPartion();
 						runPartion.partion=partion;
@@ -189,14 +197,17 @@ public class JobIndexerPartion extends Configured implements Tool {
 			}
 			if(runPartion!=null)
 			{
-				System.out.println("vertify:"+runPartion.partion+">>>"+runPartion.partionvertify);
+				System.out.println("22222  vertify:"+runPartion.partion+">>>"+runPartion.partionvertify+"<<<<");
 				int ret=0;
 				try{
 					flock.trylock();
-					String currentvertify = this.getCurrentVertify(runPartion.partion, runPartion.days,submatch);
+					String currentvertify = this.getCurrentVertify(runPartion.partion, runPartion.days,submatch,tablemode);
 					Path indexOtherPath = new Path(this.index, runPartion.partion);
 					Path otherveritify=new Path(indexOtherPath, "vertify");
-					if (currentvertify.equals(parse.readFirstLineStr(otherveritify))) {
+					String lastVertify=parse.readFirstLineStr(otherveritify);
+					System.out.println("333333 vertify:"+runPartion.partion+">>>"+runPartion.partionvertify+">>>"+currentvertify+">>>>"+lastVertify+"<<<<");
+
+					if (currentvertify.equals(lastVertify)) {
 						System.out.println("##########finiesd by other process #########");
 						continue;
 					}
@@ -217,8 +228,8 @@ public class JobIndexerPartion extends Configured implements Tool {
 				{
 					continue;
 				}
-				String currentVertify = this.getCurrentVertify(runPartion.partion, days,submatch);
-				System.out.println("vertify:"+runPartion.partion+">>>"+runPartion.partionvertify+"<<<"+currentVertify);
+				String currentVertify = this.getCurrentVertify(runPartion.partion, days,submatch,tablemode);
+				System.out.println("44444 vertify:"+runPartion.partion+">>>"+runPartion.partionvertify+"<<<"+currentVertify+"<<<<");
 
 				if (!currentVertify.equals(runPartion.partionvertify)) {
 					System.out.println("##########changed#########");

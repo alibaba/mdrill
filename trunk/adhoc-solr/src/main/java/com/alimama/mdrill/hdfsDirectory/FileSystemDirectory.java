@@ -293,20 +293,16 @@ public class FileSystemDirectory extends Directory {
     
   
 
-    private class FileSystemIndexInput extends BufferedIndexInput {
-
-	
-
+private class FileSystemIndexInput extends BufferedIndexInput {
 	private final Path filePath; // for debugging
 	private final Descriptor descriptor;
 	private long length=-1;
 	private boolean isOpen;
 	private boolean isClone;
 	
-	private long tlSum=0;
-	private long tlCount=0;
+	
 
-        public FileSystemIndexInput(final Path path, final int ioFileBufferSize)
+    public FileSystemIndexInput(final Path path, final int ioFileBufferSize)
 	        throws IOException {
 	    filePath = path;
 	    descriptor = new Descriptor(fs,path, ioFileBufferSize);
@@ -315,41 +311,38 @@ public class FileSystemDirectory extends Directory {
 
 	protected void readInternal(byte[] b, int offset, int len)
 	        throws IOException {
-		long t1=System.currentTimeMillis();
+		long t0=System.currentTimeMillis();
+		long t1=0l;
 	    synchronized (descriptor) {
-		long position = getFilePointer();
-		if (position != descriptor.Positon()) {
-		    descriptor.Stream().seek(position);
-		    descriptor.setPositon(position);
-		}
-		int total = 0;
-		do {
-		    int i = descriptor.Stream().read(b, offset + total, len - total);
-		    if (i == -1) {
-		    	throw new IOException("Read past EOF");
-		    }
-		    descriptor.addPositon(i);
-		    total += i;
-		} while (total < len);
+			t1=System.currentTimeMillis();
+			long position = getFilePointer();
+			if (position != descriptor.Positon()) {
+			    descriptor.Stream().seek(position);
+			    descriptor.setPositon(position);
+			}
+			int total = 0;
+			do {
+			    int i = descriptor.Stream().read(b, offset + total, len - total);
+			    if (i == -1) {
+			    	throw new IOException("Read past EOF");
+			    }
+			    descriptor.addPositon(i);
+			    total += i;
+			} while (total < len);
 	    }
 	    
 	    long t2=System.currentTimeMillis();
 	    long tl=t2-t1;
-	    tlSum+=tl;
-	    tlCount+=1;
-	    if(tl>100||tlCount%1000==0)
-	    {
-	    	logger.info("readInternal "+this.filePath.getName()+" timetaken="+tl+",tlSum="+tlSum+",tlCount="+tlCount);
-	    	if(tlSum>10000000)
-		    {
-		    	tlCount=0;
-		    	tlSum=0;
-		    }
+	    long tl2=t2-t0;
+	    
+	    synchronized (descriptor) {
+	    	descriptor.Stat(tl, tl2, len);
 	    }
+
+	   
 	}
 
 	public void close() throws IOException {
-    	logger.info("close "+this.filePath.getName()+" tlSum="+tlSum+",tlCount="+tlCount);
 	    if (!isClone) {
 		if (isOpen) {
 		    synchronized (descriptor) {
@@ -384,8 +377,6 @@ public class FileSystemDirectory extends Directory {
 	public Object clone() {
 	    FileSystemIndexInput clone = (FileSystemIndexInput) super.clone();
 	    clone.isClone = true;
-	    clone.tlCount=0;
-	    clone.tlSum=0;
 	    return clone;
 	}
 

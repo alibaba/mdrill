@@ -193,7 +193,7 @@ public class ReadOnlyDirectory implements MdrillDirectory{
 
 
 	@Override
-	public void sync() {
+	public void syncLocal() {
 		// TODO Auto-generated method stub
 		
 	}

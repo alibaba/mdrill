@@ -27,12 +27,10 @@ public static void main(String[] args) throws Exception {
 			 
 			 doc2.addField("mdrillPartion", "201309");
 			 doc2.addField("mdrillCmd", "add");
-			 doc2.addField("higo_uuid", i);
 			 doc2.addField("thedate", "20130901");
 			 
 			 doc1.addField("mdrillPartion", "201308");
 			 doc1.addField("mdrillCmd", "add");
-			 doc1.addField("higo_uuid", i);
 			 doc1.addField("thedate", "20130801");
 			 for(int j=0;j<10;j++)
 			 {
@@ -40,7 +38,7 @@ public static void main(String[] args) throws Exception {
 				 doc2.addField("user_id_"+j+"_s", String.valueOf(((int)(Math.random()*10000))));//java.util.UUID.randomUUID().toString()
 			 }
 		 }
-		 String result=MdrillService.insert("rpt_p4padhoc_cust", docs, params,MdrillService.FlushType.buffer);
+		 String result=MdrillService.insert("rpt_p4padhoc_cust", docs, false,params,MdrillService.FlushType.buffer);
 		 System.out.println(i+"@"+result);
 		
 		 

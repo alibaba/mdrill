@@ -561,7 +561,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		return uif;
 	}
 	
-	private static ThreadPoolExecutor pool=new ThreadPoolExecutor(UniqConfig.getUnivertedFieldThreads(), UniqConfig.getUnivertedFieldThreads(),
+	private static ThreadPoolExecutor pool=new ThreadPoolExecutor(Math.max(UniqConfig.getUnivertedFieldThreads()/2, 1), UniqConfig.getUnivertedFieldThreads(),
             100L, TimeUnit.SECONDS,
             new LinkedBlockingQueue<Runnable>());
 	

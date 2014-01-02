@@ -34,42 +34,65 @@ public class UserJson {
 		return m_fpsql;
 	}
 	
-	public static void addJsonList(String json) throws Exception
+	public static void addJsonList(String json,String user) throws Exception
 	{
 		JSONObject jsonObj = new JSONObject(json);
 		JSONArray list=jsonObj.getJSONObject("data").getJSONArray("users");
 		for(int i=0;i<list.length();i++)
 		{
 			JSONObject obj=list.getJSONObject(i);
-			addjson(obj.toString());
+			addjson(obj.toString(),user);
 		}
 	}
 	
-	
 	public static String getJson() throws JSONException, SQLException
+	{
+		return getJson(null,false);
+	}
+	public static String getJson(String daystart,boolean extamsg) throws JSONException, SQLException
 	{
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("code", "1");
 		MySqlConn m_fpsql = getConn();
-
 		
+		String strSql = "select userid,email,cname,role,permission,'-' as queryday,opuser,optime from users_json order by role desc,userid";
+		if(daystart!=null&&!daystart.isEmpty())
+		{
+			strSql = " select userid,email,cname,role,permission,opuser,optime from users_json where (cname not in (select nick from query_analyser.day_user_pv  where queryday>'"+daystart+"')) order by role desc,userid";
+		}
+		
+		if(extamsg)
+		{
+			strSql = " select a.userid as userid,a.email as email ,a.cname as cname,a.role as role,a.permission as permission,a.opuser as opuser,a.optime as optime, b.queryday as queryday " +
+					"from ( " +
+					""+strSql+") " +
+			"  a " +
+			" left join (select nick,max(queryday) as queryday from query_analyser.day_user_pv group by nick ) b" +
+			" on a.cname=b.nick order by role desc,queryday desc" ;
+			
+		}
+
+		jsonObj.put("_exehql", strSql);
+
 		Connection conn = m_fpsql.getConn();
-		String strSql = "select userid,email,cname,role,permission from users_json order by role desc,userid";
 		Statement stmt = conn.createStatement();
 		try {
 			ResultSet res = stmt.executeQuery(strSql);
-			HashMap<String,String> rtn=new HashMap<String,String>();
-			rtn.put("_exehql", strSql);
 			JSONArray userlist=new JSONArray();
 			while (res.next()) {
 				JSONObject item = new JSONObject();
 				item.put("userid", String.valueOf(res.getString("userid")));
 				item.put("email", String.valueOf(res.getString("email")));
+				item.put("queryday", String.valueOf(res.getString("queryday")));
 
+				
 				item.put("cname", String.valueOf(res.getString("cname")));
 
 				item.put("role", Integer.parseInt(res.getString("role")));
 				item.put("permission", new JSONArray(res.getString("permission")));
+				item.put("opuser", String.valueOf(res.getString("opuser")));
+				item.put("optime", String.valueOf(res.getString("optime")));
+
 
 				userlist.put(item);
 			 }
@@ -89,7 +112,7 @@ public class UserJson {
 		return jsonObj.toString();
 	}
 	
-	public static void addjson(String json) throws Exception
+	public static void addjson(String json,String user) throws Exception
 	{
 		JSONObject jsonObj = new JSONObject(json);
 		String userid=jsonObj.getString("userid");
@@ -99,18 +122,18 @@ public class UserJson {
 		val.put("cname", jsonObj.getString("cname"));
 		val.put("role", String.valueOf(jsonObj.getInt("role")));
 		val.put("permission", jsonObj.getJSONArray("permission").toString());
-		add(userid, val);
+		add(userid, val,user);
 	}
 
 	
 	
-	public static String add(String userid,Map<String,String> val) throws Exception
+	public static String add(String userid,Map<String,String> val,String user) throws Exception
 	{
-		del(userid);
-		return create(userid, val);
+		del(userid,user);
+		return create(userid, val,user);
 	}
 	
-	public static String del(String userid) throws Exception
+	public static String del(String userid,String user) throws Exception
 	{
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("code", "0");
@@ -137,10 +160,11 @@ public class UserJson {
 	}
 	
 	
-	public static String create(String userid,Map<String,String> val) throws Exception
+	public static String create(String userid,Map<String,String> val,String user) throws Exception
 	{
 		MySqlConn m_fpsql = getConn();
-
+		val.put("opuser", String.valueOf(user));
+		val.put("optime", getNowTime());
 		JSONObject jsonObj = new JSONObject();
 
 		StringBuffer sqlbuffer=new StringBuffer();
@@ -186,11 +210,18 @@ public class UserJson {
 		return jsonObj.toString();
 	}
 
-	
-	public String update(String userid,Map<String,String> val) throws SQLException
+	private static String getNowTime()
+	{
+		SimpleDateFormat fmt=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		
+		return fmt.format(new java.util.Date());
+
+	}
+	public String update(String userid,Map<String,String> val,String user) throws SQLException
 	{
 		MySqlConn m_fpsql = getConn();
-
+		val.put("opuser", String.valueOf(user));
+		val.put("optime", getNowTime());
 		StringBuffer sqlbuffer=new StringBuffer();
 		String joinchar="";
 		String[] indexval=new String[val.size()];

@@ -2,12 +2,10 @@ package com.alimama.mdrill.topology;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
@@ -25,6 +23,7 @@ import backtype.storm.task.OutputCollector;
 
 import com.alipay.bluewhale.core.cluster.SolrInfo;
 import com.alipay.bluewhale.core.cluster.SolrInfo.ShardCount;
+import com.alimama.mdrill.topology.SolrStartTable.hbExecute;
 import com.alimama.mdrill.topology.utils.Interval;
 import com.alimama.mdrill.topology.utils.SolrStartJettyExcetionCollection;
 import com.alimama.mdrill.utils.HadoopUtil;
@@ -35,7 +34,7 @@ import com.alipay.bluewhale.core.utils.NetWorkUtils;
 import com.alipay.bluewhale.core.utils.StormUtils;
 import com.alipay.bluewhale.core.work.Worker;
 
-public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
+public class SolrStartJetty implements StopCheck,SolrStartInterface{
     private static Logger LOG = Logger.getLogger(SolrStartJetty.class);
     private Configuration conf;
     private String hdfsSolrhome;
@@ -47,24 +46,17 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     private OutputCollector collector;
     private boolean isMergeServer=false;
 	private AtomicBoolean neetRestart=new AtomicBoolean(false);
-	public ExecutorService EXECUTE2 = new ThreadPoolExecutor(1, 1,
-            60*20, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>());
 	
-	ThreadPoolExecutor EXECUTE =null;
+	ShardThread EXECUTE =null;
 
 	@Override
-	public void setExecute(ThreadPoolExecutor EXECUTE) {
+	public void setExecute(ShardThread EXECUTE) {
 		this.EXECUTE=EXECUTE;
 		
 	}
+	
+	private AtomicBoolean initSolrConfig=new AtomicBoolean(false);
 
-    private boolean isRealTime=false;
-
-    public void setRealTime(boolean isRealTime) {
-		this.isRealTime = isRealTime;
-		LinkFSDirectory.setRealTime(isRealTime);
-	}
 
     public void setRestart()
     {
@@ -90,6 +82,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		this.singleStorePath=IndexUtils.getPath(diskList, taskIndex,0,this.lfs);
 		HigoJoinUtils.setLocalStorePath(diskList.split(","));
 		SolrCore.setSearchCacheSize(partions);
+		SolrCore.setBinglogType(params.binlog);
 		LOG.info("higolog init table:"+this.tablename+",port:"+this.portbase+",taskIndex:"+this.taskIndex+",taskId:"+this.taskid+",storepath:"+this.singleStorePath);
 		this.init();
 		this.validate();
@@ -173,76 +166,96 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 					lfs.mkdirs(new Path(confpath, "complete"));
 				}
 			}
+			initSolrConfig.set(true);
 			return needRestart;
 		} catch (Throwable e) {
 			LOG.error(StormUtils.stringify_error(e));
+			initSolrConfig.set(true);
 			return false;
 		}
 	}
     
     public void start() throws Exception {
-    	statcollect.setLastTime(System.currentTimeMillis());
-    	statcollect.setStat(ShardsState.INIT);
+	    statcollect.setStat(ShardsState.INIT);
     	this.zkHeatbeat();
-    	LOG.info("higolog table begin:"+this.tablename);
-    	new Thread(this).start();
+   	
+		TimerTask task=new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					synchronized (isInit) {
+						 if(!isInit.get())
+						 {
+							 statcollect.setLastTime(System.currentTimeMillis());
+						    LOG.info("higolog table begin:"+SolrStartJetty.this.tablename);
+					    	rsyncExecute exe=new rsyncExecute(SolrStartJetty.this,true);
+					    	EXECUTE.EXECUTE_HDFS.submit(exe);
+					    	while(!exe.isfinish()&&!statcollect.isTimeout(1200l*1000))
+					    	{
+					    		Thread.sleep(1000l);
+					    	}
+					    	
+					    	while(!initSolrConfig.get())
+			    	    	{
+			    	    		Thread.sleep(1000l);
+			    	    	}
+					    	
+					    	if(statcollect.isTimeout(1200l*1000))
+					    	{
+								statcollect.setLastTime(System.currentTimeMillis());
+					    	}
+					    	SolrStartJetty.this.startJetty();
+							isInit.set(true);
+							LOG.info("higolog table end:" + SolrStartJetty.this.tablename);
+							hb();
+							return ;
+						 }
+					}
+					
+
+					 if (!hbInterval.heartBeatInterval()) {
+							return;
+						}
+						hb();
+				  
+
+
+					
+				} catch (Throwable ex) {
+					LOG.error("hb",ex);
+					try{
+						SolrStartJetty.this.runException(ex);
+					}catch (Throwable eee) {}
+				}				
+			}
+			
+		};
+		taskList.add(task);
+		EXECUTE.TIMER.schedule(task, 100l, 10000l);
     }
     
-    
+	ArrayList<TimerTask> taskList=new ArrayList<TimerTask>();
+
     
     AtomicBoolean isInit=new AtomicBoolean(false);
-    public void run() {
 
-	    try {
-	    	rsyncExecute exe=new rsyncExecute(this,true);
-	    	EXECUTE2.submit(exe);
-	    	while(!exe.isfinish()&&!statcollect.isTimeout(600l*1000))
-	    	{
-	    		Thread.sleep(1000l);
-	    	}
-	    	if(statcollect.isTimeout(600l*1000))
-	    	{
-				statcollect.setLastTime(System.currentTimeMillis());
-	    	}
-			this.startJetty();
-			isInit.set(true);
-			LOG.info("higolog table end:" + this.tablename);
-			
-			
-			hb();
-			while(true)
-	    	{
-				sleep();
-	    		
-	    		if(!hbInterval.heartBeatInterval())
-	    		{
-	    		    continue ;
-	    		}
-	    		
-	    		hb();
-	    	}
-			
-		} catch (Throwable er) {
-			this.runException(er);
-		}
-	}
-	
-	private void hb()
+    hbExecute lasthb=null;
+	private synchronized void hb()
 	{
-		hbExecute exec=new hbExecute(this);
-		EXECUTE.submit(exec);
-		while(!exec.isfinish())
+		
+		if(!initSolrConfig.get())
 		{
-			this.sleep();
+			return ;
 		}
+		if(lasthb==null||lasthb.isfinish())
+		{
+			hbExecute exec=new hbExecute(this);
+	    	EXECUTE.EXECUTE.submit(exec);
+	    	lasthb=exec;
+		}
+		
 	}
-	
-	private void sleep()
-	{
-		try {
-			Thread.sleep(10000l);
-		} catch (InterruptedException e) {}
-	}
+
 
     private SolrStartJettyExcetionCollection errorCollect=new SolrStartJettyExcetionCollection();
     private SolrStartJettyStat statcollect=new SolrStartJettyStat();
@@ -262,6 +275,12 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     }
     
     public void stop() throws Exception {
+    	for(TimerTask t:taskList){
+    		t.cancel();
+    	}
+    	EXECUTE.TIMER.purge();
+    	
+    	
 		statcollect.setStat(ShardsState.UINIT);
 	    this.zkHeatbeat();
 	    this.stopJetty();
@@ -289,10 +308,13 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		    	needhb=true;
 		    }
 		}else{
+			statcollect.setLastTime(System.currentTimeMillis());
+
 		    neetRestart.set(false);
 		    this.stopJetty();
+
 		    rsyncExecute exe=new rsyncExecute(this,false);
-	    	EXECUTE2.submit(exe);
+		    EXECUTE.EXECUTE_HDFS.submit(exe);
 	    	while(!exe.isfinish()&&!statcollect.isTimeout(600l*1000))
 	    	{
 	    		Thread.sleep(1000l);
@@ -375,7 +397,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		    String hdfsforder = (this.isMergeServer) ? "mergerServer" : IndexUtils.getHdfsForder(taskIndex);
 		    Integer bindport = this.getBindPort();
 		    Long hbtime = statcollect.getLastTime();
-		    SolrInfo info = new SolrInfo(this.params.replication,this.params.replicationindex,this.taskIndex,this.isRealTime,localSolrPath.toString(),
+		    SolrInfo info = new SolrInfo(this.params.replication,this.params.replicationindex,this.taskIndex,false,localSolrPath.toString(),
 			    "solrservice".toString(), hdfsforder, bindport,
 			    statcollect.getStat(), new HashMap<String, ShardCount>(), new HashMap<String, ShardCount>(), this.statcollect.getSetupTime(),
 			     hbtime, this.isMergeServer);
@@ -442,8 +464,6 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 	public void setConf(Map stormConf) {
 		
 	}
-	
-	
 
     public static class rsyncExecute implements Runnable{
     	private SolrStartJetty obj;
@@ -451,13 +471,10 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		private AtomicBoolean isfinish=new AtomicBoolean(false);
 		private boolean result=false;
     	public rsyncExecute(SolrStartJetty obj, boolean issync) {
-			super();
 			this.obj = obj;
 			this.issync = issync;
 		}
 
-
-		
 
 		@Override
 		public void run() {
@@ -474,9 +491,7 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		{
 			return this.result;
 		}
-    	
     }
-    
     
     public static class hbExecute implements Runnable{
     	private SolrStartJetty obj;
@@ -484,9 +499,6 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
     	public hbExecute(SolrStartJetty obj) {
 			this.obj = obj;
 		}
-
-
-		
 
 		@Override
 		public void run() {
@@ -504,6 +516,4 @@ public class SolrStartJetty implements Runnable,StopCheck,SolrStartInterface{
 		}
 		    	
     }
-	
-	
 }

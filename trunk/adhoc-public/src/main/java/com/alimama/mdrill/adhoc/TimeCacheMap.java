@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Map.Entry;
 
 
@@ -22,11 +24,16 @@ public class TimeCacheMap<K, V> implements Serializable{
     private LinkedList<HashMap<K, V>> _buckets;
 
     private final Object _lock = new Object();
-    private Thread _cleaner;
+    private Thread _cleaner=null;
+    TimerTask task=null;
+    Timer timer=null;
+    
+    
     private ExpiredCallback _callback;
     
+    
     private int numBuckets;
-    public TimeCacheMap(int expirationSecs, int numBuckets, ExpiredCallback<K, V> callback) {
+    public TimeCacheMap(Timer timer,int expirationSecs, int numBuckets, ExpiredCallback<K, V> callback) {
     	this.numBuckets=numBuckets;
         if(numBuckets<2) {
             throw new IllegalArgumentException("numBuckets must be >= 2");
@@ -40,6 +47,9 @@ public class TimeCacheMap<K, V> implements Serializable{
         _callback = callback;
         final long expirationMillis = expirationSecs * 1000L;
         final long sleepTime = expirationMillis / (numBuckets-1);
+        
+        if(timer==null)
+        {
         _cleaner = new Thread(new Runnable() {
             public void run() {
                 try {
@@ -64,6 +74,34 @@ public class TimeCacheMap<K, V> implements Serializable{
         });
         _cleaner.setDaemon(true);
         _cleaner.start();
+        
+        }else{
+        	task=new TimerTask() {
+				
+				@Override
+				public void run() {
+					 try {
+	                        Map<K, V> dead = null;
+	                        synchronized(_lock) {
+	                            dead = _buckets.removeLast();
+	                            _buckets.addFirst(new HashMap<K, V>());
+	                        }
+	                        if(_callback!=null) {
+	                            for(Entry<K, V> entry: dead.entrySet()) {
+	                                _callback.expire(entry.getKey(), entry.getValue());
+	                            }
+	                            _callback.commit();
+	                        }
+	                    
+		                } catch (Throwable ex) {
+
+		                }					
+				}
+			};
+        	timer.schedule(task, sleepTime,sleepTime);
+        	this.timer=timer;
+
+        }
     }
     
     public void fourceTimeout(Timeout<K, V> fetch,Update<K, V> d)
@@ -127,15 +165,20 @@ public class TimeCacheMap<K, V> implements Serializable{
     }
 
     public TimeCacheMap(int expirationSecs, ExpiredCallback<K, V> callback) {
-        this(expirationSecs, DEFAULT_NUM_BUCKETS, callback);
+        this(null,expirationSecs, DEFAULT_NUM_BUCKETS, callback);
     }
+    
+    public TimeCacheMap( Timer timer,int expirationSecs, ExpiredCallback<K, V> callback) {
+        this(timer,expirationSecs, DEFAULT_NUM_BUCKETS, callback);
+    }
+    
 
     public TimeCacheMap(int expirationSecs) {
         this(expirationSecs, DEFAULT_NUM_BUCKETS);
     }
 
     public TimeCacheMap(int expirationSecs, int numBuckets) {
-        this(expirationSecs, numBuckets, null);
+        this(null,expirationSecs, numBuckets, null);
     }
 
 
@@ -235,11 +278,19 @@ public class TimeCacheMap<K, V> implements Serializable{
             return size;
         }
     }
-
     @Override
     protected void finalize() throws Throwable {
         try {
-            _cleaner.interrupt();
+        	if(_cleaner!=null)
+        	{
+        		_cleaner.interrupt();
+        	}
+        	
+        	if(this.timer!=null)
+        	{
+        		this.task.cancel();
+        		this.timer.purge();
+        	}
         } finally {
             super.finalize();
         }

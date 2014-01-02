@@ -2,7 +2,21 @@ package com.etao.adhoc.analyse.vo;
 
 public class ModuleInfo {
 	private String queryDay;
+	@Override
+	public String toString() {
+		return "ModuleInfo [queryDay=" + queryDay + ", moduleName="
+				+ moduleName + ", nicklist=" + nicklist + ", queryCnt="
+				+ queryCnt + ", uv=" + uv + "]";
+	}
 	private String moduleName;
+	private String nicklist;
+
+	public String getNicklist() {
+		return nicklist;
+	}
+	public void setNicklist(String nicklist) {
+		this.nicklist = nicklist;
+	}
 	private int queryCnt;
 	private int uv;
 	public String getQueryDay() {
@@ -29,9 +43,5 @@ public class ModuleInfo {
 	public void setUv(int uv) {
 		this.uv = uv;
 	}
-	@Override
-	public String toString() {
-		return "ModuleInfo [queryDay=" + queryDay + ", moduleName="
-				+ moduleName + ", queryCnt=" + queryCnt + ", uv=" + uv + "]";
-	}
+	
 }

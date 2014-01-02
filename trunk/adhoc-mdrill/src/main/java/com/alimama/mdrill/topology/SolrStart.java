@@ -1,11 +1,7 @@
 package com.alimama.mdrill.topology;
 
 
-
-
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -54,14 +50,7 @@ public class SolrStart implements StopCheck, SolrStartInterface {
 
 	}
 	
-	@Override
-    public void setRealTime(boolean isRealTime) {
-		jetty.setRealTime(isRealTime);
-		for (SolrStartTable table : tables) {
-			table.setRealTime(isRealTime);
-		}
 
-	}
 
 	@Override
 	public void setConfigDir(String dir) {
@@ -140,7 +129,7 @@ public class SolrStart implements StopCheck, SolrStartInterface {
 	}
 
 	@Override
-	public void setExecute(ThreadPoolExecutor EXECUTE) {
+	public void setExecute(ShardThread EXECUTE) {
 		jetty.setExecute(EXECUTE);
 		for (SolrStartTable table : tables) {
 			table.setExecute(EXECUTE);

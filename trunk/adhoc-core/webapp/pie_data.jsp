@@ -19,6 +19,7 @@
 	String sort = request.getParameter("sort");
 	String order = request.getParameter("order");
 	String leftjoin = request.getParameter("leftjoin");
-	
-	Pie.result(projectName,  startStr, rowsStr, queryStr,  fl, groupby, sort, order,out);
+		String showOther = request.getParameter("showOther");
+
+	Pie.result(projectName,  startStr, rowsStr, queryStr,  fl, groupby, sort, order,showOther,out);
 %>
