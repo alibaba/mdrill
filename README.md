@@ -5,8 +5,8 @@
 4：基于mdrill应用的adhoc项目，使用了10台机器,存储了400亿的数据<br>
 &nbsp;&nbsp;==&gt;每次扫描30亿的行数，响应时间在20秒~120秒左右(取决不同的查询条件与扫描的列数)。<br>
 &nbsp;&nbsp;==&gt;对100亿数据进行count(*),耗时为2秒，单列sum耗时在25秒,按照日期分组求count和sum耗时47秒，按照用户id分组并且按照成交笔数排序去TopN 耗时 243秒。<br>
-&nbsp;&nbsp;==&gt;全文检索模式：每天162亿*70维度的数据增量。通过mapreduce创建索引(1000slot 6小时)。使用云梯hdfs存储和检索（45T/天）。10台机器-48G内存。响应时间3~10秒
-
+&nbsp;&nbsp;==&gt;全文检索模式：每天162亿*70维度的数据增量。通过mapreduce创建索引(1000slot 6小时)。使用云梯hdfs存储和检索（45T/天）。10台机器-48G内存。响应时间3~10秒<br>
+&nbsp;&nbsp;==&gt;0.20.4版本以后引入实时数据：10台机器每天10亿数据的实时导入，高峰2亿/小时。
 <h1> 发行日志</h1>
  2013.07.24 version 0.18-beta  初始化版本  <br>
  2013.08.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
@@ -19,6 +19,7 @@
  2013.11.19 version 0.20.1-alpha 使用hdfs进行检索&&实时append <a href="https://github.com/alibaba/mdrill/wiki/020_1">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUypgcZpmvwwv" target="_blank">源码下载</a>) <br>
  2013.12.03 version 0.20.2-alpha 全文检索模式优化 <a href="https://github.com/alibaba/mdrill/wiki/020_2">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUeabpfm9bHwG" target="_blank">源码下载</a>) <br>
  2013.12.05 version 0.20.3-alpha bugfix (alpha版本，慎用。 <a href="http://yunpan.cn/QU9u6YIRUyVin" target="_blank">源码下载</a>) <br>
+ 2014.01.02 version 0.20.4-alpha 通过editlog来保证实时数据的可靠性 <a href="https://github.com/alibaba/mdrill/wiki/0_20_4_alpha" >see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QDTNyLH6NjyeA" target="_blank">源码下载</a>) <br>
  
  
  <h1>版本源码路径</h1>
