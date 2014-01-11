@@ -39,6 +39,9 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
 <li><a href="https://github.com/alibaba/mdrill/wiki/plan" target="_blank">版本开发计划</a></li>
+<li><a href="https://github.com/alibaba/mdrill/wiki/adhoc" target="_blank">阿里妈妈-AdHoc-基于mdrill的大数据自助分析平台</a></li>
+
+
 
 <li><a hfef="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">LICENSE</a></li>
 </ul>
