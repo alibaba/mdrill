@@ -86,11 +86,19 @@ public class FdtCompressIndexOutput extends IndexOutput {
 
 	@Override
 	public void writeBytes(byte[] b, int offset, int length) throws IOException {
-		this.ramoutput.writeBytes(b, offset, length);
-		this.isNeedFlush=true;
-		if(this.ramoutput.getFilePointer()>this.blocksize)
+		int begin=offset;
+		int end=offset+length;
+		while(begin<end)
 		{
-			this.syncBlock();
+			int size=Math.min(1024, end-begin);
+			this.ramoutput.writeBytes(b, begin, size);
+			this.isNeedFlush=true;
+			if(this.ramoutput.getFilePointer()>this.blocksize)
+			{
+				this.syncBlock();
+			}
+			begin+=size;
+		
 		}
 	}
 

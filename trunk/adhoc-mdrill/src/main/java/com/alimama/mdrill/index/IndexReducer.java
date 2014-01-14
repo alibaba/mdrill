@@ -15,11 +15,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.TermInfosWriter;
-import org.apache.lucene.util.Version;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
@@ -54,9 +51,14 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 
     private String[] fields = null;
 
+    private int Index=0;
 	protected void setup(Context context) throws java.io.IOException,
 			InterruptedException {
 		super.setup(context);
+		debugInfo=0;
+		doccount=0;
+		TaskID taskId = context.getTaskAttemptID().getTaskID();
+		this.Index = taskId.getId();
 
 		context.getCounter("higo", "dumpcount").increment(0);
 
@@ -100,12 +102,16 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 		String[] fieldslist = fieldStrs.split(",");
 		this.documentConverter = new DocumentConverter(fieldslist,"solrconfig.xml", "schema.xml");
 		shardWriter = this.initShardWriter(context);
+		LOG.info("end initShardWriter");
 
 		try {
 			this.analyzer = this.documentConverter .getAnalyzer();JobIndexPublic.setAnalyzer(conf);
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
+		
+		LOG.info("end set up");
+
 
 	}
 	
@@ -137,6 +143,7 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 
     protected void cleanup(Context context) throws IOException,	InterruptedException {
 		try {
+			LOG.info("begin clean up");
 			RamWriter ram = doclistcache.toRamWriter(documentConverter, analyzer,context);
 			ramMerger.process(ram);
 			if (this.maybeFlush(ramMerger,context,true)) {
@@ -164,7 +171,9 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 				lfs.delete(new Path(localtmpath),true);
 			}
 
-		} catch (Exception e) {
+		} catch (Throwable e) {
+			LOG.error("cleanup",e);
+
 			throw new IOException(e);
 		}
 
@@ -190,8 +199,20 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
     private IntWritable lastkey = null;
     private int debuglines=0;
 
+    long debugInfo=0;
 	protected void reduce(PairWriteable key, Iterable<DocumentMap> values,
 			Context context) throws java.io.IOException, InterruptedException {
+		if(debugInfo%10000==0)
+		{
+			LOG.info("debugInfo:"+debugInfo);
+			if(debugInfo>maxDocCount_l)
+			{
+				LOG.info("debugInfo>maxDocCount_l:"+debugInfo);
+				return ;
+			}
+		}
+		debugInfo++;
+
 		if(!key.isNum())
 		{
 			int dumps=0;
@@ -214,14 +235,23 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 		
 		lastkey = new IntWritable(key.getIndex());
 		
-		
 		Iterator<DocumentMap> iterator = values.iterator();
 		while (iterator.hasNext()) {
-			if(doccount>maxDocCount)
+			if(doccount>maxDocCount||debugInfo>maxDocCount_l)
 			{
+				LOG.info("count over:"+debugInfo);
+
 				break ;
 			}
-			doclistcache.add(iterator.next(),this.fields);
+			
+			DocumentMap map=iterator.next();
+			
+			int addcnt=doclistcache.add(map,this.fields);
+			if(addcnt<=0)
+			{
+				context.getCounter("higo", "addempty").increment(1);
+				continue;
+			}
 			if(!doclistcache.isoversize())
 			{
 				continue;
@@ -241,6 +271,8 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
     
     private long minsize=1024l*1024*32;
     private static long maxDocCount=10000l*1000*10;
+    private static long maxDocCount_l=10000l*1000*100;
+
     long doccount=0;
 	private boolean maybeFlush(RamWriter form,
 			Context context,boolean fource)
@@ -254,18 +286,22 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 		{
 			return false;
 		}
-		if ((docs>=1000&&formSize>minsize)||fource) {
+		if ((docs>=1000&&formSize>minsize)||fource||docs>=10000) {
 			try{
+
 			context.getCounter("higo", "docCount").increment(docs);;
 			doccount+=docs;
 			form.closeWriter();
+
 			shardWriter.process(form);
+
 			form.closeDir();
 			}catch(Throwable e)
 			{
 				LOG.error("maybeFlush error",e);
 				throw new IOException(e);
 			}
+
 			return true;
 		}
 

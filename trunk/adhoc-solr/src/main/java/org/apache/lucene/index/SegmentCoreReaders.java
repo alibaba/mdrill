@@ -99,10 +99,10 @@ public class SegmentCoreReaders {
       {
     	  FSDirectory dddir=(FSDirectory)cfsDir;
     	  String absPath=dddir.getDirectory().getAbsolutePath();
-    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), absPath+"@"+filename);
+    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), absPath+"@"+filename,cfsDir.getP());
     	  if (fieldInfos.hasProx()) {
 		  String fname=IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION);
-	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), absPath+"@"+fname);
+	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), absPath+"@"+fname,cfsDir.getP());
 	      } else {
 	        proxStream = null;
 	      }
@@ -110,10 +110,10 @@ public class SegmentCoreReaders {
       {
     	  FileSystemDirectory dddir=(FileSystemDirectory)cfsDir;
     	  String absPath=dddir.directory.toString();
-    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), absPath+"@"+filename);
+    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), absPath+"@"+filename,cfsDir.getP());
     	  if (fieldInfos.hasProx()) {
 		  String fname=IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION);
-	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), absPath+"@"+fname);
+	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), absPath+"@"+fname,cfsDir.getP());
 	      } else {
 	        proxStream = null;
 	      }

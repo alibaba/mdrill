@@ -184,7 +184,7 @@ public class JobIndexerPartion extends Configured implements Tool {
 				System.out.println("11111111 vertify:>>>last>>>"+lastVertify+">>current>>"+currentvertify+"<<<<");
 
 				if (!currentvertify.equals(lastVertify)) {
-					if (days.size() > 0) {
+					if (days.size() > 0&&MakeIndex.checkPath(fs, this.inputBase, days, submatch)) {
 						runPartion=new rebuildPartion();
 						runPartion.partion=partion;
 						runPartion.days=days;

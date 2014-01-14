@@ -124,7 +124,7 @@ public class AdhocOfflineService {
 					String towrite=line;
 					if(line.indexOf("\001")>=0||line.indexOf("\t")>=0)
 					{
-						towrite=line.replaceAll(",", "\\\",\\\"").replaceAll("\001", ",").replaceAll("\t", ",");
+						towrite=line.replaceAll(",", "\\\",\\\"").replaceAll("\001", ",").replaceAll("\t", ",").replaceAll("\"", "");
 					}
 					if(!towrite.isEmpty())
 					{
@@ -150,6 +150,8 @@ public class AdhocOfflineService {
 			throws Exception {
 		return offline(projectName, jsoncallback, queryStr, fl, groupby, mailto, username, jobname, params, leftjoin, fq2, limit2, orderby2, desc2,"");
 	}
+
+	private Object part;
 	public static String offline(String projectName, String jsoncallback, String queryStr, 
 			String fl, String groupby, 
 			String mailto, String username, String jobname, String params,String leftjoin,String fq2,String limit2,String orderby2,String desc2,String memo)
@@ -180,6 +182,26 @@ public class AdhocOfflineService {
 			hpart="ds";
 		}
 		queryStr = WebServiceParams.query(queryStr);
+
+		
+		Map stormconf = Utils.readStormConfig();
+		String mode=String.valueOf(stormconf.get("higo.mode."+projectName));
+		boolean isnothedate=mode.indexOf("@nothedate@")>=0;
+		if(isnothedate)
+		{
+			if(fl!=null)
+			{
+			fl=fl.replaceAll("thedate", hpart);
+			}
+			if(groupby!=null)
+			{
+				groupby=groupby.replaceAll("thedate", hpart);
+			}
+			if(queryStr!=null)
+			{
+				queryStr=queryStr.replaceAll("thedate", hpart);
+			}
+		}
 
 		
 		if (projectName.equals("fact_wirelesspv_clickcosteffect1_app_adhoc_d_1")) {
@@ -213,6 +235,17 @@ public class AdhocOfflineService {
 			queryStr = WebServiceParams.query(jsonStr.toString());
 		}
 		
+		if (projectName.equals("fact_wirelesspv_clickcosteffect1_app_adhoc_d_4")) {
+			projectName="fact_wirelesspv_clickcosteffect1_app_adhoc_d";
+			JSONArray jsonStr=new JSONArray(queryStr.trim());
+			JSONObject obj=new JSONObject();
+			obj.put("key", "app_type");
+			obj.put("operate", "1");
+			obj.put("value", "4");
+			jsonStr.put(obj);
+			queryStr = WebServiceParams.query(jsonStr.toString());
+		}
+		
 		
 	
 	
@@ -239,7 +272,7 @@ public class AdhocOfflineService {
 		ArrayList<String> groupFields = WebServiceParams.groupFields(groupby);
 		ArrayList<String> showFields = WebServiceParams.showHiveFields(fl);
 		HigoAdhocJoinParams[] joins=AdhocWebServiceParams.parseJoinsHive(leftjoin, shard);
-		String daycols=AdhocWebServiceParams.parseDayCols(groupFields,showFields);
+		String daycols=AdhocWebServiceParams.parseDayCols(hpart,groupFields,showFields);
 		HashMap<String,String> colMap=new HashMap<String, String>();
 		HashMap<String,String> colMapforStatFilter=new HashMap<String, String>();
 
@@ -358,7 +391,6 @@ public class AdhocOfflineService {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
 		String day = fmt.format(new Date());
 	
-		Map stormconf = Utils.readStormConfig();
 		String hdpConf = (String) stormconf.get("hadoop.conf.dir");
 		String connstr = (String) stormconf.get("higo.download.offline.conn");
 		String uname = (String) stormconf.get("higo.download.offline.username");

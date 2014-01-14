@@ -20,6 +20,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LinkFSDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 
+import com.alimama.mdrill.buffer.BlockBufferInput;
+
 
 public class FileSystemDirectory extends Directory {
     private static final Log logger = LogFactory.getLog(FileSystemDirectory.class);
@@ -29,8 +31,17 @@ public class FileSystemDirectory extends Directory {
     private final int ioFileBufferSize;
     private boolean isAllowMove=false;
     
+    private boolean isUsedBlockBuffer=false;
     
-    private HashMap<String,Path> links=new HashMap<String,Path>();
+    
+    public boolean isUsedBlockBuffer() {
+		return isUsedBlockBuffer;
+	}
+	public void setUsedBlockBuffer(boolean isUsedBlockBuffer) {
+		this.isUsedBlockBuffer = isUsedBlockBuffer;
+	}
+
+	private HashMap<String,Path> links=new HashMap<String,Path>();
 
     public boolean isAllowMove() {
         return isAllowMove;
@@ -246,7 +257,15 @@ public class FileSystemDirectory extends Directory {
 	    logger.info("openInput->usedlinks:"+name+"@"+getShortPath(f));
 	    
 	}
-	return new FileSystemIndexInput(f, bufferSize);
+	
+	
+	FileSystemIndexInput rtn= new FileSystemIndexInput(f, bufferSize);
+	if(this.isUsedBlockBuffer()&&name.indexOf("frq")>=0)
+	{
+		return new BlockBufferInput(rtn,f.toString(),this.getP());
+	}
+	
+	return rtn;
     }
 
 //    /*

@@ -1821,9 +1821,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // on close, in case the internal state of IndexWriter
       // or DocumentsWriter is corrupt
       if (hitOOM)
-        rollbackInternal();
+      {
+          rollbackInternal();
+    	  throw new CorruptIndexException("hit oom");
+      }
       else
+      {
         closeInternal(waitForMerges);
+      }
     }
   }
 
@@ -2186,6 +2191,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateDocuments");
+  	throw new IOException(oom);
+
     }
   }
 

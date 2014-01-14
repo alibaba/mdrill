@@ -1,6 +1,7 @@
 package com.alimama.mdrill.index.utils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -10,8 +11,13 @@ import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.alimama.mdrill.index.IndexReducer;
 
 public class RamWriter {
+	  public static Logger LOG = LoggerFactory.getLogger(RamWriter.class);
 
 	private RAMDirectory dir;
 	private IndexWriter writer;
@@ -39,7 +45,6 @@ public class RamWriter {
 
 	public void process(Collection<Document> docs, Analyzer analyzer)
 			throws IOException {
-
 		writer.addDocuments(docs, analyzer);
 		numDocs += docs.size();
 	}
@@ -58,6 +63,7 @@ public class RamWriter {
 			throws IOException {
 		
 		writer.optimize();
+		
 		writer.close();
 		writer = null;
 

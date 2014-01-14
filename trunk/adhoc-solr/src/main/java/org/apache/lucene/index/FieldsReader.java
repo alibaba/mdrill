@@ -251,13 +251,12 @@ final class FieldsReader implements Cloneable, Closeable {
   final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     seekIndex(n);
     long position = indexStream.readLong();
-//    LOG.info("doc seek"+position+","+n);
     fieldsStream.seek(position);
 
-//    LOG.info(position+","+indexStream.getClass().getName()+","+fieldsStream.getClass().getName());
     Document doc = new Document();
     int numFields = fieldsStream.readVInt();
-    
+//    LOG.info("doc seek"+position+","+n+","+numFields);
+
     out: for (int i = 0; i < numFields; i++) {
 
       int fieldNumber = fieldsStream.readVInt();
@@ -271,6 +270,12 @@ final class FieldsReader implements Cloneable, Closeable {
       boolean compressed = (bits & FieldsWriter.FIELD_IS_COMPRESSED) != 0;
       assert (compressed ? (format < FieldsWriter.FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS) : true)
         : "compressed fields are only allowed in indexes of version <= 2.9";
+      
+      if(compressed)
+      {
+    	    LOG.info("compressed"+position+","+n+","+fieldNumber+"@"+i+"@"+fi.name+",bits="+bits);
+      }
+      
       boolean tokenize = (bits & FieldsWriter.FIELD_IS_TOKENIZED) != 0;
       boolean binary = (bits & FieldsWriter.FIELD_IS_BINARY) != 0;
       final int numeric = bits & FieldsWriter.FIELD_IS_NUMERIC_MASK;

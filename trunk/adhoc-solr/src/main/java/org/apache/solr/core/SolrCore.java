@@ -1013,10 +1013,12 @@ public static void setSearchCacheSize(int cacheSize) {
 				{
 					log.info("#######################getSearcher:" + partionKey + ":" + f.getAbsolutePath()+",p=null");
 					dir=LinkFSDirectory.readOnlyOpen(f);;
+					dir.setCore(this,p);
 					reader=IndexReader.open(dir);
 				}else if(p.partion.equals("default"))
 				{
 					RAMDirectory rd=new RAMDirectory();
+					rd.setCore(this,p);
 					IndexWriter writer=new IndexWriter(rd, null,new KeepOnlyLastCommitDeletionPolicy(), MaxFieldLength.UNLIMITED);
 					writer.setMergeFactor(10);
 					writer.setUseCompoundFile(false);
@@ -1028,7 +1030,9 @@ public static void setSearchCacheSize(int cacheSize) {
 					IndexReader[] r=new IndexReader[list.size()];
 					for(int i=0;i<list.size();i++)
 					{
-						r[i]=IndexReader.open(list.get(i));
+						Directory d=list.get(i);
+						d.setCore(this,p);
+						r[i]=IndexReader.open(d);
 					}
 					if(r.length==1)
 					{
@@ -1041,6 +1045,7 @@ public static void setSearchCacheSize(int cacheSize) {
 				if(dir==null)
 				{
 					dir=FSDirectory.open(f);
+					dir.setCore(this,p);
 				}
 
 				File cachedir = null;
@@ -1055,6 +1060,7 @@ public static void setSearchCacheSize(int cacheSize) {
 				
 				cachedir.mkdirs();
 				Directory fieldcacheDir = FSDirectory.open(cachedir);
+				fieldcacheDir.setCore(this,p);
 
 				SolrIndexSearcher newSearcher = new SolrIndexSearcher(this,	schema, "partion_" + partionKey, reader, true);
 				newSearcher.setPartionCacheKey(p);

@@ -6,6 +6,8 @@ import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import com.alimama.mdrillImport.InvalidEntryException;
+import com.alimama.mdrillImport.Parser;
 import com.taobao.loganalyzer.input.p4ppv.parser.*;
 
 

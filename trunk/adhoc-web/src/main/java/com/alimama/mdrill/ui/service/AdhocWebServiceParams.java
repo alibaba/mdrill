@@ -43,7 +43,7 @@ public class AdhocWebServiceParams {
 		ArrayList<String> groupFields = WebServiceParams.groupFields(groupby);
 		ArrayList<String> showFields = WebServiceParams.showHiveFields(fl);
 		HigoAdhocJoinParams[] joins=AdhocWebServiceParams.parseJoinsHive(leftjoin, null);
-		String daycols=AdhocWebServiceParams.parseDayCols(groupFields,showFields);
+		String daycols=AdhocWebServiceParams.parseDayCols("dt",groupFields,showFields);
 		ArrayList<String> fieldlist=new ArrayList<String>();
 		if(joins.length<=0)
 		{
@@ -286,7 +286,7 @@ public class AdhocWebServiceParams {
 		
 	}
 	
-	public static String parseDayCols(ArrayList<String> groupFields,ArrayList<String> showFields)
+	public static String parseDayCols(String hpart,ArrayList<String> groupFields,ArrayList<String> showFields)
 	{
 		String daycols="";
 		for (String field : groupFields) {
@@ -294,9 +294,17 @@ public class AdhocWebServiceParams {
 			{
 				daycols="日期,";
 			}
+			if(field.equals(hpart))
+			{
+				daycols="日期,";
+			}
 		}
 		for (String field : showFields) {
 			if(field.equals("thedate"))
+			{
+				daycols="日期,";
+			}
+			if(field.equals(hpart))
 			{
 				daycols="日期,";
 			}

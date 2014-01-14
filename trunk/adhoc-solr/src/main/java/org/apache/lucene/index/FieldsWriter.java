@@ -132,13 +132,17 @@ public class FieldsWriter {
   // stream.  This assumes the buffer was already written
   // in the correct fields format.
   void flushDocument(int numStoredFields, RAMOutputStream buffer) throws IOException {
-    indexStream.writeLong(fieldsStream.getFilePointer());
+	  long pos=fieldsStream.getFilePointer();
+//	  LOG.info("flushDocument:"+pos+","+numStoredFields);
+    indexStream.writeLong(pos);
     fieldsStream.writeVInt(numStoredFields);
     buffer.writeTo(fieldsStream);
   }
 
   void skipDocument() throws IOException {
-    indexStream.writeLong(fieldsStream.getFilePointer());
+	  long pos=fieldsStream.getFilePointer();
+//	  LOG.info("skipDocument:"+pos);
+    indexStream.writeLong(pos);
     fieldsStream.writeVInt(0);
   }
 
@@ -269,7 +273,10 @@ public class FieldsWriter {
 	  }
 
   final void addDocument(Document doc) throws IOException {
-    indexStream.writeLong(fieldsStream.getFilePointer());
+	  long pos=fieldsStream.getFilePointer();
+    indexStream.writeLong(pos);
+
+//    LOG.info("addDocument "+pos);
 
     int storedCount = 0;
     List<Fieldable> fields = doc.getFields();
@@ -281,7 +288,9 @@ public class FieldsWriter {
 
     for (Fieldable field : fields) {
       if (field.isStored())
+      {
         writeField(fieldInfos.fieldInfo(field.name()), field);
+      }
     }
     
   }

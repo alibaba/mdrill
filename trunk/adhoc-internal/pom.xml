@@ -39,6 +39,45 @@
 	        <version>0.18-beta</version>
 	</dependency>
 	
+	<dependency>
+	     <groupId>com.alimama.dw</groupId>
+	       <artifactId>adhoc-realtime</artifactId>
+	        <version>0.18-beta</version>
+	</dependency>
+	
+
+ 	<dependency>
+            <groupId>com.alibaba.cdo</groupId>
+            <artifactId>timetunnel-clientng</artifactId>
+            <version>0.4.1-2-SNAPSHOT</version>
+            <exclusions>
+        <exclusion>
+          <groupId>org.apache.thrift</groupId>
+  <artifactId>libthrift</artifactId>
+        </exclusion>
+      </exclusions>          
+		</dependency>
+	
+	
+	    <dependency>
+      <groupId>com.taobao.loganalyzer</groupId>
+      <artifactId>p4ppv</artifactId>
+      <version>1.1.8</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.taobao.loganalyzer</groupId>
+      <artifactId>p4pclick</artifactId>
+      <version>1.2.6</version>
+    </dependency>
+
+    		
+     
+        <dependency>
+        	<groupId>org.apache.thrift</groupId>
+        	<artifactId>libthrift</artifactId>
+        	<version>0.8.0</version>
+        </dependency>
 
 
   </dependencies>

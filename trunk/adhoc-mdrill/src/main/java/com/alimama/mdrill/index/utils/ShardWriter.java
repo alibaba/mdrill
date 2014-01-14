@@ -58,13 +58,14 @@ public class ShardWriter {
 	writer.setTermIndexInterval(128);
 	writer.setUseCompoundFile(false);
 
+	logger.info("finish Construct a shard writer " + indexOutputPathStr);
 
     }
     
     public void addEmptyDoc() throws CorruptIndexException, IOException
     {
     	Document empty=new Document();
-    	empty.add(new Field("higoempty_emptydoc_s", "", Field.Store.YES, Field.Index.NO));
+    	empty.add(new Field("higoempty_emptydoc_s", "1", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
     	writer.addDocument(empty);
     }
 

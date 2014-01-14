@@ -7,15 +7,20 @@ import java.util.Date;
 
 import org.apache.log4j.Logger;
 
-import com.alimama.quanjingmonitor.parser.InvalidEntryException;
+import com.alimama.mdrillImport.InvalidEntryException;
 import com.taobao.loganalyzer.input.p4ppv.parser.P4PPVLog;
 
-public class p4p_pv2 extends com.alimama.quanjingmonitor.mdrillImport.DataParser{
+public class p4p_pv2 extends com.alimama.mdrillImport.DataParser{
 	private static final long serialVersionUID = 1L;
 	public volatile long groupCreateerror=0;
 
 	private static Logger LOG = Logger.getLogger(p4p_pv2.class);
 
+	private volatile long lines=0;
+	private static long TS_MAX=3600l*24*31;
+
+	private volatile long laststartts=(System.currentTimeMillis()/1000)-TS_MAX;
+	private volatile long lastendts=(System.currentTimeMillis()/1000)+TS_MAX;
 	@Override
 	public DataIter parseLine(String line) throws InvalidEntryException {
 		
@@ -25,15 +30,30 @@ public class p4p_pv2 extends com.alimama.quanjingmonitor.mdrillImport.DataParser
 				return null;
 			}
 			
-			if(p4ppvlog.getP4PPID()==null)
+			if(p4ppvlog.getP4PPID()==null||p4ppvlog.getTimestamp()==null)
 			{
 				return null;
 			}
+			
+			this.lines++;
+			if(this.lines>100000)
+			{
+				this.laststartts=(System.currentTimeMillis()/1000)-TS_MAX;
+				this.lastendts=(System.currentTimeMillis()/1000)+TS_MAX;
+				this.lines=0;
+			}
+			
+			long ts = Long.parseLong(p4ppvlog.getTimestamp());
+			if(ts<laststartts||ts>lastendts)
+			{
+				return null;
+			}
+			
 			DataIterParse rtn= new DataIterParse(p4ppvlog);
 			
 			return rtn;
 		} catch (Throwable nfe) {
-			if(groupCreateerror<100)
+			if(groupCreateerror<10)
 			{
 				LOG.error("InvalidEntryException:"+line,nfe);
 				groupCreateerror++;
@@ -57,8 +77,8 @@ public class p4p_pv2 extends com.alimama.quanjingmonitor.mdrillImport.DataParser
 
 
 		@Override
-		public double[] getSum() {
-			double[] rtn=new double[1];
+		public Number[] getSum() {
+			Number[] rtn=new Number[1];
 			rtn[0]=1;
 			return rtn;
 		}
@@ -72,17 +92,17 @@ public class p4p_pv2 extends com.alimama.quanjingmonitor.mdrillImport.DataParser
 
 	    
 		@Override
-		public String[] getGroup() {
+		public Object[] getGroup() {
 			 long ts = Long.parseLong(p4ppvlog.getTimestamp());
 			 long ts300=(ts/300)*300000;
 			 Date d= new Date(ts300);
 			 
-			String[] rtn=new String[5];
+			String[] rtn=new String[4];
 			rtn[0]=String.valueOf(formatDay.format(d));
 			rtn[1]=String.valueOf(formatMin.format(d));
 			rtn[2]=String.valueOf(formatHour.format(d));
 			rtn[3]=String.valueOf(p4ppvlog.getP4PPID());
-			rtn[4]=String.valueOf(getName(p4ppvlog.getQueryOriginURL(),"keyword"));
+//			rtn[4]=String.valueOf(getName(p4ppvlog.getQueryOriginURL(),"keyword"));
 			return rtn;
 		}
 		
@@ -93,12 +113,12 @@ public class p4p_pv2 extends com.alimama.quanjingmonitor.mdrillImport.DataParser
 
 	@Override
 	public String[] getGroupName() {
-		String[] rtn=new String[5];
+		String[] rtn=new String[4];
 		rtn[0]="thedate";
 		rtn[1]="miniute_5";
 		rtn[2]="hour";
 		rtn[3]="pid";
-		rtn[4]="keyword";
+//		rtn[4]="keyword";
 		return rtn;
 	}
 

@@ -105,7 +105,7 @@ public class WebServiceParams {
 			HigoJoinParams p=new HigoJoinParams();
 			p.tablename=obj.getString("tablename");
 			p.hdfsPath=obj.getString("path")+"/part-00000";
-			p.fq=WebServiceParams.fqList(obj.getString("fq"), shard,null);
+			p.fq=WebServiceParams.fqList(false,obj.getString("fq"), shard,null);
 			p.fl=obj.getString("fl").split(",");
 			p.leftkey=obj.getString("leftkey");
 			p.rightkey=obj.getString("rightkey");
@@ -550,6 +550,9 @@ public static OperateType parseOperateType(int operate)
 			case 31: {
 				return OperateType.lgeq;
 			}
+			case 40: {
+				return OperateType.bigin;
+			}
 			case 5:
 			case 6:
 			case 7:
@@ -598,7 +601,7 @@ public static OperateType parseOperateType(int operate)
 			}
 			if(isnull)
 			{
-				return "-"+key+":['' TO *]";
+				return "-"+key+":[* TO *]";
 			}
 			return key+":"+TdateFormat.transformSolrMetacharactor(value2);
 		}
@@ -704,6 +707,11 @@ public static OperateType parseOperateType(int operate)
                 return sb.toString();
 			}
 		}
+		case 40:
+		{
+			return "{!contains f="+key+"}"+value2;
+		}
+		
 		case 9:
 		{
 			String[] listStrs = value2.split(",");
@@ -751,7 +759,7 @@ public static OperateType parseOperateType(int operate)
 	private static String parseFqOperateHive(boolean isNumber,String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
 	{
 		
-		
+	
 		String ft="string";
 		if(filetypeMap!=null&&filetypeMap.containsKey(key))
 		{
@@ -994,7 +1002,7 @@ public static OperateType parseOperateType(int operate)
 		return null;
 	}
 	
-	public static ArrayList<String> fqList(String queryStr,GetPartions.Shards shard,HashMap<String, String> fieldColumntypeMap) throws JSONException
+	public static ArrayList<String> fqList(boolean isnothedate,String queryStr,GetPartions.Shards shard,HashMap<String, String> fieldColumntypeMap) throws JSONException
 	{
 		queryStr=query(queryStr);
 		ArrayList<String> fqList = new ArrayList<String>();
@@ -1010,7 +1018,11 @@ public static OperateType parseOperateType(int operate)
 				{
 					filterType=obj.getString("filter").toUpperCase();
 				}
-				ArrayList<String> sublist=fqList(obj.getJSONArray("list").toString(), shard, fieldColumntypeMap);
+				ArrayList<String> sublist=fqList(isnothedate,obj.getJSONArray("list").toString(), shard, fieldColumntypeMap);
+				if(sublist.size()==0)
+				{
+					continue;
+				}
 				if(sublist.size()==1)
 				{
 					fqList.add(sublist.get(0));
@@ -1031,7 +1043,13 @@ public static OperateType parseOperateType(int operate)
 			}else{
 			
         			for  (Iterator iter = obj.keys(); iter.hasNext();) { 
+        				
         		    	String field = (String)iter.next();
+        				if(isnothedate&&"thedate".equals(field))
+        				{
+        					continue;
+        				}
+
         		    	JSONObject jsonStr2= obj.getJSONObject(field);
         		    	int operate = Integer.parseInt(jsonStr2.getString("operate"));
         		    	String valueList=parseFqValue(jsonStr2.getString("value"),operate);
@@ -1096,6 +1114,10 @@ public static OperateType parseOperateType(int operate)
 					filterType=obj.getString("filter");
 				}
 				ArrayList<String> sublist=fqListHive(isNumber,part,obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap,colMap,colMap2,tblname);
+				if(sublist.size()==0)
+				{
+					continue;
+				}
 				if(sublist.size()==1)
 				{
 					fqList.add(sublist.get(0));
@@ -1117,6 +1139,7 @@ public static OperateType parseOperateType(int operate)
 			
     			for  (Iterator iter = obj.keys(); iter.hasNext();) { 
     		    	String key = (String)iter.next();
+    		        		    	
     		    	JSONObject jsonStr2= obj.getJSONObject(key);
     		    	
     		    	int operate = Integer.parseInt(jsonStr2.getString("operate"));
@@ -1143,7 +1166,7 @@ public static OperateType parseOperateType(int operate)
         				valueList = valueList.replaceAll("\'", "\\\'");
         			}
         			
-        			String fq=parseFqOperateHive( isNumber,part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,colMap2,tblname);
+        			String fq=parseFqOperateHive(isNumber,part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,colMap2,tblname);
         			if(fq!=null)
         			{
         				fqList.add(fq);

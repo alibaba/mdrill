@@ -117,6 +117,25 @@ public class MakeIndex {
 		}
 		return rtn;
 	}
+	
+	public static boolean checkPath(
+			FileSystem fs,
+	
+			String inputBase,
+			HashSet<String> inputs,
+			String inputmatch
+			) throws IOException
+	{
+		for (String input : inputs) {
+			Path p = new Path(inputBase, "*" + input + "*/"+inputmatch+"");
+			FileStatus[] list=fs.globStatus(p);
+			if(list!=null&&list.length>0)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
    
 	public static int make(
 			FileSystem fs,

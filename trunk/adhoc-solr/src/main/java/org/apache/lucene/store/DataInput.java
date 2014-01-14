@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import com.alimama.mdrill.buffer.PForDelta;
 
 /**
  * Abstract base class for performing read operations of Lucene's low-level
@@ -321,8 +320,11 @@ public abstract class DataInput implements Cloneable {
     i |= (b & 0x7FL) << 49;
     if ((b & 0x80) == 0) return i;
     b = readByte();
+    i |= (b & 0x7FL) << 56;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
     assert (b & 0x80) == 0;
-    return i | ((b & 0x7FL) << 56);
+    return i | ((b & 0x7FL) << 63);
   }
   
   public long readVVLong() throws IOException {

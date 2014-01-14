@@ -2,10 +2,9 @@ package com.alimama.mdrill.index.utils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.UTFDataFormatException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.zip.CRC32;
 
@@ -17,6 +16,11 @@ public class DocumentMap  implements Writable
 {
 
 	private String[] data =new String[0];
+	@Override
+	public String toString() {
+		return "DocumentMap [data=" + Arrays.toString(data) + "]";
+	}
+
 	public int setMap(ArrayList<HashMap<String, String>> list,String[] fields) {
 
 		HashMap<String, String> rtn=new HashMap<String, String>();
@@ -26,6 +30,11 @@ public class DocumentMap  implements Writable
 			{
 				rtn.put(fields[i], data[i]);
 			}
+		}
+		
+		if(rtn.size()<=0)
+		{
+			return 0;
 		}
 		CRC32 crc32 = new CRC32();
 		crc32.update(java.util.UUID.randomUUID().toString().getBytes());

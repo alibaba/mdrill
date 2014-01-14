@@ -20,8 +20,8 @@ import com.alibaba.tt.log.impl.TTLogSimpleInput;
 import com.alibaba.tt.queue.TTQueueCluster;
 import com.alibaba.tt.queue.impl.MessageKey;
 import com.alibaba.tt.queue.impl.TTQueueClusterImpl;
-import com.alimama.quanjingmonitor.parser.InvalidEntryException;
-import com.alimama.quanjingmonitor.parser.Parser;
+import com.alimama.mdrillImport.InvalidEntryException;
+import com.alimama.mdrillImport.Parser;
 
 
 public class TTReader

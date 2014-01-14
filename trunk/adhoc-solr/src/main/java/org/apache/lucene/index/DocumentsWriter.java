@@ -745,6 +745,7 @@ final class DocumentsWriter {
     return updateDocument(doc, analyzer, null);
   }
   
+  
   boolean updateDocument(Document doc, Analyzer analyzer, Term delTerm)
     throws CorruptIndexException, IOException {
 
@@ -1004,6 +1005,8 @@ final class DocumentsWriter {
       throw new AlreadyClosedException("this IndexWriter is closed");
     }
   }
+
+//  boolean doPauseWaitQueue = false;
 
   /** Does the synchronized work to finish/flush the
    *  inverted document. */

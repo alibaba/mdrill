@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.request.uninverted.GrobalCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,15 +37,18 @@ public class BlockBufferInput extends BufferedIndexInput {
 	private boolean isClone;
 	private Object key;
 	
-	
+	private PartionKey p=null;
+
+
 	public blockData lastbuff =new blockData(null, 0);
 	public Long lastBlockIndex = -1l;
 	
-	public BlockBufferInput(IndexInput input,Object key) {
+	public BlockBufferInput(IndexInput input,Object key,PartionKey p) {
 		super("BlockBufferInput", 1024);
 		this.descriptor = new Descriptor(input);
 		this.isOpen = true;
 		this.key=key;
+		this.p=p;
 	}
 	
 	
@@ -60,7 +65,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 		}
 		
 		if(blockdata==null){
-			block blk=new block(this.key, blockIndex);
+			block blk=new block(this.key, blockIndex,this.p);
 			blockdata=(blockData) GrobalCache.fieldValueCache.get(blk);
 			if (blockdata == null) {
 				synchronized (lock) {
@@ -184,11 +189,17 @@ public class BlockBufferInput extends BufferedIndexInput {
 
 		public IndexInput input;
 		public String key;
+		private PartionKey p=null;
 
-		public KeyInput(IndexInput input, String key) {
+		public PartionKey getP() {
+			return p;
+		}
+
+		public KeyInput(IndexInput input, String key,PartionKey p) {
 			super("KeyInput");
 			this.input = input;
 			this.key = key;
+			this.p=p;
 		}
 
 		@Override

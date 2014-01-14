@@ -25,6 +25,8 @@ import java.util.Collection;
 import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.index.TermInfosWriter;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.schema.IndexSchema;
 
 /** A Directory is a flat list of files.  Files may be written once, when they
@@ -47,6 +49,24 @@ public abstract class Directory implements Closeable {
 
 	public String dir_uuid=java.util.UUID.randomUUID().toString();
 	private IndexSchema schema=null;
+	private SolrCore core=null;
+	
+	private PartionKey p=null;
+	
+	public PartionKey getP() {
+		return p;
+	}
+
+	public SolrCore getCore() {
+		return core;
+	}
+
+	public void setCore(SolrCore core,PartionKey p) {
+		this.core = core;
+		this.p = p;
+
+	}
+
 	public IndexSchema getSchema() {
 		return schema;
 	}

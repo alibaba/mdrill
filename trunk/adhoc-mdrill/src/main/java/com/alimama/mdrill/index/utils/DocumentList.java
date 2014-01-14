@@ -24,10 +24,11 @@ public class DocumentList
 	}
 	
 	
-	public void add(DocumentMap res,String[] fields)
+	public int add(DocumentMap res,String[] fields)
 	{
 		int cnt=res.setMap(this.list, fields);
 		this.count+=cnt;
+		return cnt;
 	}
 	
 	public boolean isoversize()

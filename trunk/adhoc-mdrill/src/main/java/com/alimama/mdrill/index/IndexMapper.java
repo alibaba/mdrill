@@ -127,13 +127,21 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
      	
     }
     
-    private String parseDefault(String input)
+    private String parseDefault(String input,Context context)
     {
     	if (input == null) {
 			return null;
 		}
     	input=input.trim();
-		if (input.isEmpty() || input.equals("\\N")|| input.equals("\\n")) {
+		if (input.isEmpty() || input.equals("\\N")|| input.equals("\\n")|| input.toLowerCase().equals("null")) {
+    		context.getCounter("higo", "nullcolcount").increment(1);
+			return null;
+		}
+		
+		if(input.length()>=512000)
+		{
+    		context.getCounter("higo", "bigtextskip").increment(1);
+
 			return null;
 		}
 
@@ -158,7 +166,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 	    		return false;
 	    	}
     	}else{
-        	if(parseDefault(record)==null)
+        	if(parseDefault(record,context)==null)
         	{
 	    		return false;
         	}
@@ -180,7 +188,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
     	for (int i = 0; i < fields.length; i++) {
     	    String fieldName = fields[i];
     	    String string =(i<values.length)?values[i]:null;
-    	    String val=parseDefault(string);
+    	    String val=parseDefault(string,context);
 
 			if (this.isDate[i]) {
 				res[i]=TdateFormat.ensureTdate(val, fieldName);

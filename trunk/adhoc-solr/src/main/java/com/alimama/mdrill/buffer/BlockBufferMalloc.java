@@ -4,7 +4,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.request.uninverted.GrobalCache;
 
 
@@ -41,11 +43,16 @@ public class BlockBufferMalloc {
 		private Object key;
 		private long index;
 		private long flushkey=0;
-		public block(Object key, long pos) {
+		public block(Object key, long pos,PartionKey p) {
 			super();
 			this.key = key;
 			this.index = pos;
-			this.flushkey=SolrResourceLoader.getCacheFlushKey(null);
+			if(p==null)
+			{
+				this.flushkey=SolrResourceLoader.getCacheFlushKey(null);
+			}else{
+				this.flushkey=SolrResourceLoader.getCacheFlushKey(p);
+			}
 		}
 		
 

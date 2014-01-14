@@ -11,6 +11,7 @@ import com.alipay.tiansuan.solrplugin.HdfsToSet.TransType;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -36,11 +37,16 @@ public class StringSelectInQuery <A> extends MultiTermQuery {
 	private TransType<A> trans;
 
 
+	boolean isempty=false;
 	public ListTermEnum(IndexReader reader, Set<A> list, String field,TransType<A> trans)
 	        throws IOException {
 		this.trans=trans;
+		if(list==null||list.size()<=0)
+		{
+			isempty=true;
+		}
+		this.maxmincmp = this.TermMaxMin(field,list,this.trans);
 
-	    this.maxmincmp = this.TermMaxMin(field,list,this.trans);
 	    this.list = list;
 	    this.field=field;
 	    Term start=this.maxmincmp.getMin();
@@ -52,6 +58,12 @@ public class StringSelectInQuery <A> extends MultiTermQuery {
 
 	@Override
 	protected boolean termCompare(Term term) {
+		
+		if(isempty)
+		{
+		    endEnum = true;
+			return false;
+		}
 	    if (term.field().equals(this.field) &&list.contains(this.trans.trans(term.text())) ) {                                                                              
 		 return true;
 	    }
@@ -94,7 +106,14 @@ public class StringSelectInQuery <A> extends MultiTermQuery {
 
 	public <T> maxminPair<Term> TermMaxMin(String fields,
 	        Collection<? extends T> coll,TransType<T> t) {
+		
+		if(isempty)
+		{
+		    return new maxminPair<Term>(new Term(fields), new Term(fields));
+		}
+		
 	    Iterator<? extends T> i = coll.iterator();
+	    
 	    Term first=new Term(fields,t.transBack(i.next()));
 	    Term max=first;
 	    Term min = first;

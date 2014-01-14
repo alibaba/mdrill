@@ -39,6 +39,7 @@ import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
  * into a single Segment.  After adding the appropriate readers, call the merge method to combine the 
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
  * @see #add
  */
 final class SegmentMerger {
+
   private Directory directory;
   private String segment;
   private int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
@@ -250,8 +252,12 @@ final class SegmentMerger {
       for (IndexReader reader : readers) {
         final SegmentReader matchingSegmentReader = matchingSegmentReaders[idx++];
         FieldsReader matchingFieldsReader = null;
+//    	LOG.info("matchingSegmentReader "+(matchingSegmentReader==null));
+
         if (matchingSegmentReader != null) {
           final FieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
+//      	LOG.info("fieldsReader "+(fieldsReader==null));
+
           if (fieldsReader != null && fieldsReader.canReadRawDocs()) {
             matchingFieldsReader = fieldsReader;
           }

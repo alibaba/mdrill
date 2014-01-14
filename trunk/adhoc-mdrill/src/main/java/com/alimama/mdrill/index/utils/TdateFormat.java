@@ -131,7 +131,7 @@ public class TdateFormat {
 	
 	public static String transformSolrMetacharactor(String input){
         StringBuffer sb = new StringBuffer();
-        String regex = "[+\\-&|!(){}\\[\\]^\"~?:(\\)]";
+        String regex = "[+\\-&|!(){}\\[\\]^\"~?:(\\) ]";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(input);
         while(matcher.find()){
@@ -144,7 +144,7 @@ public class TdateFormat {
 	
 	public static String transformSolrMetacharactorNoLike(String input){
         StringBuffer sb = new StringBuffer();
-        String regex = "[+\\-&|!(){}\\[\\]^\"~?:(\\)*]";
+        String regex = "[+\\-&|!(){}\\[\\]^\"~?:(\\)* ]";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(input);
         while(matcher.find()){

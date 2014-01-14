@@ -22,7 +22,7 @@ import com.alibaba.tt.log.impl.TTLogSimpleInput;
 import com.alibaba.tt.queue.TTQueueCluster;
 import com.alibaba.tt.queue.impl.MessageKey;
 import com.alibaba.tt.queue.impl.TTQueueClusterImpl;
-import com.alimama.quanjingmonitor.mdrillImport.ImportReader.RawDataReader;
+import com.alimama.mdrillImport.ImportReader.RawDataReader;
 import com.alimama.quanjingmonitor.tt.DynaClassLoader;
 
 public class TT4Reader extends RawDataReader {
@@ -50,17 +50,39 @@ public class TT4Reader extends RawDataReader {
 		String logname = (String) config.get(confPrefix + "-log");
 		String accesskey = (String) config.get(confPrefix + "-accesskey");
 		String subid = (String) config.get(confPrefix + "-subid");
-		LOG.debug("Opening TT connection logname=" + logname + ", accesskey="
+		LOG.info("Opening TT connection logname=" + logname + ", accesskey="
 				+ accesskey + ", subid=" + subid);
 
 		try {
 			Date curTime;
 			SimpleDateFormat formatDate = new SimpleDateFormat("yyyyMMddHHmmss");
 			Object startTime = config.get(confPrefix + "-start-time");
+
 			if (startTime == null) {
 				curTime = new Date(System.currentTimeMillis());
 			} else {
-				curTime = formatDate.parse((String) startTime);
+				Object validate = config.get(confPrefix + "-validate-time");
+				Long ts=System.currentTimeMillis();
+				if(validate!=null)
+				{
+					try {
+						ts = Long.parseLong(String.valueOf(validate));
+					} catch (Throwable e) {
+						ts=System.currentTimeMillis();
+						LOG.error("parseLong:"+String.valueOf(validate), e);
+					}
+				}
+				Long now=System.currentTimeMillis();
+				if(ts<=(now+1000l*300)&&ts>=now-1000l*300)
+				{
+					curTime= formatDate.parse(String.valueOf(startTime));
+					LOG.info("formatDate.parse "+curTime+","+formatDate.format(curTime)+","+String.valueOf(validate));
+
+				}else{
+					curTime = new Date(System.currentTimeMillis());
+					LOG.info("formatDate.curr "+curTime+","+formatDate.format(curTime)+","+String.valueOf(validate));
+				}
+
 			}
 			_log = new TTLogImpl(logname, subid, accesskey);
 			if (_inStreamInput != null) {
@@ -108,15 +130,10 @@ public class TT4Reader extends RawDataReader {
 		TTLogBlock block = null;
 		try {
 			block = _inStreamInput.read();
-		} catch (IndexOutOfBoundsException e) {
-			e.printStackTrace();
-		} catch (TTQueueException e) {
-			e.printStackTrace();
-		} catch (TTQueueSafemodeException e) {
-			e.printStackTrace();
-		} catch (TTSubChangedException e) {
-			e.printStackTrace();
-		}
+		} catch (Throwable e) {
+			LOG.error("ttreaderror",e);
+			block=null;
+		} 
 		if (block == null) {
 			return null;
 		}

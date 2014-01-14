@@ -28,6 +28,7 @@ import org.apache.solr.request.compare.GroupbyRow;
 import backtype.storm.utils.Utils;
 
 import com.alipay.bluewhale.core.cluster.SolrInfo.ShardCount;
+import com.alimama.mdrill.index.utils.TdateFormat;
 import com.alimama.mdrill.json.JSONArray;
 import com.alimama.mdrill.json.JSONException;
 import com.alimama.mdrill.json.JSONObject;
@@ -319,7 +320,7 @@ public class MdrillService {
 		long t1=System.currentTimeMillis();
 		String logParams = logRequest(projectName, callback, startStr, rowsStr,
 				queryStr, dist, fl, groupby, sort, order,leftjoin);
-		LOG.info("higorequest:" + logParams);
+		LOG.info("higorequest:" + cutString(logParams));
 		TablePartion part = GetPartions.partion(projectName);
 		HeartBeat hb=new HeartBeat(out);
 		new Thread(hb).start();
@@ -328,7 +329,7 @@ public class MdrillService {
 			
 			String logParams2 = logRequest(projectName, callback, startStr, rowsStr,
 					queryStr, dist, fl, groupby, sort, order,leftjoin);
-			LOG.info("query:" + logParams2);
+			LOG.info("query:" + cutString(logParams2));
 
 			int start = WebServiceParams.parseStart(startStr);
 			int rows = WebServiceParams.parseRows(rowsStr);
@@ -343,6 +344,7 @@ public class MdrillService {
 			Map stormconf = Utils.readStormConfig();
 			String mode=String.valueOf(stormconf.get("higo.mode."+part.name));
 
+			
 			LinkedHashMap<String, String> fieldColumntypeMap = readFieldsFromSchemaXml(part.name);
 
 			SortParam sortType = WebServiceParams.sort(sort, order,fieldColumntypeMap,groupbyFields);
@@ -367,7 +369,8 @@ public class MdrillService {
 					break;
 				}
 			}
-			
+			LOG.info("request core.size="+cores.length);
+
 			ShardsList[] ms = GetShards.get(part.name, true);
 
 			MdrillPartionsInterface drillpart=MdrillPartions.INSTANCE(part.parttype);
@@ -375,22 +378,29 @@ public class MdrillService {
 			queryStr=drillpart.SqlFilter(queryStr);
 
 			Arrays.sort(partionsAll);
-			LOG.info("partionsAll:" + Arrays.toString(partionsAll));
+			LOG.info("partionsAll:" + cutString(Arrays.toString(partionsAll)));
 
 
 			GetPartions.Shards shard = GetPartions.getshard(part, partionsAll,cores, ms);
 			HigoJoinParams[] joins=WebServiceParams.parseJoins(leftjoin, shard);
-			ArrayList<String> fqList = WebServiceParams.fqList(queryStr, shard,	fieldColumntypeMap);
+			
+			boolean isnothedate=mode.indexOf("@nothedate@")>=0;
+
+			ArrayList<String> fqList = WebServiceParams.fqList(isnothedate,queryStr, shard,	fieldColumntypeMap);
+			if(isnothedate&&mode.indexOf("@fdt@")<0)
+			{
+				fqList.add("-higoempty_emptydoc_s:[* TO *]");		
+			}
 
 			String rtn= result(part,callback, fqList, shard, start, rows, sortType,
 					groupbyFields, showFields, commonStatMap,
 					distStatFieldMap,joins,mode);
 			long t2=System.currentTimeMillis();
 			long timetaken=t2-t1;
-			LOG.info("timetaken:"+(timetaken)+",logParams2:"+logParams2);
+			LOG.info("timetaken:"+(timetaken)+",logParams2:"+cutString(logParams2));
 			if(timetaken>1000l*100)
 			{
-				LOG.info("longrequest:"+(timetaken)+",logParams2:"+logParams2+"@"+rtn);
+				LOG.info("longrequest:"+(timetaken)+",logParams2:"+cutString(logParams2)+"@"+cutString(rtn));
 			}
 			 hb.setIsstop(true);
 			    while(!hb.isstop())
@@ -415,15 +425,15 @@ public class MdrillService {
 			SolrInfoList infolist=GetShards.getSolrInfoList(part.name);
 	    	infolist.run();
 			long t2=System.currentTimeMillis();
-			LOG.error("timetaken:"+(t2-t1)+",logParams:"+logParams);
-			LOG.error(logParams, e);
+			LOG.error("timetaken:"+(t2-t1)+",logParams:"+cutString(logParams));
+			LOG.error(cutString(logParams), e);
 			throw e;
 		} catch (Exception e) {
 			SolrInfoList infolist=GetShards.getSolrInfoList(part.name);
 	    	infolist.run();
 			long t2=System.currentTimeMillis();
-			LOG.error("timetaken:"+(t2-t1)+",logParams:"+logParams);
-			LOG.error(logParams, e);
+			LOG.error("timetaken:"+(t2-t1)+",logParams:"+cutString(logParams));
+			LOG.error(cutString(logParams), e);
 			throw e;
 		}
 		finally{
@@ -522,6 +532,14 @@ public class MdrillService {
 		return datatype;
 
 	}
+	
+	
+	private static String cutString(String str)
+	{
+		String rtn=String.valueOf(str);
+		
+		return rtn.substring(0,Math.min(rtn.length(), 10240));
+	}
 
 	private static String result(TablePartion part,String callback, ArrayList<String> fqList,
 			GetPartions.Shards shard, int start, int rows, final SortParam sortType,
@@ -554,7 +572,7 @@ public class MdrillService {
 				}
 				WebServiceParams.setGroupByQuery(query, fqList, groupbyFields,
 						minstart, maxEend, distStatFieldMap, commonStatMap, sortType,joins,null);
-				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
+				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + cutString(query.toString()));
 				
 				QueryResponse qr = WebServiceParams.fetchGroupCrcQr(query, server);
 				
@@ -567,7 +585,7 @@ public class MdrillService {
 					query = WebServiceParams.makeSolrQuery(shard);
 					WebServiceParams.setGroupByQuery(query, fqList, groupbyFields,
 							0, Math.min(groupValueCache.size()*10,UniqConfig.defaultCrossMaxLimit()), distStatFieldMap, commonStatMap, sortType,joins,groupValueCache);
-					LOG.info("queryinfo_pre:"+shard.urlMain + "/select/?" + query.toString());
+					LOG.info("queryinfo_pre:"+shard.urlMain + "/select/?" + cutString(query.toString()));
 					QueryResponse qr2 = server.query(query, SolrRequest.METHOD.POST);
 //					jsonObj.put("__timedebug_qr2", qr2.getTimetaken().toString());
 					WebServiceParams.setGroupByResult(query,jsonObj, qr2, groupbyFields, showFields,joins,groupValueCache);
@@ -633,7 +651,7 @@ public class MdrillService {
 				WebServiceParams.setGroupByQuery(query, fqList,
 						groupFieldsEmpty, start, rows, distStatFieldMap,
 						commonStatMap, sortType,joins,null);
-				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
+				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + cutString(query.toString()));
 				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
 //				jsonObj.put("__timedebug", qr.getTimetaken().toString());
 
@@ -642,7 +660,7 @@ public class MdrillService {
 				WebServiceParams.setDetailByQuery(
 						query, fqList, showFields,
 						start, rows, sortType,joins,mode.indexOf("@fdt@")>=0);
-				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + query.toString());
+				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + cutString(query.toString()));
 				
 				QueryResponse qr = WebServiceParams.fetchDetailCrcQr(query, server);
 //				jsonObj.put("__timedebug", qr.getTimetaken().toString());
@@ -659,7 +677,7 @@ public class MdrillService {
 		}
 
 		jsonObj.put("____debugurl",
-				shard.urlMain + "/select/?" + query.toString());
+				shard.urlMain + "/select/?" + cutString(query.toString()));
 
 		if (callback != null && callback.length() > 0) {
 			return callback + "(" + jsonObj.toString() + ")";

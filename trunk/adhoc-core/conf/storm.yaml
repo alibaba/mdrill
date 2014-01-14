@@ -79,25 +79,92 @@
  
  #----从tt实时导入到mdrill----
  higo.mode.p4p_pv2: "@realtime@"
- higo.partion.type.p4p_pv2: "day"
+ higo.partion.type.p4p_pv2: "month"
  p4p_pv2-log: "p4p_pv2"
  p4p_pv2-subid: "1226132513ZWOWEH3B"
  p4p_pv2-accesskey: "2ac04eb8-b3a4-4fb3-ab89-e8a689501b37"
  p4p_pv2-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.p4p_pv2"
  p4p_pv2-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
- p4p_pv2-commitbatch: 5000
- p4p_pv2-commitbuffer: 10000
- p4p_pv2-spoutbuffer: 10000
- p4p_pv2-boltbuffer: 10000
- p4p_pv2-mode: "local"
- p4p_pv2-timeoutSpout: 240
- p4p_pv2-timeoutBolt: 60
- p4p_pv2-timeoutCommit: 30
+ p4p_pv2-commitbatch: 1000
+ p4p_pv2-commitbuffer: 1000
+ p4p_pv2-spoutbuffer: 1000
+ p4p_pv2-boltbuffer: 1000
+ p4p_pv2-threads: 30
+ p4p_pv2-mode: "merger"
+ p4p_pv2-timeoutSpout: 90
+ p4p_pv2-timeoutBolt: 30
+ p4p_pv2-timeoutCommit: 300
  
- #----数据导入命令  ./bluewhale jar ./mdrill.jar com.alimama.quanjingmonitor.mdrillImport.Topology p4p_pv2topology  p4p_pv2 20131229084400 8 1024 ----
+ higo.mode.tanx_pv: "@realtime@"
+ higo.partion.type.tanx_pv: "month"
+ tanx_pv-log: "tanx_pv"
+ tanx_pv-subid: "01061423317TVV8KSN"
+ tanx_pv-accesskey: "604a3330-5c1f-4488-9466-de63f08fe297"
+ tanx_pv-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_pv"
+ tanx_pv-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ tanx_pv-commitbatch: 1000
+ tanx_pv-commitbuffer: 1000
+ tanx_pv-spoutbuffer: 1000
+ tanx_pv-boltbuffer: 1000
+ p4p_pv2-threads: 60
+ tanx_pv-mode: "merger"
+ tanx_pv-timeoutSpout: 90
+ tanx_pv-timeoutBolt: 30
+ tanx_pv-timeoutCommit: 300
  
+ 
+ higo.mode.tanx_click: "@realtime@"
+ higo.partion.type.tanx_click: "month"
+ 
+ tanx_click_zhitou-log: "tanx_click_zhitou"
+ tanx_click_zhitou-subid: "0106143856X2HG2CRT"
+ tanx_click_zhitou-accesskey: "9f126ea7-e728-464f-92db-8fe03aed561a"
+ tanx_click_zhitou-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_click_zhitou"
+ tanx_click_zhitou-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ tanx_click_zhitou-commitbatch: 500
+ tanx_click_zhitou-commitbuffer: 500
+ tanx_click_zhitou-spoutbuffer: 500
+ tanx_click_zhitou-boltbuffer: 500
+ tanx_click_zhitou-threads: 2
+ tanx_click_zhitou-mode: "merger"
+ tanx_click_zhitou-timeoutSpout: 90
+ tanx_click_zhitou-timeoutBolt: 60
+ tanx_click_zhitou-timeoutCommit: 300
+ 
+ tanx_click_rt-log: "tanx_rd_log"
+ tanx_click_rt-subid: "0106144243FH80E8QP"
+ tanx_click_rt-accesskey: "a53f9bb3-26c0-4ba8-9389-13057b9e5d34"
+ tanx_click_rt-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_click_rt"
+ tanx_click_rt-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ tanx_click_rt-commitbatch: 500
+ tanx_click_rt-commitbuffer: 500
+ tanx_click_rt-spoutbuffer: 500
+ tanx_click_rt-boltbuffer: 500
+ tanx_click_rt-threads: 2
+ tanx_click_rt-mode: "merger"
+ tanx_click_rt-timeoutSpout: 90
+ tanx_click_rt-timeoutBolt: 60
+ tanx_click_rt-timeoutCommit: 300
+ 
+ tanx_user_rt-log: "user_rd"
+ tanx_user_rt-subid: "0106144909UBGMF3IB"
+ tanx_user_rt-accesskey: "91bb5ad9-dc37-49b1-be75-8e1de52e4407"
+ tanx_user_rt-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_user_rt"
+ tanx_user_rt-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ tanx_user_rt-commitbatch: 500
+ tanx_user_rt-commitbuffer: 500
+ tanx_user_rt-spoutbuffer: 500
+ tanx_user_rt-boltbuffer: 500
+ tanx_user_rt-mode: "merger"
+ tanx_user_rt-threads: 2
+ tanx_user_rt-timeoutSpout: 90
+ tanx_user_rt-timeoutBolt: 60
+ tanx_user_rt-timeoutCommit: 300
  
 
+ 
+ #----数据导入命令  ./bluewhale jar ./mdrill.jar com.alimama.mdrillImport.Topology p4p_pv2topology  p4p_pv2 20131229084400 8 1024 ----
+ 
  
  #----如果higo.shards.replication: 2，higo.shards.count: 30的额外配置参考----
  #higo.fixed.shards.1: "0:tiansuan1.kgb.cm4:0,1,2,3,4"
@@ -125,9 +192,9 @@
  #----mdrill同时最多加载的分区个数，取决于内存与数据量----
  higo.cache.partions: 10
  #----通用的worker的jvm参数配置----
- worker.childopts: "-Xms5g -Xmx5g -Xmn2g -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-%port%.log "
+ worker.childopts: "-Xms4g -Xmx4g -Xmn2g -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-%port%.log "
  #----个别的worker的端口的jvm参数配置，通常用于给merger server单独配置----
- worker.childopts.6601: "-Xms5g -Xmx5g -Xmn2g -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-%port%.log "
+ worker.childopts.6601: "-Xms4g -Xmx4g -Xmn2g -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-%port%.log "
  #----mdrill的表格列表在hdfs下的路径-----
  higo.table.path: "/group/tbdp-etao-adhoc/p4padhoc/tablelist"
  #----mdrill中启动的solr使用的初始端口号-----
@@ -142,17 +209,24 @@
  higo.partion.type.rpt_seller_all_m_dir: "dir@thedate"
  higo.partion.type.ods_allpv_ad_d: "day"
  higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_1: "day"
- higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_1: "@nonzipout@" 
+ higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_1: "@nonzipout@nothedate@" 
  higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_2: "day"
- higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_2: "@nonzipout@" 
+ higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_2: "@nonzipout@nothedate@" 
  higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: "day"
- higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: "@nonzipout@" 
+ higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: "@nonzipout@nothedate@" 
+ higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_4: "day"
+ higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_4: "@nonzipout@nothedate@"
  
-
- 
- 
- 
+ #---注意只有分区类型为day的时候才能配置nothedate参数----
+ higo.partion.type.fact_wirelesspv_clickcosteffect1_adhoc_d: "day"
+ higo.mode.fact_wirelesspv_clickcosteffect1_adhoc_d: "@nonzipout@nothedate@"
+ higo.partion.type.fact_wireless_pvcost_clickeffect_zz_adhoc_d: "day"
+ higo.mode.fact_wireless_pvcost_clickeffect_zz_adhoc_d: "@nonzipout@nothedate@"  
+  
  #-------------hdfs mode-----------------
+ higo.partion.type.s_ods_log_p4pclick: "day"
+ higo.mode.s_ods_log_p4pclick: "@fdt@nonzipout@nothedate@" 
+ 
  higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:15@blocksize:1073741824@iosortmb:256@igDataChange@" 
  higo.index.parallel.ods_allpv_ad_d: 40
  

@@ -68,7 +68,13 @@ public class DirectoryInfo {
 		{
 			for(String d:list)
 			{
-				rtn+=this.d.fileLength(d);
+				try{
+					rtn+=this.d.fileLength(d);
+				}catch(Throwable e)
+				{
+					LOG.error("getfilelen",e);
+
+				}
 			}
 		}
 		}catch(Throwable e)

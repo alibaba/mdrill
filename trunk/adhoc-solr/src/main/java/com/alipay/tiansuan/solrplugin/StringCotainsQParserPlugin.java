@@ -31,7 +31,7 @@ import org.apache.solr.search.QueryParsing;
  * 
  *      <queryParser name="inhdfs" class="com.alipay.tiansuan.solrplugin.SelectInLocalFileQParserPlugin"/>
 
-http://hdphadoop:8983/solr/select/?q=user_id%3A2*&version=2.2&start=0&rows=10&indent=on&fq={!inhdfs%20f=user_id}hdfs://hdphadoop.com:9000/data/tiansuan/filein2
+http://hdphadoop:8983/solr/select/?q=user_id%3A2*&version=2.2&start=0&rows=10&indent=on&fq={!contains%20f=user_id}hdfs://hdphadoop.com:9000/data/tiansuan/filein2
 http://hdphadoop:8983/solr/select/?q=user_id%3A2*&version=2.2&start=0&rows=100&indent=on&fq={!infile%20f=user_id}/data/testdata/filein
  * {!inhdfs f=myfield}filename
  * @author yannian

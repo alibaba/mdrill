@@ -124,6 +124,7 @@ public class ReadOnlyDirectory implements MdrillDirectory{
 		    				for(FileStatus ssss:sublist)
 		    				{
 			    				FileSystemDirectory d=new FileSystemDirectory(fstimeout, ssss.getPath(), false, conf_timeout);
+			    				d.setUsedBlockBuffer(true);
 				    			DirectoryInfo info=new DirectoryInfo();
 				    			info.d=d;
 				    			info.tp=DirectoryInfo.DirTpe.file;
@@ -136,6 +137,7 @@ public class ReadOnlyDirectory implements MdrillDirectory{
 
 		    			
 		    			FileSystemDirectory d=new FileSystemDirectory(fs, p, false, conf);
+		    			d.setUsedBlockBuffer(true);
 		    			DirectoryInfo info=new DirectoryInfo();
 		    			info.d=d;
 		    			info.tp=DirectoryInfo.DirTpe.file;

@@ -67,7 +67,7 @@ public class UniqConfig {
 		return buffersize;
 	}
 	
-	static long ramsize=1024l*1024*200;
+	static long ramsize=1024l*1024*100;
 	public static long RealTimeRamSize()
 	{
 		return ramsize;
