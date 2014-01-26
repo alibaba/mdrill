@@ -86,7 +86,7 @@ public class p4p_pv2 extends com.alimama.mdrillImport.DataParser{
 		@Override
 		public long getTs() {
 			 long ts = Long.parseLong(p4ppvlog.getTimestamp());
-			 return (ts/300)*300000;
+			 return (ts/10)*10000;
 		}
 		
 

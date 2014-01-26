@@ -29,7 +29,10 @@ import org.apache.solr.core.SolrCore;
 import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 import com.alimama.mdrill.utils.HadoopUtil;
 public abstract class LinkFSDirectory extends FSDirectory {
-	
+	@Override
+	  public String toString() {
+	    return directory.toString();
+	  }
 	public static LinkFSDirectory open(File path) throws IOException {
 		return open(path, null);
 	}
@@ -305,33 +308,41 @@ public abstract class LinkFSDirectory extends FSDirectory {
 		  file.setLastModified(System.currentTimeMillis());
 	  }
 	  
+	  
+	  
 	  public void deleteFile(String name) throws IOException
 	  {
-		  if(this.hdfsLinks.containsKey(name))
-		  {
-			  Configuration conf = getConf();
-			  Path p=this.hdfsLinks.get(name);
-			  
-			  try {
-				FileSystemDirectory dir=new FileSystemDirectory(FileSystem.get(conf), p.getParent(), false, conf);
-				dir.deleteFile(p.getName());
-			} catch (IOException e) {
-				SolrCore.log.error("hdfs",e);
-			}
-		  }
 		  
-		  if(!this.links.containsKey(name))
-		  {
-			  super.deleteFile(name);
-		  }
+		  this.hdfsLinks.remove(name);
+		  this.links.remove(name);
 		  
-		 
-		  
-		  File file = this.links.get(name);
-		  if(file!=null&&file.exists())
-		  {
-			  file.delete();
-		  }
+		  super.deleteFile(name);
+
+//		  if(this.hdfsLinks.containsKey(name))
+//		  {
+//			  Configuration conf = getConf();
+//			  Path p=this.hdfsLinks.get(name);
+//			  
+//			  try {
+//				FileSystemDirectory dir=new FileSystemDirectory(FileSystem.get(conf), p.getParent(), false, conf);
+//				dir.deleteFile(p.getName());
+//			} catch (IOException e) {
+//				SolrCore.log.error("hdfs",e);
+//			}
+//		  }
+//		  
+//		  if(!this.links.containsKey(name))
+//		  {
+//			  super.deleteFile(name);
+//		  }
+//		  
+//		 
+//		  
+//		  File file = this.links.get(name);
+//		  if(file!=null&&file.exists())
+//		  {
+//			  file.delete();
+//		  }
 	  }
 	  
 	public long fileLength(String name) throws IOException {

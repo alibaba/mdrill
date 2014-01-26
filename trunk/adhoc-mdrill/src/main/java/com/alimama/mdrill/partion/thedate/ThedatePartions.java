@@ -290,6 +290,51 @@ public class ThedatePartions implements MdrillPartionsInterface{
 		return rtn;
 	}
 
+
+	@Override
+	public String getDropComparePartion(long days) throws Exception {
+		if(days<=0)
+		{
+			return null;
+		}
+		long dayms=1000l*3600*24;
+		int index=0;
+		while(true)
+		{
+			long before=System.currentTimeMillis()-(days+index)*dayms;
+			
+			long prev=System.currentTimeMillis()-(days+index)*dayms+dayms;
+			
+			String day=fmt.format(new Date(before));
+			String prevday=fmt.format(new Date(prev));
+			
+			String p1=ThedatePartionsUtils.parseDay(day, this.parttype);
+			String pprev=ThedatePartionsUtils.parseDay(prevday, this.parttype);
+			
+			if(!pprev.equals(p1))
+			{
+				return p1;
+			}
+		
+			index++;
+		}
+		
+//		private SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
+
+	}
+
+
+	@Override
+	public boolean isAllowDropPartion(String partion, String cmp)
+			throws Exception {
+		if(cmp==null||partion==null)
+		{
+			return false;
+		}
+		
+		return cmp.compareTo(partion)>=0;
+	}
+
 	
 	
 	 

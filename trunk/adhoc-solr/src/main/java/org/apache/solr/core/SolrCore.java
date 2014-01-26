@@ -79,6 +79,7 @@ import com.alimama.mdrill.solr.realtime.ReadOnlyDirectory;
 import com.alimama.mdrill.solr.realtime.RealTimeDirectory;
 import com.alimama.mdrill.solr.realtime.ShardPartion;
 import com.alimama.mdrill.utils.HadoopUtil;
+import com.esotericsoftware.minlog.Log;
 
 import java.net.URL;
 import java.lang.reflect.Constructor;
@@ -671,9 +672,10 @@ public final class SolrCore implements SolrInfoMBean {
 
   private static Integer cacheSize = 10;
   private static Integer cacheSizeHb = 4;
-  private final Object listlock=new Object();
+  private static final Object listlock=new Object();
   public static Cache<String,RefCounted<SolrIndexSearcher>> searchCache=null;
   public static Cache<String,RefCounted<SolrIndexSearcher>> searchCacheForHb=null;
+  
   public static final LinkedList<RefCounted<SolrIndexSearcher>> clearlist=new LinkedList<RefCounted<SolrIndexSearcher>>();
 
 
@@ -909,10 +911,16 @@ public static void setSearchCacheSize(int cacheSize) {
 			if (rtn == null) {
 
 				File f = new File(getDataDir(), partion);
+				try{
 				rtn = new RealTimeDirectory(f, HadoopUtil.hadoopConfDir,
 						ShardPartion
 								.getHdfsRealtimePath(p.tablename, p.partion)
 								.toString(),this,p);
+				}catch(Throwable e)
+				{
+					log.error("getForWrite error",e);
+					rtn=null;
+				}
 			}
 
 			if (isWritePool) {

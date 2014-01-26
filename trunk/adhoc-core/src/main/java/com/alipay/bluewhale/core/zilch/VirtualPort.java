@@ -106,7 +106,24 @@ public class VirtualPort {
 			Set<Integer> valid_ports) {
 
 		Socket socket = ZeroMq.socket(context, ZeroMq.pull);
-		ZeroMq.bind(socket, url);
+		for(int i=0;i<61;i++)
+		{
+			try{
+			ZeroMq.bind(socket, url);
+			break;
+			}catch(org.zeromq.ZMQException e)
+			{
+				LOG.info("zeromqBind error",e);
+				if(i>=60)
+				{
+					throw e;
+				}
+				try {
+					Thread.sleep(1000l*3);
+				} catch (InterruptedException e1) {
+				}
+			}
+		}
 		Map<Integer, Socket> virtual_mapping = new HashMap<Integer, ZMQ.Socket>();
 
 		RunnableCallback loop_fn = new VirtualPortDispatch(context, socket,

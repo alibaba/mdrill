@@ -59,7 +59,7 @@ public class BigReUsedBuffer<T> {
 				}
 			}
 			
-			log.info("####BigByteBuffer### calloc free:"+free.size()+",mallocTimes:"+mallocTimes.get()+",reusedTimes:"+reusedTimes.get());
+//			log.info("####BigByteBuffer### calloc free:"+free.size()+",mallocTimes:"+mallocTimes.get()+",reusedTimes:"+reusedTimes.get());
 			return new BlockArray<T>(data, size);
 	}
 	

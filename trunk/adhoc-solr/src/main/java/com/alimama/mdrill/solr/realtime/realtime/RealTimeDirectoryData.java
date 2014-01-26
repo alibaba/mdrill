@@ -60,9 +60,9 @@ public class RealTimeDirectoryData {
 			RealTimeDirectoryStatus rstatus,RealTimeDirectory mainthr) {
 		this.params = params;
 		this.status = rstatus;
-		this.RamDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.timerslow,UniqConfig.RealTimeLocalFlush(), mainthr);
-		this.bufferDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.timerquick,UniqConfig.RealTimeBufferFlush(), mainthr);
-		this.ToDel=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.timerslow,UniqConfig.RealTimeDelete(), mainthr);
+		this.RamDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getSlowTimer(),UniqConfig.RealTimeLocalFlush(), mainthr);
+		this.bufferDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getQuickTimer(),UniqConfig.RealTimeBufferFlush(), mainthr);
+		this.ToDel=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getSlowTimer(),UniqConfig.RealTimeDelete(), mainthr);
 	}
 	
 	public int doclistSize()
@@ -488,6 +488,12 @@ public class RealTimeDirectoryData {
 			sdoc.remove("mdrillPartion");
 			sdoc.remove("mdrillCmd");
 			sdoc.remove("mdrill_uuid");
+			
+			if("mm_12229823_1573806_11174236".equals(sdoc.getFieldValue("pid")))
+			{
+				LOG.info("####flushDocList :"+sdoc);
+			}
+			
 			Document lucenedoc = DocumentBuilder.toDocument(sdoc,
 					params.core.getSchema());
 			doclist.add(lucenedoc);
@@ -525,7 +531,7 @@ public class RealTimeDirectoryData {
 					info.tp = DirectoryInfo.DirTpe.file;
 					this.diskDirector.put(s1, info);
 					SolrCore.log
-							.info(">>>>>LinkFSDirectory readOnlyOpen add links "
+							.info(">>>>> add links "
 									+ s1);
 				}
 			}

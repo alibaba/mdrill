@@ -10,6 +10,22 @@
 <%@ page import="com.alimama.mdrill.ui.service.*" %>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>tanx</title>
+  
+  
+    
+  <script>
+quanjing_logcheck=0;
+</script>
+ <script language="javascript" type="text/javascript" src="http://adhoc.etao.com:9999/quanjing_check.jsp"></script>
+
+<script>
+	if(quanjing_logcheck!=1)
+	{
+		location.href='http://adhoc.etao.com:9999/quanjing_tanx.jsp';
+	}
+	</script>
+	
+    
      <script language="javascript" type="text/javascript" src="../js/jquery.js"></script>
     <script language="javascript" type="text/javascript" src="../js/My97DatePicker/WdatePicker.js"></script>
     	
@@ -1092,7 +1108,6 @@ a.g-menu-item, a.soptclass { cursor: pointer; }
 html,body {
 margin: 10; /* Remove body margin/padding */
 padding: 0;
-overflow: hidden; /* Remove scroll bars on browser window */
 font-size: 75%;
 }
  
@@ -1137,11 +1152,21 @@ z-index: 1200;
  	    <div id="loading" style="position:fixed !important;position:absolute;top:0;left:0;height:100%; width:100%; z-index:999; background:#000 url(http://interjc.googlecode.com/svn/trunk/waterfall/img/load.gif) no-repeat center center; opacity:0.6; filter:alpha(opacity=60);font-size:14px;line-height:20px;display:none" >  
     <p id="loading-one" style="color:#fff;position:absolute; top:50%; left:50%; margin:20px 0 0 -50px; padding:3px 10px;" onclick="javascript:turnoff('loading')">页面载入中..</p>  
 </div>  
+<div style="font-size:50px; border:double; width:210px; text-align:center; vertical-align:middle">全景监控</div>
 
-	<h1><a href="./tanx.jsp">数据对比</a>/数据排行</h1>
- 	<br>
- 	<input type="text" name="thedateCmp" id="thedateCmp" onFocus="WdatePicker({dateFmt:'yyyyMMdd'})"  />
- 	
+ 	<h1><a style="color:#551890" href="./tanxpv.jsp">TANX外投流量指标</a>/TANX外投流量数据排行/<a href="http://110.75.67.162:9999/quanjing/" target="_blank">P4P流量和系统监控</a></h1>
+
+ 
+ 	<table  border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td>日期：</td>
+    <td> 	<input type="text" name="thedateCmp" id="thedateCmp" onFocus="WdatePicker({dateFmt:'yyyyMMdd'})"  />
+
+</td>
+  </tr>
+  <tr>
+    <td>起始时间（小时与分钟）:</td>
+    <td> 	 
  	<select name="hourForm" id="hourForm" >
       <option value="00">00</option>
       <option value="01">01</option>
@@ -1185,6 +1210,12 @@ z-index: 1200;
       <option value="55">55</option>
   </select>
   
+</td>
+  </tr>
+  <tr>
+    <td>结束时间（小时与分钟）</td>
+    <td> 	
+    	
   
   	<select name="hourTo" id="hourTo" >
       <option value="00">00</option>
@@ -1228,9 +1259,16 @@ z-index: 1200;
       <option value="55" selected="selected">55</option>
   </select>
 
-   	<span ><input type="button" onclick="searchDatatbl()"  value="查看" /></span><br>
+    	
+    	</td>
+  </tr>
+  <tr>
+    <td colspan="2" align="right"><span ><input type="button" onclick="searchDatatbl()"  value="查看" /></span></td>
+  </tr>
+</table>
+ 	
    <div id="tablelist_id">
-<table id="list4"  dir="ltr" style="width: 670px;"></table>
+<table id="list4"  dir="ltr" style="width: 800px;"></table>
 <div id="pager2"></div>
 
 
@@ -1253,6 +1291,10 @@ function requestPV_AVG_pid()
 		var chooseday=jQuery("#thedateCmp").val();
 		var datts=dayToTimestampDay(chooseday);
 		var daystart=parseDay(new Date(datts-8*24*60*60*1000));
+			if("20140118">=daystart)
+		{
+			daystart="20140118";
+		}
 		var dayend=parseDay(new Date(datts-1*24*60*60*1000));
 	  var fromStr=jQuery("#hourForm").val()+jQuery("#minForm").val();
 		var toStr=jQuery("#hourTo").val()+jQuery("#minTo").val();
@@ -1262,7 +1304,7 @@ function requestPV_AVG_pid()
 	  var requestparams={};
 		requestparams.start=0;
 		requestparams.rows=10000;
-		requestparams.project="tanx_pv";
+		requestparams.project="rpt_quanjing_tanxpv";
 			requestparams.order="desc";
 			requestparams.sort="sum(records)";
 			requestparams.groupby="pid";
@@ -1315,6 +1357,10 @@ function requestCLICK_AVG_pid(pidlist)
 		var chooseday=jQuery("#thedateCmp").val();
 		var datts=dayToTimestampDay(chooseday);
 		var daystart=parseDay(new Date(datts-8*24*60*60*1000));
+			if("20140118">=daystart)
+		{
+			daystart="20140118";
+		}
 		var dayend=parseDay(new Date(datts-1*24*60*60*1000));
 	  var fromStr=jQuery("#hourForm").val()+jQuery("#minForm").val();
 		var toStr=jQuery("#hourTo").val()+jQuery("#minTo").val();
@@ -1325,7 +1371,7 @@ function requestCLICK_AVG_pid(pidlist)
 	  var requestparams={};
 		requestparams.start=0;
 		requestparams.rows=10000;
-		requestparams.project="tanx_click";
+		requestparams.project="rpt_quanjing_tanxclick";
 			requestparams.order="desc";
 			requestparams.sort="sum(records)";
 			requestparams.groupby="pid";
@@ -1372,16 +1418,28 @@ function requestPV_today_pid()
 		var chooseday=jQuery("#thedateCmp").val();
 		var datts=dayToTimestampDay(chooseday);
 		var daystart=parseDay(new Date(datts-8*24*60*60*1000));
+			if("20140118">=daystart)
+		{
+			daystart="20140118";
+		}
 		var dayend=parseDay(new Date(datts-1*24*60*60*1000));
 	  var fromStr=jQuery("#hourForm").val()+jQuery("#minForm").val();
 		var toStr=jQuery("#hourTo").val()+jQuery("#minTo").val();
+		
+			var strtablename="tanx_pv";
+		var todayStr=parseDay(new Date());
+		if(todayStr!=chooseday)
+		{
+			strtablename="rpt_quanjing_tanxpv";
+		}
+		
 		var newq=[];
 	  newq.push({"thedate":{"operate":1,"value":chooseday}});
 	  newq.push({"miniute_5":{"operate":9,"value":[fromStr,toStr]}});
 	  var requestparams={};
 		requestparams.start=0;
 		requestparams.rows=10000;
-		requestparams.project="tanx_pv";
+		requestparams.project=strtablename;
 			requestparams.order="desc";
 			requestparams.sort="sum(records)";
 			requestparams.groupby="pid,producttype";
@@ -1429,9 +1487,19 @@ function requestCLICK_today_pid(pidlist)
 		var chooseday=jQuery("#thedateCmp").val();
 		var datts=dayToTimestampDay(chooseday);
 		var daystart=parseDay(new Date(datts-8*24*60*60*1000));
+			if("20140118">=daystart)
+		{
+			daystart="20140118";
+		}
 		var dayend=parseDay(new Date(datts-1*24*60*60*1000));
 	  var fromStr=jQuery("#hourForm").val()+jQuery("#minForm").val();
 		var toStr=jQuery("#hourTo").val()+jQuery("#minTo").val();
+			var strtablename="tanx_click";
+		var todayStr=parseDay(new Date());
+		if(todayStr!=chooseday)
+		{
+			strtablename="rpt_quanjing_tanxclick";
+		}
 		var newq=[];
 	  newq.push({"thedate":{"operate":1,"value":chooseday}});
 	  newq.push({"miniute_5":{"operate":9,"value":[fromStr,toStr]}});
@@ -1439,8 +1507,8 @@ function requestCLICK_today_pid(pidlist)
 
 	  var requestparams={};
 		requestparams.start=0;
-		requestparams.rows=6000;
-		requestparams.project="tanx_click";
+		requestparams.rows=10000;
+		requestparams.project=strtablename;
 			requestparams.order="desc";
 			requestparams.sort="sum(records)";
 			requestparams.groupby="pid";
@@ -1564,28 +1632,77 @@ function showresultable(tp,data,YPOS,color)
 	var clickavg=g_result_table['click_avg'];
 	for(var p in pvtoday)
 	{
-		var item={'pid':p,'producttype':pvtoday[p]['producttype'],'pvtoday':pvtoday[p]['v']};
+		
+		var pdtp=pvtoday[p]['producttype'];
+		var strpdtp="";
+		if(pdtp=="D")
+		{
+			strpdtp="直投";
+		}
+			if(pdtp=="X")
+		{
+			strpdtp="交换";
+		}
+			if(pdtp=="S")
+		{
+			strpdtp="系统抄底";
+		}
+	
+		var item={'pid':p,'producttype':strpdtp,'pvtoday':pvtoday[p]['v']};
 		
 		if(pvavg[p])
 		{
-			item['pvavg']=pvavg[p]['v'];
+			item['pvavg']=pvavg[p]['v'].toFixed(2);
 		}else{
 			item['pvavg']=0;
 		}
 		
 		if(clicktoday[p])
 		{
-			item['clicktoday']=clicktoday[p]['v'];
+			item['clicktoday']=clicktoday[p]['v'].toFixed(2);
 		}else{
 			item['clicktoday']=0;
 		}
 		
 			if(clickavg[p])
 		{
-			item['clickavg']=clickavg[p]['v'];
+			item['clickavg']=clickavg[p]['v'].toFixed(2);
 		}else{
 			item['clickavg']=0;
 		}
+		
+		
+		if(item["pvavg"]>0)
+		{
+						item['rate_avg']=(100*item['clickavg']/item["pvavg"]).toFixed(2);
+		}else{
+			     item['rate_avg']=0;
+		}
+		
+		
+		if(item["pvtoday"]>0)
+		{
+						item['rate_today']=(100*item['clicktoday']/item["pvtoday"]).toFixed(2);
+		}else{
+			     item['rate_today']=0;
+		}
+		
+		if(item["pvavg"]>0)
+		{
+						item['diff_pv_today']=(100*(item['pvtoday']-item["pvavg"])/item["pvavg"]).toFixed(2);
+		}else{
+			     item['diff_pv_today']=0;
+		}
+		
+		
+			if(item["clickavg"]>0)
+		{
+						item['diff_click_today']=(100*(item['clicktoday']-item["clickavg"])/item["clickavg"]).toFixed(2);
+		}else{
+			     item['diff_click_today']=0;
+		}
+		
+		
 		
 		resultlist.push(item);
 	}
@@ -1596,22 +1713,26 @@ jQuery("#list4").jqGrid(
 { datatype: "jsonstring",
 	datastr:JSON.stringify(resultlist),
 	 height: 600,
-	 colNames:['pid','producttype', 'pvtoday', 'pvavg','clicktoday','clickavg'], 
+	 colNames:['pid','产品类型', '当日pv', '七日平均pv','当日点击','七日平均点击','七日平均点击率(%)','当日点击率(%)','pv波动(%)','点击波动(%)'], 
 	 colModel:[ 
-	  {name:'pid',index:'pid', width:300,searchoptions:{sopt:['eq']}}, 
-	   {name:'producttype',index:'producttype', width:100,searchoptions:{sopt:['eq']}}, 
-	 {name:'pvtoday',index:'pvtoday', width:80, align:"right",sorttype:"float",searchoptions:{sopt:['eq','ne','le','lt','gt','ge']}}, 
-	 {name:'pvavg',index:'pvavg', width:80, align:"right",sorttype:"float",searchoptions:{sopt:['eq','ne','le','lt','gt','ge']}}, 
-	 {name:'clicktoday',index:'clicktoday', width:80, align:"right",sorttype:"float",searchoptions:{sopt:['eq','ne','le','lt','gt','ge']}}, 
-	 {name:'clickavg',index:'clickavg', width:80, align:"right",sorttype:"float",searchoptions:{sopt:['eq','ne','le','lt','gt','ge']}}
+	  {name:'pid',index:'pid', width:300,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
+	   {name:'producttype',index:'producttype', width:100,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
+	 {name:'pvtoday',index:'pvtoday', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}}, 
+	 {name:'pvavg',index:'pvavg', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}}, 
+	 {name:'clicktoday',index:'clicktoday', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}}, 
+	 {name:'clickavg',index:'clickavg', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}},
+	 {name:'rate_avg',index:'rate_avg', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}},
+	 {name:'rate_today',index:'rate_today', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}},
+	 {name:'diff_pv_today',index:'diff_pv_today', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}},
+	 {name:'diff_click_today',index:'diff_click_today', width:100, align:"right",sorttype:"float",searchoptions:{clearSearch:false,sopt:['eq','ne','le','lt','gt','ge']}},
 	 ], 
 	  pager: '#pager2',
-	  rowNum:50, 
+	  rowNum:200, 
 	  rowList:[50,100,200,500],
 	  sortname: 'pvtoday',
     viewrecords: true,
     sortorder: "desc",
-    caption:"JSON Example"
+    caption:"tanx排行"
 });	
 	
 jQuery("#list4").jqGrid('filterToolbar',{searchOperators : true});	
@@ -1621,6 +1742,52 @@ jQuery("#list4").jqGrid('filterToolbar',{searchOperators : true});
 
 
 searchDatatbl();
+
+
+
+
+
+
+
+function parseDate(date)
+{
+    var month = date.getMonth() < 9 ? "0" + (date.getMonth() + 1) : (date.getMonth() + 1);   
+    var day = date.getDate() <= 9 ? "0" + (date.getDate()) : (date.getDate());   
+    var hour = date.getHours() <= 9 ? "0" + (date.getHours()) : (date.getHours());
+    var miniute = date.getMinutes() <= 9 ? "0" + (date.getMinutes()) : (date.getMinutes());
+        var secs = date.getSeconds() <= 9 ? "0" + (date.getSeconds()) : (date.getSeconds());
+
+    var yyyymmdd= (date.getFullYear() + "" + month + "" + day+hour+miniute+secs);         
+    return yyyymmdd;
+}
+
+function jsonpcall()
+{
+	
+}
+
+
+$(function(){
+var logparams={};
+logparams["date"]=parseDate(new Date());
+logparams["bizdate"]=parseDay(new Date())+"-"+parseDay(new Date());
+logparams["nick"]=log_nickname.replace(/\(.*\)/ig,"");
+logparams["email"]=log_userid+"@taobao.com";
+logparams["set"]="全景监控tanxtable";
+logparams["dimvalue"]=location.href;
+logparams["filter"]="";
+logparams["r"]=new Date().getTime();
+logparams["callback"]="jsonpcall";
+
+
+$.ajax({
+url:"http://adhoc.etao.com:9999/querylog.jsp",
+data:logparams,
+dataType:"jsonp",
+jsonp:"jsonpcall",
+success:jsonpcall});
+
+});
 
 	</script>	
 </script>

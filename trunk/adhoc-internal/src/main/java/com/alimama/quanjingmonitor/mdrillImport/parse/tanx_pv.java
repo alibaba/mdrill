@@ -29,8 +29,9 @@ public class tanx_pv extends com.alimama.mdrillImport.DataParser{
 				return null;
 			}
 			
-			
-			if(pvlog.getPid()==null||pvlog.getTimestamp()==null||pvlog.getPid().length()>50)
+			String pid=pvlog.getPid();
+			String strts=pvlog.getTimestamp();
+			if(pid==null||strts==null||pid.length()>50)
 			{
 				return null;
 			}
@@ -43,14 +44,14 @@ public class tanx_pv extends com.alimama.mdrillImport.DataParser{
 				this.lines=0;
 			}
 			
-			long ts = Long.parseLong(pvlog.getTimestamp());
+			long ts = Long.parseLong(strts);
 			if(ts<laststartts||ts>lastendts)
 			{
 				return null;
 			}
 			
 			
-			DataIterParse rtn= new DataIterParse(pvlog);
+			DataIterParse rtn= new DataIterParse(pvlog,pid,ts);
 			
 			return rtn;
 		} catch (Throwable nfe) {
@@ -66,9 +67,12 @@ public class tanx_pv extends com.alimama.mdrillImport.DataParser{
 	
 	public static class DataIterParse implements DataIter{
 		private TanxPVLog pvlog=null;
-
-		public DataIterParse(TanxPVLog pvlog) {
+		private String pid;
+		private long ts;
+		public DataIterParse(TanxPVLog pvlog,String pid,long ts) {
 			this.pvlog = pvlog;
+			this.pid=pid;
+			this.ts=ts;
 		}
 
 		@Override
@@ -77,66 +81,56 @@ public class tanx_pv extends com.alimama.mdrillImport.DataParser{
 		}
 
 
+		
 		@Override
 		public Number[] getSum() {
-			Number[] rtn=new Number[1];
-			rtn[0]=1;
-			return rtn;
+			return new Number[]{1};
 		}
 		
 		@Override
 		public long getTs() {
-			 long ts = Long.parseLong(pvlog.getTimestamp());
-			 return (ts/300)*300000;
+			 return (ts/10)*10000;
 		}
 		
 
 	    
 		@Override
 		public Object[] getGroup() {
-			 long ts = Long.parseLong(pvlog.getTimestamp());
-			 long ts300=(ts/300)*300000;
-			 Date d= new Date(ts300);
-			 
-			String[] rtn=new String[5];
-			rtn[0]=String.valueOf(formatDay.format(d));
-			rtn[1]=String.valueOf(formatMin.format(d));
-			rtn[2]=String.valueOf(pvlog.getPid());
-			rtn[3]=String.valueOf(pvlog.getProductType());
-			rtn[4]=String.valueOf(pvlog.getSubProductType());
-			
-			return rtn;
+			 Date d= new Date((ts/300)*300000);
+			return new String[]{
+					String.valueOf(formatDay.format(d))
+					,String.valueOf(formatMin.format(d))
+					,String.valueOf(this.pid)
+					,String.valueOf(pvlog.getProductType())
+			};
 		}
 		
 	}
-	
 
-	
+	private static String[] colname={
+			"thedate"
+			,"miniute_5"
+			,"pid"
+			,"producttype"
+	};
 
 	@Override
 	public String[] getGroupName() {
-		String[] rtn=new String[5];
-		rtn[0]="thedate";
-		rtn[1]="miniute_5";
-		rtn[2]="pid";
-		rtn[3]="producttype";
-		rtn[4]="subproducttype";
-		return rtn;
+		return colname;
 	}
 
 	
-
+	private static String[] sumName={"records"};
 	@Override
 	public String[] getSumName() {
-		String[] rtn=new String[1];
-		rtn[0]="records";
-		return rtn;
+		return sumName;
 
 	}
 
+	private static String tablename="tanx_pv";
 	@Override
 	public String getTableName() {
-		return "tanx_pv";
+		return tablename;
 	}
 	
     private static SimpleDateFormat formatDay = new SimpleDateFormat("yyyyMMdd");

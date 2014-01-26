@@ -272,7 +272,7 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 					      double f = sizekb*1.0/1024;
 						contentw.append("结果大小："+(sizekb<=1?"小于1KB":df.format(f)+"MB")+"<br>\r\n");
 						String strurl="http://adhoc.etao.com:9999/downloadoffline.jsp?uuid="+this.getUuid();
-						contentw.append("下载:"+strurl+"<br>");
+						contentw.append("七星阵:"+strurl+"<br>");
 					}else{
 						contentw.append(" <br>");
 						contentw.append("Sorry，任务出错，请与管理员联系 <br>");
@@ -314,7 +314,7 @@ public class MysqlCallback implements IOffilneDownloadCallBack{
 			content.append("<tr><td>结果大小：<span style=\"color: #FF0000;font-weight: bold;\">"+(sizekb<=1?"小于1KB":df.format(f)+"MB")+"</span></tr></td>\r\n");
 			content.append("<tr><td>执行时间："+((this.endtime.getTime()-this.starttime.getTime())/1000)+"秒</tr></td>\r\n");
 			content.append("<tr><td>查询参数：<br>&nbsp;&nbsp;&nbsp;&nbsp;"+this.params.replaceAll("。", "<br>&nbsp;&nbsp;&nbsp;&nbsp;")+"</tr></td>\r\n");
-			content.append("<tr><td>下载地址：<a href=\"http://adhoc.etao.com:9999/downloadoffline.jsp?uuid="+this.getUuid()+"\">http://adhoc.etao.com:9999/downloadoffline.jsp?uuid="+this.getUuid()+"</a></tr></td>\r\n");
+			content.append("<tr><td>七星阵下载：<a href=\"http://adhoc.etao.com:9999/downloadoffline.jsp?uuid="+this.getUuid()+"\">http://adhoc.etao.com:9999/downloadoffline.jsp?uuid="+this.getUuid()+"</a></tr></td>\r\n");
 		}else{
 			content.append("<tr><td>任务名称："+this.jobname+"</tr></td>\r\n");
 			content.append("<tr><td>任务ID："+this.uuid+"</tr></td>\r\n");

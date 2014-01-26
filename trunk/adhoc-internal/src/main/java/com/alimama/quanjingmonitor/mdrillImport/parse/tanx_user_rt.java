@@ -93,7 +93,7 @@ public class tanx_user_rt extends com.alimama.mdrillImport.DataParser{
 		@Override
 		public long getTs() {
 			 long ts = Long.parseLong(pvlog[1]);
-			 return (ts/300)*300000;
+			 return (ts/10)*10000;
 		}
 		
 

@@ -679,6 +679,27 @@ class SyncProcesses extends ShutdownWork {
 		Map<String, String> environment = new HashMap<String, String>();
 		environment.put("LD_LIBRARY_PATH",
 				(String) conf.get(Config.JAVA_LIBRARY_PATH));
+		
+		try{
+		ArrayList<String> killlist=findByJavaPort.findProcess(port);
+		if(killlist!=null)
+		{
+			
+			for(int i=0;i<3;i++)
+			{
+				for(String pid:killlist)
+				{
+					StormUtils.ensure_process_killed(Integer.parseInt(pid));
+				}
+				Thread.sleep(300);
+			}
+		}
+		
+		}catch(Throwable e)
+		{
+			LOG.error("killlist",e);
+		}
+		
 
 		StormUtils.launch_work_process(commandSB.toString(), environment);
 	}

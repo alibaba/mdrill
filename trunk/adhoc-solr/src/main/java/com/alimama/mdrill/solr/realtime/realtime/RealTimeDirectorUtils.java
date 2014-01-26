@@ -17,17 +17,42 @@ import org.slf4j.LoggerFactory;
 
 import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 import com.alimama.mdrill.solr.realtime.DirectoryInfo;
+import com.alimama.mdrill.utils.UniqConfig;
 
 
 //review ok 2013-12-27
 public class RealTimeDirectorUtils {
 	public static Logger LOG = LoggerFactory.getLogger(RealTimeDirectorUtils.class);
 
-	public static Timer timerslow = new Timer();
-	public static Timer timerquick = new Timer();
+	private static Timer timerslow = null;
+	private static Timer timerquick = null;
+	private static Object TIMER_LOCK=new Object();  
 
+	public static Timer getQuickTimer()
+	{
+		synchronized (TIMER_LOCK) {
+			if(timerquick==null)
+			{
+				timerquick=new Timer();
+			}
+			
+			return timerquick;
+		}
+	}
+	
+	public static Timer getSlowTimer()
+	{
+		synchronized (TIMER_LOCK) {
+			if(timerslow==null)
+			{
+				timerslow=new Timer();
+			}
+			
+			return timerslow;
+		}
+	}
 
-	private static Cache<Long, Object> termsCache = Cache.synchronizedCache(new SimpleLRUCache<Long, Object>(102400));
+	private static Cache<Long, Object> termsCache = Cache.synchronizedCache(new SimpleLRUCache<Long, Object>(UniqConfig.MaybeRepCheckCacheSize()));
 	
 	private static AtomicLong debuglines=new AtomicLong(0); 
 	

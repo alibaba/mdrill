@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -305,14 +306,24 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 	long editlogtime=System.currentTimeMillis();
 	
 	AtomicInteger addIntervel=new AtomicInteger(0);
+	
 	public synchronized void addDocument(SolrInputDocument doc,boolean writelog) throws CorruptIndexException, LockObtainFailedException, IOException
 	{
+		if("mm_12229823_1573806_11174236".equals(doc.getFieldValue("pid")))
+		{
+			LOG.info("####addDocument 1 :"+doc+","+String.valueOf(writelog));
+		}
+		
 		if(RealTimeDirectorUtils.maybeReplication(doc))
 		{
 			return ;
 		}
+		
+		if("mm_12229823_1573806_11174236".equals(doc.getFieldValue("pid")))
+		{
+			LOG.info("####addDocument 2 :"+doc+","+String.valueOf(writelog));
+		}
 	
-		doc.setTxid(0l);
 		if(writelog)
 		{
 			try {
@@ -321,8 +332,8 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 				synchronized (editlog) {
 					if(!needRollLogs.get())
 					{
-						needRollLogs.set(true);
 						editlog.openForWrite();
+						needRollLogs.set(true);
 					}
 					editlog.logEdit(op);
 					long lasttid=editlog.getLastWrittenTxId();
@@ -338,7 +349,8 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 					}
 				}
 			} catch (Exception e) {
-				LOG.error("editlog",e);
+				LOG.error("editlog_"+this.params.Partion.toString(),e);
+				editlog.openForWrite();
 			}
 		}
 		
@@ -382,9 +394,9 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 		List<StorageDirectory> editsDirs = new ArrayList<StorageDirectory>();
 		if("hdfs".equals(SolrCore.getBinglogType()))
 		{
-			editsDirs.add(new StorageDirectory(FileSystem.get(conf), new Path(params.hdfsPath, "editlogs_v6")));
+			editsDirs.add(new StorageDirectory(FileSystem.get(conf), new Path(params.hdfsPath, "editlogs_v9")));
 		}else{
-			editsDirs.add(new StorageDirectory(FileSystem.getLocal(conf), new Path(params.baseDir, "editlogs_v6")));
+			editsDirs.add(new StorageDirectory(FileSystem.getLocal(conf), new Path(params.baseDir, "editlogs_v9")));
 		}
 		LOG.info("recoverFromEditlog begin:"+this.params.getLogStr());
 		editlog = new FSEditLog(conf, editsDirs);
@@ -428,18 +440,29 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 						try {
 							op = (AddOp) stream.readOp();
 							if (op == null) {
+					    		LOG.error("readOp end");
+
 								break;
+							}
+							if(op.getDoc()==null)
+							{
+					    		LOG.error("readOp doc null");
+
+								continue;
 							}
 						} catch (Throwable e) {
 							LOG.error("readOp", e);
 							break;
 						}
+						
+						SolrInputDocument doc=op.getDoc();
+						doc.setTxid(op.getTransactionId());
 						if(lines<100000)
 						{
 							lines++;
 							if(lines%500==0)
 							{
-								LOG.info("##recover##"+op.getDoc().toString()+",savedTxid="+savedTxid+":"+this.params.getLogStr());
+								LOG.info("##recover##"+doc.toString()+",savedTxid="+savedTxid+":"+this.params.getLogStr());
 							}
 						}
 						allrecord++;
@@ -448,7 +471,7 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 							this.flushDocList();
 						}
 			
-						this.addDocument(op.getDoc(),false);
+						this.addDocument(doc,false);
 					}
 					
 					lasttxid=Math.max(stream.getLastTxId(), lasttxid);

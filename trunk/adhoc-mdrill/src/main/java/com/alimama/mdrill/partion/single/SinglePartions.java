@@ -86,4 +86,15 @@ public class SinglePartions implements MdrillPartionsInterface{
 		return rtn;
 	}
 
+	@Override
+	public String getDropComparePartion(long days) throws Exception {
+		return null;
+	}
+
+	@Override
+	public boolean isAllowDropPartion(String partion, String cmp)
+			throws Exception {
+		return false;
+	}
+
 }

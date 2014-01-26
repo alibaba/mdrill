@@ -29,9 +29,13 @@ public class ImportSpout implements IRichSpout{
     public ImportSpout(String confPrefix)
     {
     	this.confPrefix=confPrefix;
+    	istanxpv=this.confPrefix.indexOf("tanx_pv")>=0;
     }
 
     int buffersize=5000;
+    int intMapsize=500;
+    
+    boolean istanxpv=false;
     @Override
     public void open(Map conf, TopologyContext context,SpoutOutputCollector collector) {
     	try {
@@ -48,7 +52,8 @@ public class ImportSpout implements IRichSpout{
     	this.collector = collector;
     	int readerCount=context.getComponentTasks(context.getThisComponentId()).size();
     	int readerIndex=context.getThisTaskIndex();
-    	nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(this.buffersize);
+    	this.intMapsize=Math.min(this.buffersize, 1024);
+    	nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(this.intMapsize);
 
     	try {
 			this.reader=new ImportReader(conf, confPrefix, parse, readerIndex, readerCount);
@@ -65,11 +70,11 @@ public class ImportSpout implements IRichSpout{
 	
     private static SimpleDateFormat formatHour = new SimpleDateFormat("HH:mm:ss");
 
-	private synchronized boolean putdata(DataParser.DataIter log)
+	private boolean putdata(DataParser.DataIter log)
 	{	
     	long ts=log.getTs();
-		BoltStatKey key=new BoltStatKey(log.getGroup(),ts);
-		BoltStatVal val=new BoltStatVal(log.getSum());
+		BoltStatKey key=new BoltStatKey(log.getGroup());
+		BoltStatVal val=new BoltStatVal(log.getSum(),ts);
 		
 		BoltStatVal statval=nolockbuffer.get(key);
 		this.status.ttInput++;
@@ -86,7 +91,7 @@ public class ImportSpout implements IRichSpout{
     		return false;
     	}
     	
-    	if(!this.timeoutCheck.istimeout()&&nolockbuffer.size()<buffersize&&nolockbuffer.size()<buffersize)
+    	if(!this.timeoutCheck.istimeout()&&nolockbuffer.size()<buffersize)
 		{
     		return false;
 		}
@@ -94,12 +99,29 @@ public class ImportSpout implements IRichSpout{
 
 		HashMap<BoltStatKey, BoltStatVal> buffer=nolockbuffer;
     	LOG.info(this.confPrefix+"####total:group="+buffer.size()+",ts:"+formatHour.format(new Date(ts))+",status:"+this.status.toString());
-    	nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(buffersize);
+    	nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(this.intMapsize);
+    	int batch=1;
 		for(Entry<BoltStatKey, BoltStatVal> e:buffer.entrySet())
 		{
+			batch++;
 			BoltStatKey pkey=e.getKey();
-    		List<Object> data = StormUtils.mk_list((Object)pkey,e.getValue());
+			BoltStatVal pvalue=e.getValue();
+			
+			if(istanxpv)
+			{
+				if(pkey.list.length>=3&&"mm_12229823_1573806_11174236".equals(pkey.list[2]))
+				{
+					LOG.info("yanniandebugspout:"+pkey.toString()+"==="+pvalue.toString());
+				}
+			}
+			
+    		List<Object> data = StormUtils.mk_list((Object)pkey,pvalue);
 	        collector.emit(data, SpoutUtils.uuid());
+	        
+	        if(batch%50==0)
+	        {
+	        	this.sleep(10);
+	        }
 		}
 		
 		if(this.status.ttInput>100000000)
@@ -111,15 +133,13 @@ public class ImportSpout implements IRichSpout{
 	}
 	
     @Override
-    public void nextTuple()  {
-    	int lineindex=1;
+    public synchronized void nextTuple()  {
 		try {
 			List ttdata = this.reader.read();
 			if(ttdata==null)
 			{
 				return ;
 			}
-			boolean isover=false;
 			for(Object o:ttdata)
 			{
 				this.status.ttInput++;
@@ -127,33 +147,24 @@ public class ImportSpout implements IRichSpout{
 				while(true)
 				{
 					this.status.groupInput++;
-					if((lineindex++)%500==0)
-					{
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e1) {
-						}
-					}
-					if(this.putdata(pv))
-					{
-						isover=true;
-					}
+					this.putdata(pv);
 					if(!pv.next())
 					{
 						break;
 					}
 				}
 			}
-			if(isover)
-			{
-				return ;
-			}
-		
+			
 		} catch (Throwable e) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e1) {
-			}
+			this.sleep(100);
+		}
+    }
+    
+    private void sleep(int i)
+    {
+    	try {
+			Thread.sleep(i);
+		} catch (InterruptedException e1) {
 		}
     }
 
@@ -163,12 +174,12 @@ public class ImportSpout implements IRichSpout{
     }
         @Override
     public void ack(Object msgId) {
-	
+        	this.status.ackCnt++;
     }
 
     @Override
     public void fail(Object msgId) {
-	
+    	this.status.failCnt++;
     }
 
     @Override

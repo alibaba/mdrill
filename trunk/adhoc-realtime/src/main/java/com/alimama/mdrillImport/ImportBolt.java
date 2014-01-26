@@ -16,10 +16,13 @@ public class ImportBolt implements IRichBolt {
 	private static Logger LOG = Logger.getLogger(ImportBolt.class);
     private static final long serialVersionUID = 1L;
     private String confPrefix;
+    boolean istanxpv=false;
 
     public ImportBolt(String confPrefix)
     {
     	this.confPrefix=confPrefix;
+    	istanxpv=this.confPrefix.indexOf("tanx_pv")>=0;
+
     }
 
 	private OutputCollector collector=null;
@@ -32,6 +35,7 @@ public class ImportBolt implements IRichBolt {
     private DataParser parse=null;
 	private BoltStatus status=null;
     int buffersize=5000;
+    int intMapsize=500;
 
 
     @Override
@@ -46,6 +50,7 @@ public class ImportBolt implements IRichBolt {
     	
 		int timeout=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-timeoutBolt")));
 		this.buffersize=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-boltbuffer")));
+    	this.intMapsize=Math.min(this.buffersize, 1024);
 
     	this.status=new BoltStatus();
 
@@ -54,15 +59,24 @@ public class ImportBolt implements IRichBolt {
     	this.commit=new mdrillCommit(parse,conf,this.confPrefix);
     	
     	this.collector=collector;
-    	this.nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(10000);
+    	this.nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(this.intMapsize);
     }
     
 	
     @Override
-    public void execute(Tuple input) {
+    public synchronized void execute(Tuple input) {
     	this.status.InputCount++;
     	BoltStatKey key=(BoltStatKey) input.getValue(0);
     	BoltStatVal bv=(BoltStatVal)input.getValue(1);
+    	
+    	
+    	if(istanxpv)
+		{
+			if(key.list.length>=3&&"mm_12229823_1573806_11174236".equals(key.list[2]))
+			{
+				LOG.info("yanniandebugbolt:"+key.toString()+"==="+bv.toString());
+			}
+		}
 
     	BoltStatVal statval=nolockbuffer.get(key);
     	if(statval==null)
@@ -87,8 +101,8 @@ public class ImportBolt implements IRichBolt {
 		}
     	
 	    	HashMap<BoltStatKey, BoltStatVal> buffer=nolockbuffer;
-			nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(buffersize);
-			this.commit.updateAll(buffer,key.getGroupts());
+			nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(this.intMapsize);
+			this.commit.updateAll(buffer,istanxpv);
 		
 		LOG.info(this.confPrefix+" bolt flush:groupsize="+buffer.size()+","+this.status.toString()+","+this.commit.toDebugString());
 		this.timeoutCheck.reset();

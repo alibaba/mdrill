@@ -35,6 +35,11 @@ public class UniqConfig {
 	}
 	
 	
+	public static int MaybeRepCheckCacheSize()
+	{
+		return 10240;
+	}
+	
 	public static long logRollIntervel()
 	{
 		return 1000l;

@@ -193,6 +193,12 @@ public class MdrillService {
 
 		for(SolrInputDocument doc:docs)
 		{
+			if("mm_12229823_1573806_11174236".equals(doc.getFieldValue("pid")))
+			{
+				LOG.info("####yannian debug pid :"+doc);
+
+			}
+			
 			doc.setField("mdrill_uuid", uuid());
 			if(!doc.containsKey("mdrillPartion"))
 			{
@@ -247,6 +253,7 @@ public class MdrillService {
 	
 			for (String s : write.list) {
 				String url = "http://" + s + "/solr/" + projectName;
+				try{
 				CommonsHttpSolrServer server = new CommonsHttpSolrServer(url);
 				server.setConnectionManagerTimeout(60000l);
 				server.setSoTimeout(60000);
@@ -261,6 +268,11 @@ public class MdrillService {
 				req.add(docs);
 				UpdateResponse rsp = req.process(server);
 				rtn.put(s, rsp.toString());
+				}catch(Throwable e)
+				{
+					LOG.error("insert error "+url,e);
+					throw new Exception(e);
+				}
 			}
 
 		}else if(tp.equals(FlushType.sync)||tp.equals(FlushType.syncHdfs))
@@ -269,6 +281,7 @@ public class MdrillService {
 			{
 				for (String s : write.list) {
 					String url = "http://" + s + "/solr/" + projectName;
+					try{
 					CommonsHttpSolrServer server = new CommonsHttpSolrServer(url);
 					server.setConnectionManagerTimeout(60000l);
 					server.setSoTimeout(60000);
@@ -283,6 +296,10 @@ public class MdrillService {
 					req.add(docs);
 					UpdateResponse rsp = req.process(server);
 					rtn.put(s, rsp.toString());
+					}catch(Throwable e)
+					{
+						LOG.error("insert error "+url,e);
+						throw new Exception(e);					}
 				}
 			}
 		}

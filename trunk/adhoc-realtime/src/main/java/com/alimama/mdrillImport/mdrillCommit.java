@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.apache.solr.common.SolrInputDocument;
@@ -14,37 +16,44 @@ import com.alimama.mdrill.ui.service.MdrillService;
 
 public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,BoltStatVal>{
 	private static Logger LOG = Logger.getLogger(mdrillCommit.class);
-
+	private static Timer TIMER_LIST=null;  
+	private static Object TIMER_LOCK=new Object();  
     private TimeCacheMap<BoltStatKey, BoltStatVal> group=null;
 	private DataParser parse;
-	private TimeCacheMap.Timeout<BoltStatKey, BoltStatVal> clean=null;
 	private TimeCacheMap.Update<BoltStatKey, BoltStatVal> update=null;
 	private ArrayList<SolrInputDocument> doclist=null;
 	private Object doclistLock=new Object();
 
     private int commitbatch=5000;
     private int buffersize=50000;
-	private TimeOutCheck timeoutCheck=null;
 	private TimeOutCheck timeoutCheckcommit=null;
     private String confPrefix;
 
-	int timeout;
+	private int timeout;
+	private volatile long lastts[]={0,0};
+	private volatile long committs=System.currentTimeMillis();
+
 	public mdrillCommit(DataParser parse,Map conf,String confPrefix)
 	{
+		synchronized (TIMER_LOCK) {
+			if(TIMER_LIST==null)
+			{
+				TIMER_LIST=new Timer(); 
+			}
+		}
+		
     	this.confPrefix=confPrefix;
 
 		this.parse=parse;
 		this.commitbatch=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-commitbatch")));
 		this.buffersize=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-commitbuffer")));
-		this.timeout=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-timeoutBolt")));
-		int timeoutCache=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-timeoutCommit")));
-		timeoutCheck=new TimeOutCheck(this.timeout*1000l);
-		timeoutCheckcommit=new TimeOutCheck(timeoutCache*1000l);
-		this.group=new TimeCacheMap<BoltStatKey, BoltStatVal>(120, this);
+		this.timeout=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-timeoutCommit")));
+		timeoutCheckcommit=new TimeOutCheck(10*1000l);
+		this.group=new TimeCacheMap<BoltStatKey, BoltStatVal>(TIMER_LIST,Math.max(this.timeout, 20), this);
     	this.doclist=new ArrayList<SolrInputDocument>(300);
 		this.update=new TimeCacheMap.Update<BoltStatKey, BoltStatVal>() {
     		@Override
-    		public BoltStatVal update(BoltStatKey key, BoltStatVal old,
+    		public synchronized BoltStatVal update(BoltStatKey key, BoltStatVal old,
     				BoltStatVal newval) {
     			if(old==null)
     			{
@@ -55,53 +64,56 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
     			return rtn;
     		}
     	};
-    	
-    	this.clean=new TimeCacheMap.Timeout<BoltStatKey, BoltStatVal>() {
-			@Override
-			public boolean timeout(BoltStatKey key, BoltStatVal val) {
-				return mdrillCommit.this.lasttimeout>key.getGroupts();
-			}
-    		
-    	};
 	}
-	
-	volatile long lasttimeout=0l;
-	
-	long localMergerDelay=60*1000;
-	long lastts=0;
-
-	public void updateAll(HashMap<BoltStatKey, BoltStatVal> buffer,long logTs)
-	{
-		this.group.updateAll(buffer, this.update);
-		this.maybeupdateAll(logTs);
-	}
-	
-	
-	public void maybeupdateAll(long logTs)
-	{
-		if(timeoutCheck.istimeout(logTs))
-		{
-			this.lasttimeout=logTs-this.timeout;
-			group.fourceTimeout(this.clean,this.update);
-			timeoutCheck.reset();
-		}
 		
+
+	public synchronized void updateAll(HashMap<BoltStatKey, BoltStatVal> buffer,boolean istanxpv)
+	{
+		this.lastts=this.getMinTs(buffer,istanxpv);
+		this.group.updateAll(buffer, this.update);
+
+		group.maybeClean();
 		int ramsize=group.size();
 		if(ramsize>buffersize)
 		{
-			group.fourceTimeout();
+			LOG.info("fourceTimeout:"+this.toDebugString());
+			group.fourceClean();
 		}
-		
-		this.lastts=logTs;
-
-		
 	}
+	
+	private long[] getMinTs(HashMap<BoltStatKey, BoltStatVal> buffer,boolean istanxpv)
+	{
+		long logTs=System.currentTimeMillis();
+		long logTsmax=System.currentTimeMillis();
+
+		for(Entry<BoltStatKey, BoltStatVal> e:buffer.entrySet())
+		{
+			BoltStatKey key=e.getKey();
+			BoltStatVal bv=e.getValue();
+			
+			if(istanxpv)
+			{
+				if(key.list.length>=3&&"mm_12229823_1573806_11174236".equals(key.list[2]))
+				{
+					LOG.info("yanniandebuggetMinTs:"+key.toString()+"==="+bv.toString());
+				}
+			}
+			long ts=bv.getGroupts();
+			logTs=Math.min(logTs, ts);
+			logTsmax=Math.max(logTsmax, ts);
+
+		}
+		return new long[]{logTs,logTsmax};
+	}
+	
+
 
     private static SimpleDateFormat formatHour = new SimpleDateFormat("HH:mm:ss");
     
 	@Override
-	public void expire(BoltStatKey key, BoltStatVal val) {
-		
+	public synchronized void expire(BoltStatKey key, BoltStatVal val) {
+		try{
+			this.committs=val.getGroupts();
 	 	SolrInputDocument doc=new SolrInputDocument();
 
 		String[] groupnames=parse.getGroupName();
@@ -129,10 +141,16 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
     		timeoutCheckcommit.reset();
 		 	this.commit();
     	}
+		}catch(Throwable e)
+		{
+			LOG.info("expire "+this.toDebugString(),e);
+
+		}
 	}
 
 	@Override
-	public void commit() {
+	public synchronized void commit() {
+		try{
 		ArrayList<SolrInputDocument> buffer=null;
 		synchronized (doclistLock) {
 	 		buffer=doclist;
@@ -144,7 +162,7 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 	    	for(int i=0;i<100;i++)
 	    	{
 	    		try {
-					LOG.info(this.confPrefix+" mdrill request:"+buffer.size());
+					LOG.info(this.confPrefix+" mdrill request:"+i+"@"+buffer.size()+","+this.toDebugString());
 					MdrillService.insertLocal(this.parse.getTableName(), buffer,null);
 					break ;
 				} catch (Throwable e) {
@@ -156,10 +174,18 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 				}
 	    	}
     	}
+		}catch(Throwable e)
+		{
+			LOG.info("commit "+this.toDebugString(),e);
+		}
 	}
 
 
 	public String toDebugString() {
-		return "access "+formatHour.format(new Date(lastts))+",doclist="+doclist.size()+",group="+group.size();
+		try {
+		return "access "+formatHour.format(new Date(lastts[0]))+"@"+formatHour.format(new Date(lastts[1]))+"@"+formatHour.format(new Date(this.committs))+",doclist="+doclist.size()+",group="+group.size();
+		} catch (Throwable e) {
+		}
+		return "";
 	}
 }

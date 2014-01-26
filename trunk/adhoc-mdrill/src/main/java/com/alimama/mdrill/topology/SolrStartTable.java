@@ -12,6 +12,8 @@ import java.util.TimerTask;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -201,6 +203,22 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 		
 		return ishdfsmode;
 	}
+	
+	
+	private String cleanPartionDays()
+	{
+		String tablemode=this.getTableMode();
+		String hdfsPral = null;
+		Pattern mapiPattern = Pattern.compile("@cleanPartionDays:([0-9]+)@");
+		Matcher mat = mapiPattern.matcher(tablemode);
+		if (mat.find()) {
+			hdfsPral = mat.group(1);
+		}
+		
+		return hdfsPral;
+		
+		
+	}
 
 	private void syncPartion(String key, Path hdfspartion) throws IOException {
 		String tablemode=this.getTableMode();
@@ -245,7 +263,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 			}catch(Throwable e){
 				isnotrealtime=true;
 			}
-			if(!isnotrealtime&&(isrealtime||fs.exists(realtime)||lfs.exists(localrealtime)))
+			if(isrealtime||(!isnotrealtime&&(fs.exists(realtime)||lfs.exists(localrealtime))))
 			{
 				//TODO nothing
 			}else//离线模式
@@ -318,11 +336,37 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 		boolean ischange = false;
 		HashMap<String, Vertify> hdfsVertify = IndexUtils.readVertifyList(fs,hdfsIndexpath);// partions
 		HashMap<String, Vertify> localVertify = IndexUtils.readVertifyList(lfs,	localIndexPath);// ./data
+		String partionday=cleanPartionDays();
+		String dropCmp=null;
+		
+		try {
+			if(partionday!=null)
+			{
+				dropCmp=this.mdrillpartion.getDropComparePartion(Long.parseLong(partionday));
+			}
+		} catch (Throwable e1) {
+			LOG.info("getDropComparePartion",e1);
+		}
+		
+		
 
 		this.partstat.syncClearPartions();
 
 		for (Entry<String, Vertify> e : hdfsVertify.entrySet()) {
 			String partion = e.getKey();
+			if(partionday!=null&&dropCmp!=null)
+			{
+				try {
+					if(this.mdrillpartion.isAllowDropPartion(partion, dropCmp))
+					{
+						continue;
+					}
+				} catch (Exception e1) {
+					LOG.info("isAllowDropPartion",e1);
+				}
+			}
+			
+			
 			this.partstat.addPartionStat(partion);
 
 			
@@ -339,7 +383,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 		skiplist.add("default");
 		skiplist.add("");
 
-
+		
 		for (Entry<String, Vertify> e : localVertify.entrySet()) {
 			if(skiplist.contains(e.getKey()))
 			{
@@ -440,7 +484,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 			
 		};
 		taskList.add(task);
-		EXECUTE.TIMER.schedule(task, 10000l, 10000l);
+		EXECUTE.schedule(task, 60000l, 10000l);
 		
 	}
 	
@@ -481,7 +525,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 		for(TimerTask t:taskList){
     		t.cancel();
     	}
-    	EXECUTE.TIMER.purge();
+    	EXECUTE.purge();
 		statcollect.setStat(ShardsState.UINIT);
 		this.zkHeatbeat();
 		this.stopService();
@@ -491,10 +535,10 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 	}
 
 	public Boolean isTimeout() {
-		Long timespan = 1000l * 60 * 30;
+		Long timespan = 1000l * 60 * 40;
 		ShardsState stat = statcollect.getStat();
 		if (stat.equals(ShardsState.SERVICE)) {
-			timespan = 1000l * 60 * 20;
+			timespan = 1000l * 60 * 40;
 		}
 		boolean istimeout= isInit.get()&&statcollect.isTimeout(timespan);
 		

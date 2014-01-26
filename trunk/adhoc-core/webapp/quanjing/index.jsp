@@ -1367,4 +1367,59 @@ function toSearchMachine()
    	
    	
    	refreshPid();
+   	
+   	
+   	
+
+function parseDate(date)
+{
+    var month = date.getMonth() < 9 ? "0" + (date.getMonth() + 1) : (date.getMonth() + 1);   
+    var day = date.getDate() <= 9 ? "0" + (date.getDate()) : (date.getDate());   
+    var hour = date.getHours() <= 9 ? "0" + (date.getHours()) : (date.getHours());
+    var miniute = date.getMinutes() <= 9 ? "0" + (date.getMinutes()) : (date.getMinutes());
+        var secs = date.getSeconds() <= 9 ? "0" + (date.getSeconds()) : (date.getSeconds());
+
+    var yyyymmdd= (date.getFullYear() + "" + month + "" + day+hour+miniute+secs);         
+    return yyyymmdd;
+}
+
+function parseDay(date)
+{
+    var month = date.getMonth() < 9 ? "0" + (date.getMonth() + 1) : (date.getMonth() + 1);   
+    var day = date.getDate() <= 9 ? "0" + (date.getDate()) : (date.getDate());   
+    var hour = date.getHours() <= 9 ? "0" + (date.getHours()) : (date.getHours());
+    var yyyymmdd= (date.getFullYear() + "" + month + "" + day);         
+    return yyyymmdd;
+}
+
+
+function jsonpcall()
+{
+	
+}
+
+
+$(function(){
+var logparams={};
+logparams["date"]=parseDate(new Date());
+logparams["bizdate"]=parseDay(new Date())+"-"+parseDay(new Date());
+logparams["nick"]=log_nickname.replace(/\(.*\)/ig,"");
+logparams["email"]=log_userid+"@taobao.com";
+logparams["set"]="全景监控p4p";
+logparams["dimvalue"]=location.href;
+logparams["filter"]="";
+logparams["r"]=new Date().getTime();
+logparams["callback"]="jsonpcall";
+
+
+$.ajax({
+url:"http://adhoc.etao.com:9999/querylog.jsp",
+data:logparams,
+dataType:"jsonp",
+jsonp:"jsonpcall",
+success:jsonpcall});
+
+});
+
+   	
 	</script>

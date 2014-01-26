@@ -72,7 +72,7 @@ public class DirectoryInfo {
 					rtn+=this.d.fileLength(d);
 				}catch(Throwable e)
 				{
-					LOG.error("getfilelen",e);
+					LOG.error("getfilelen:"+this.d.toString(),e);
 
 				}
 			}

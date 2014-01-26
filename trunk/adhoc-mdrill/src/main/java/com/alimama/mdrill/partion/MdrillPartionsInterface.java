@@ -15,7 +15,8 @@ public interface MdrillPartionsInterface {
 	public String SqlFilter(String queryStr) throws Exception;
 	
 	public String InsertPartion(SolrInputDocument doc)  throws Exception;
-	
+	public String getDropComparePartion(long days) throws Exception;
+	public boolean isAllowDropPartion(String partion,String cmp) throws Exception;
 	public HashSet<String> getNameList(FileSystem fs,String inputBase,String startPoint,int dayDelay, int maxRunDays) throws Exception;
 	public HashMap<String,HashSet<String>> indexPartions(HashSet<String> namelist,String startday,int dayDelay, int maxRunDays) throws Exception;
 	public HashMap<String,String> indexVertify(HashMap<String,HashSet<String>> partions,int shards,String startday,int dayDelay, int maxRunDays) throws Exception;

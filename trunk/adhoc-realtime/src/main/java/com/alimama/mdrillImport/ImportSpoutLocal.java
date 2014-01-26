@@ -64,11 +64,11 @@ public class ImportSpoutLocal implements IRichSpout{
 	
     private static SimpleDateFormat formatHour = new SimpleDateFormat("HH:mm:ss");
 
-	private synchronized boolean putdata(DataParser.DataIter log)
+	private boolean putdata(DataParser.DataIter log)
 	{	
     	long ts=log.getTs();
-		BoltStatKey key=new BoltStatKey(log.getGroup(),ts);
-		BoltStatVal val=new BoltStatVal(log.getSum());
+		BoltStatKey key=new BoltStatKey(log.getGroup());
+		BoltStatVal val=new BoltStatVal(log.getSum(),ts);
 		
 		BoltStatVal statval=nolockbuffer.get(key);
 		this.status.ttInput++;
@@ -95,7 +95,7 @@ public class ImportSpoutLocal implements IRichSpout{
     	LOG.info(this.confPrefix+"####total:group="+buffer.size()+",ts:"+formatHour.format(new Date(ts))+",status:"+this.status.toString());
     	nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(buffersize);
 
-		this.commit.updateAll(buffer,key.getGroupts());
+		this.commit.updateAll(buffer,false);
 		if(this.status.ttInput>100000000)
 		{
 			this.status.reset();
@@ -106,51 +106,42 @@ public class ImportSpoutLocal implements IRichSpout{
 	
     @Override
     public void nextTuple()  {
-    	int lineindex=1;
+
 		try {
 			List ttdata = this.reader.read();
 			if(ttdata==null)
 			{
 				return ;
 			}
-			boolean isover=false;
 			for(Object o:ttdata)
 			{
 				this.status.ttInput++;
 				DataParser.DataIter pv=(DataParser.DataIter)o;
 				while(true)
 				{
-					if((lineindex++)%500==0)
-					{
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e1) {
-						}
-					}
-					
 					this.status.groupInput++;
-					if(this.putdata(pv))
-					{
-						isover=true;
-					}
+					this.putdata(pv);
 					if(!pv.next())
 					{
 						break;
 					}
 				}
 			}
-			if(isover)
-			{
-				return ;
-			}
-		
+			
 		} catch (Throwable e) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e1) {
-			}
+			this.sleep();
+		}
+    
+    }
+    
+    private void sleep()
+    {
+    	try {
+			Thread.sleep(100);
+		} catch (InterruptedException e1) {
 		}
     }
+
 
     @Override
     public void close() {

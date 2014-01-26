@@ -162,12 +162,22 @@ public class MakeIndex {
 			for (String input : inputs) {
 				Path p = new Path(inputBase, "*" + input + "*/"+inputmatch+"");
 				System.out.println(p.toString());
+				FileStatus[] list=fs.globStatus(p);
+				if(list==null||list.length==0)
+				{
+					continue;
+				}
 				SequenceFileInputFormat.addInputPath(job, p);
 			}
 		} else {
 			for (String input : inputs) {
 				Path p = new Path(inputBase, "*" + input + "*/"+inputmatch+"");
 				System.out.println(p.toString());
+				FileStatus[] list=fs.globStatus(p);
+				if(list==null||list.length==0)
+				{
+					continue;
+				}
 				FileInputFormat.addInputPath(job, p);
 			}
 		}

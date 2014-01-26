@@ -64,7 +64,7 @@ public class RealTimeDirectoryThread {
 		
 		taskList.add(task);
 		
-		RealTimeDirectorUtils.timerquick.schedule(task, 300, 300);
+		RealTimeDirectorUtils.getQuickTimer().schedule(task, 300, 300);
 	
 	}
 	
@@ -83,7 +83,7 @@ public class RealTimeDirectoryThread {
 			
 		};
 		taskList.add(task);
-		RealTimeDirectorUtils.timerslow.schedule(task, len, len);
+		RealTimeDirectorUtils.getSlowTimer().schedule(task, len, len);
 	}
 	
 	
@@ -125,7 +125,7 @@ public class RealTimeDirectoryThread {
 			}
 		};
 		taskList.add(task);
-		RealTimeDirectorUtils.timerquick.schedule(task, len, len);
+		RealTimeDirectorUtils.getQuickTimer().schedule(task, len, len);
 	}
 	
 	
@@ -141,8 +141,8 @@ public class RealTimeDirectoryThread {
     	for(TimerTask t:taskList){
     		t.cancel();
     	}
-    	RealTimeDirectorUtils.timerslow.purge();
-    	RealTimeDirectorUtils.timerquick.purge();
+    	RealTimeDirectorUtils.getSlowTimer().purge();
+    	RealTimeDirectorUtils.getQuickTimer().purge();
     }
     
     public void startSyncFromHdfs(final Runnable callback) throws IOException
@@ -201,6 +201,6 @@ public class RealTimeDirectoryThread {
 			}
 		};
 		taskList.add(task);
-		RealTimeDirectorUtils.timerslow.schedule(task, 0);
+		RealTimeDirectorUtils.getSlowTimer().schedule(task, 0);
 	}
 }

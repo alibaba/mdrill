@@ -161,7 +161,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 		this.freeBlock();
 	    if (!isClone) {
 		if (isOpen) {
-			log.info("##buffer_close##"+"@free:"+BlockBufferMalloc.free.size()+"#malloc:"+BlockBufferMalloc.mallocTimes.get()+":"+BlockBufferMalloc.reusedTimes.get()+"@create:"+this.createcount);
+//			log.info("##buffer_close##"+"@free:"+BlockBufferMalloc.free.size()+"#malloc:"+BlockBufferMalloc.mallocTimes.get()+":"+BlockBufferMalloc.reusedTimes.get()+"@create:"+this.createcount);
 		    descriptor.in.close();
 		    isOpen = false;
 		} else {

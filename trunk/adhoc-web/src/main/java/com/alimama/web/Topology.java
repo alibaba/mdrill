@@ -61,17 +61,19 @@ public class Topology {
 			con.setTaskerrors(stat.task_errors(stormId, tid));
 			
 			StringBuffer buff=new StringBuffer();
-			buff.append("任务:"+ String.format("%03d",con.getTaskId())+"<br>");
-			buff.append("机器域名:"+con.getHostname()+"<br>");
-			buff.append("nodeport:"+con.getNp()+"<br>");
+			buff.append("getComponentId:"+ con.getTaskInfo().getComponentId()+"<br>\r\n");
+			buff.append("任务:"+ String.format("%03d",con.getTaskId())+"<br>\r\n");
+			buff.append("机器域名:"+con.getHostname()+"<br>\r\n");
+			buff.append("nodeport:"+con.getNp()+"<br>\r\n");
 			SimpleDateFormat fmt=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			if(con.getStarttime()!=null)
 			{
 				String yyyymmmddd=fmt.format(new Date(1000l*con.getStarttime()));
-				buff.append("启动时间:"+yyyymmmddd+"<br>");
+				buff.append("启动时间:"+yyyymmmddd+"<br>\r\n");
 			}
-			buff.append("心跳信息:"+con.getHb()+"<br>");
-			buff.append("task异常信息:"+con.getTaskerrors()+"<br>");
+			buff.append("心跳信息:"+con.getHb()+"<br>\r\n");
+			buff.append("task异常信息:"+con.getTaskerrors()+"<br>\r\n");
+
 			
 			rtn.add(buff.toString());
 			}catch(Throwable e){

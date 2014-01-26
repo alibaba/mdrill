@@ -231,7 +231,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
 			
 		};
 		taskList.add(task);
-		EXECUTE.TIMER.schedule(task, 100l, 10000l);
+		EXECUTE.schedule(task, 100l, 10000l);
     }
     
 	ArrayList<TimerTask> taskList=new ArrayList<TimerTask>();
@@ -278,7 +278,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
     	for(TimerTask t:taskList){
     		t.cancel();
     	}
-    	EXECUTE.TIMER.purge();
+    	EXECUTE.purge();
     	
     	
 		statcollect.setStat(ShardsState.UINIT);
@@ -288,7 +288,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
         
     public Boolean isTimeout()
     {
-		return isInit.get()&&statcollect.isTimeout(1000l*60*20);
+		return isInit.get()&&statcollect.isTimeout(1000l*60*40);
     }
     
     private Interval hbInterval=new Interval();;

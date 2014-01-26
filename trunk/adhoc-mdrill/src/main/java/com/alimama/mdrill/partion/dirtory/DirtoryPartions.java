@@ -35,6 +35,8 @@ public class DirtoryPartions implements MdrillPartionsInterface{
 	public String InsertPartion(SolrInputDocument doc)  throws Exception{
 		return String.valueOf(doc.getFieldValue(this.fieldname));
 	}
+	
+	
 
 	@Override
 	public String[] SqlPartions(String queryStr) throws Exception {
@@ -128,6 +130,17 @@ public class DirtoryPartions implements MdrillPartionsInterface{
 		rtn.setPartionType(this.parttype);
 		rtn.init();
 		return rtn;
+	}
+
+	@Override
+	public String getDropComparePartion(long days) throws Exception {
+		return null;
+	}
+
+	@Override
+	public boolean isAllowDropPartion(String partion, String cmp)
+			throws Exception {
+		return false;
 	}
 
 }

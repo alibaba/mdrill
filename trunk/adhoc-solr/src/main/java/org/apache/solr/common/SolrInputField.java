@@ -32,6 +32,10 @@ public class SolrInputField implements Iterable<Object>, Serializable
   Object value = null; 
   float boost = 1.0f;
   
+  public SolrInputField(){
+	  
+  }
+  
   public SolrInputField( String n )
   {
     this.name = n;

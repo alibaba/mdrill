@@ -24,7 +24,7 @@ public class Topology {
 		int mb=Integer.parseInt(args[3]);
 		conf.put("topology.worker.childopts", "-Xms"+mb+"m -Xmx"+mb+"m -Xmn"+(mb/2)+"m -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-import-%port%.log ");
 		conf.setNumWorkers(workescount);
-		conf.setNumAckers(Math.max(workescount/4, 4));
+		conf.setNumAckers(Math.max(workescount/2, 4));
 		String peinding=args[4];
 		conf.setMaxSpoutPending(Integer.parseInt(peinding));
 		
@@ -48,7 +48,7 @@ public class Topology {
 		for(String prefix:prefixlist)
 		{
 			String mode=String.valueOf(conf.get(prefix+"-mode"));
-			String threadconfig=conf.get(prefix+"-threads")==null?String.valueOf(conf.get(prefix+"-threads")):String.valueOf(workescount);
+			String threadconfig=conf.get(prefix+"-threads")!=null?String.valueOf(conf.get(prefix+"-threads")):String.valueOf(workescount);
 			int threads=workescount;
 			try{
 				threads=Integer.parseInt(threadconfig);
@@ -56,12 +56,21 @@ public class Topology {
 			{
 				threads=workescount;
 			}
+			int threads_reduce=threads;
+			String threadconfig_reduce=conf.get(prefix+"-threads_reduce")!=null?String.valueOf(conf.get(prefix+"-threads_reduce")):String.valueOf(threads_reduce);
+			try{
+				threads_reduce=Integer.parseInt(threadconfig_reduce);
+			}catch(Throwable e)
+			{
+				threads_reduce=threads;
+			}
+			
 			if(mode.equals("local"))
 			{
-				builder.setSpout("map_"+prefix, new ImportSpoutLocal(prefix), threads*2);
+				builder.setSpout("map_"+prefix, new ImportSpoutLocal(prefix), threads);
 			}else{
-				builder.setSpout("map_"+prefix, new ImportSpout(prefix), threads*2);
-				builder.setBolt("reduce_"+prefix, new ImportBolt(prefix), threads).fieldsGrouping("map_"+prefix, new Fields("key") );
+				builder.setSpout("map_"+prefix, new ImportSpout(prefix), threads);
+				builder.setBolt("reduce_"+prefix, new ImportBolt(prefix), threads_reduce).fieldsGrouping("map_"+prefix, new Fields("key") );
 			}
 		}
 		

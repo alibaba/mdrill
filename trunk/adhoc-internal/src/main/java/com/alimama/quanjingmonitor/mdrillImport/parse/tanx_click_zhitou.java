@@ -89,7 +89,7 @@ public class tanx_click_zhitou extends com.alimama.mdrillImport.DataParser{
 		@Override
 		public long getTs() {
 			 long ts = Long.parseLong(pvlog.getClickTime());
-			 return (ts/300)*300000;
+			 return (ts/10)*10000;
 		}
 		
 

@@ -9,12 +9,16 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Logger;
+
+
 
 
 
 public class TimeCacheMap<K, V> implements Serializable{
 	private static final long serialVersionUID = 1L;
     private static final int DEFAULT_NUM_BUCKETS = 3;
+	private static Logger LOG = Logger.getLogger(TimeCacheMap.class);
 
     public static interface ExpiredCallback<K, V> {
         public void expire(K key, V val);
@@ -33,6 +37,10 @@ public class TimeCacheMap<K, V> implements Serializable{
     
     
     private int numBuckets;
+	private long lasttime=System.currentTimeMillis();
+	private long localMergerDelay=20*1000l;
+
+    
     public TimeCacheMap(Timer timer,int expirationSecs, int numBuckets, ExpiredCallback<K, V> callback) {
     	this.numBuckets=numBuckets;
         if(numBuckets<2) {
@@ -43,33 +51,25 @@ public class TimeCacheMap<K, V> implements Serializable{
             _buckets.add(new HashMap<K, V>());
         }
 
-
         _callback = callback;
+        
         final long expirationMillis = expirationSecs * 1000L;
         final long sleepTime = expirationMillis / (numBuckets-1);
-        
+        this.localMergerDelay=sleepTime-100;
         if(timer==null)
         {
         _cleaner = new Thread(new Runnable() {
             public void run() {
-                try {
-                    while(true) {
-                        Map<K, V> dead = null;
-                        Thread.currentThread().sleep(sleepTime);
-                        synchronized(_lock) {
-                            dead = _buckets.removeLast();
-                            _buckets.addFirst(new HashMap<K, V>());
-                        }
-                        if(_callback!=null) {
-                            for(Entry<K, V> entry: dead.entrySet()) {
-                                _callback.expire(entry.getKey(), entry.getValue());
-                            }
-                            _callback.commit();
-                        }
-                    }
-                } catch (InterruptedException ex) {
+					while (true) {
+						LOG.info("_cleaner start");
+						try {
+							Thread.currentThread().sleep(sleepTime);
+							TimeCacheMap.this.maybeClean();
+						} catch (Throwable ex) {
+							LOG.error("_cleaner", ex);
+						}
+					}
 
-                }
             }
         });
         _cleaner.setDaemon(true);
@@ -77,31 +77,86 @@ public class TimeCacheMap<K, V> implements Serializable{
         
         }else{
         	task=new TimerTask() {
-				
 				@Override
 				public void run() {
-					 try {
-	                        Map<K, V> dead = null;
-	                        synchronized(_lock) {
-	                            dead = _buckets.removeLast();
-	                            _buckets.addFirst(new HashMap<K, V>());
-	                        }
-	                        if(_callback!=null) {
-	                            for(Entry<K, V> entry: dead.entrySet()) {
-	                                _callback.expire(entry.getKey(), entry.getValue());
-	                            }
-	                            _callback.commit();
-	                        }
-	                    
-		                } catch (Throwable ex) {
-
-		                }					
+					try {
+						TimeCacheMap.this.maybeClean();
+					} catch (Throwable ex) {
+						LOG.error("_cleaner", ex);
+					}
 				}
 			};
         	timer.schedule(task, sleepTime,sleepTime);
         	this.timer=timer;
 
         }
+    }
+    
+    
+     
+    private  void timerReset()
+	{
+		lasttime=System.currentTimeMillis();
+	}
+    
+	private boolean isTimeout()
+	{
+		long time=System.currentTimeMillis();
+    	if((lasttime+localMergerDelay)<=time)
+		{
+			return true ;
+		}
+    	
+    	return false;
+	}
+    
+    public void maybeClean()
+    {
+        synchronized(_lock) {
+	    	if(!this.isTimeout())
+	    	{
+	    		return ;
+	    	}
+	    	this.timerReset();
+        }
+		 	
+        this.clean();
+	
+    }
+    
+    private void clean()
+    {
+    	try {
+            Map<K, V> dead = null;
+            synchronized(_lock) {
+                dead = _buckets.removeLast();
+                _buckets.addFirst(new HashMap<K, V>());
+            
+            }
+            if(_callback!=null) {
+             	synchronized(_callback) {
+	                for(Entry<K, V> entry: dead.entrySet()) {
+	                    _callback.expire(entry.getKey(), entry.getValue());
+	                }
+	                _callback.commit();
+             	}
+            }
+            
+           
+        
+        } catch (Throwable ex) {
+				LOG.error("_cleaner maybeClean", ex);
+        }	
+    }
+    
+    
+    public void fourceClean()
+    {
+        synchronized(_lock) {
+	    	this.timerReset();
+        }
+        this.clean();					
+	
     }
     
     public void fourceTimeout(Timeout<K, V> fetch,Update<K, V> d)
@@ -116,27 +171,31 @@ public class TimeCacheMap<K, V> implements Serializable{
     	}
 
          if(_callback!=null&&lastdata!=null) {
-        	 HashMap<K, V> needupdate=new HashMap<K, V>();
-        	 for(HashMap<K, V> dead:lastdata)
-        	 {
-	             for(Entry<K, V> entry: dead.entrySet()) {
-	            	 K key=entry.getKey();
-	            	 V val=entry.getValue();
-	            	 if(fetch.timeout(key,val))
-	            	 {
-	            		 _callback.expire(key, val);
-	            	 }else{
-	            		 needupdate.put(key, val);
-	            	 }
-	             }
-        	 }
-        	 
-        	 _callback.commit();
+          	synchronized(_callback) {
 
-        	 if(needupdate.size()>0)
-        	 {
-        		 this.updateAll(needupdate, d);
-        	 }
+	        	 HashMap<K, V> needupdate=new HashMap<K, V>();
+	        	 for(HashMap<K, V> dead:lastdata)
+	        	 {
+		             for(Entry<K, V> entry: dead.entrySet()) {
+		            	 K key=entry.getKey();
+		            	 V val=entry.getValue();
+		            	 if(fetch.timeout(key,val))
+		            	 {
+		            		 _callback.expire(key, val);
+		            	 }else{
+		            		 needupdate.put(key, val);
+		            	 }
+		             }
+	        	 }
+	        	 
+	        	 _callback.commit();
+	        	 
+	
+	        	 if(needupdate.size()>0)
+	        	 {
+	        		 this.updateAll(needupdate, d);
+	        	 }
+          	}
         	 
          }
     }
@@ -153,6 +212,8 @@ public class TimeCacheMap<K, V> implements Serializable{
     	}
 
          if(_callback!=null&&lastdata!=null) {
+         	synchronized(_callback) {
+
         	 for(HashMap<K, V> dead:lastdata)
         	 {
 	             for(Entry<K, V> entry: dead.entrySet()) {
@@ -161,6 +222,7 @@ public class TimeCacheMap<K, V> implements Serializable{
         	 }
         	 
         	 _callback.commit();
+         	}
          }
     }
 
