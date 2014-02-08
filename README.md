@@ -26,9 +26,12 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
  2013.12.03 version 0.20.2-alpha 全文检索模式优化 <a href="https://github.com/alibaba/mdrill/wiki/020_2">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUeabpfm9bHwG" target="_blank">源码下载</a>) <br>
  2013.12.05 version 0.20.3-alpha bugfix (alpha版本，慎用。 <a href="http://yunpan.cn/QU9u6YIRUyVin" target="_blank">源码下载</a>) <br>
  2014.01.02 version 0.20.4-alpha 通过editlog来保证实时数据的可靠性 <a href="https://github.com/alibaba/mdrill/wiki/0_20_4_alpha" >see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QDTNyLH6NjyeA" target="_blank">源码下载</a>) <br>
- 2014.01.14 version 0.20.5-alpha bug fix (<a href="http://yunpan.cn/QzP6H2vfgW5k8" target="_blank">源码下载</a>) <br>
- 2014.01.26 version 0.20.6-alpha bug fix (推荐版本。 <a href="http://yunpan.taobao.com/share/link/N62RcRYGa" target="_blank">源码下载</a> 依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
+ 2014.01.14 version 0.20.5-alpha bug fix (<a href="http://yunpan.cn/QzP6H2vfgW5k8" target="_blank">下载</a>) <br>
+ 2014.01.26 version 0.20.6-alpha bug fix (<a href="http://yunpan.taobao.com/share/link/N62RcRYGa" target="_blank">下载</a>) <br>
+ 2014.02.08 version 0.20.7-alpha cache改进 <a href="https://github.com/alibaba/mdrill/wiki/0.20.7">see detail</a>  (推荐版本。 <a href="http://yunpan.taobao.com/share/link/662RdRlqL" target="_blank">下载</a> 依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
+
  
+ http://yunpan.taobao.com/share/link/662RdRlqL
  <h1>版本源码路径</h1>
  https://github.com/alibaba/mdrill/tree/master/release  <br>
 
