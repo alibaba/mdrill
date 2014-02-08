@@ -60,8 +60,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.CRC32;
 
-public class UnInvertedField extends UnInvertedFieldBase implements GrobalCache.ILruMemSizeCache{
-	  public static Logger log = LoggerFactory.getLogger(UnInvertedField.class);
+public class UnInvertedField extends UnInvertedFieldBase {
+	 public static Logger log = LoggerFactory.getLogger(UnInvertedField.class);
 
 	public static double MINVALUE_FILL=Math.min(Long.MIN_VALUE,Double.MIN_VALUE);
 	public static double MINVALUE=MINVALUE_FILL+10000;
@@ -253,7 +253,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 	}
 	
 	private void uninvert(String field,SegmentReader reader,IndexSchema schema,boolean isreadDouble) throws IOException {
-		SolrCore.log.info("####UnInverted#### SegmentReader begin");
+		UnInvertedField.log.info("####UnInverted#### SegmentReader begin");
 		this.field = field;
 		if(this.checkEmpty())
 		{
@@ -318,13 +318,13 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		
 		total_time = (int) (System.currentTimeMillis() - startTime);
 		this.tnr.setUni(this);
-		SolrCore.log.info("####UnInverted#### Create "+this.toString() +" " + this.isMultiValued + "@" + key+ ",dataType=" + dataType+",");
+		UnInvertedField.log.info("####UnInverted#### Create "+this.toString() +" " + this.isMultiValued + "@" + key+ ",dataType=" + dataType+",");
 		
 	}
 		
 	private void uninvert(String field,
 			SolrIndexSearcher searcher, IndexReader reader) throws IOException {
-		SolrCore.log.info("####UnInverted#### begin");
+		UnInvertedField.log.info("####UnInverted#### begin");
 
 		this.field = field;
 		if(this.checkEmpty())
@@ -356,7 +356,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 //				this.tnr.setUni(this);
 //				this.dataType = UnInvertedFieldUtils.getDataType(this.ft);
 //				total_time = (int) (System.currentTimeMillis() - startTime);
-//				SolrCore.log.info("####UnInverted#### Load "+this.toString() +" " + this.isMultiValued + "@" + key	+ ",dataType=" + dataType+",");
+//				UnInvertedField.log.info("####UnInverted#### Load "+this.toString() +" " + this.isMultiValued + "@" + key	+ ",dataType=" + dataType+",");
 //				return;
 //			}else{
 //				this.setdefault();
@@ -378,7 +378,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 
 		total_time = (int) (System.currentTimeMillis() - startTime);
 		this.tnr.setUni(this);
-		SolrCore.log.info("####UnInverted#### Create "+this.toString() +" " + this.isMultiValued + "@" + key+ ",dataType=" + dataType+",");
+		UnInvertedField.log.info("####UnInverted#### Create "+this.toString() +" " + this.isMultiValued + "@" + key+ ",dataType=" + dataType+",");
 	}
   
 	private boolean checkEmpty()
@@ -515,6 +515,8 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		uninvert(field, reader,schema,isreadDouble);
 	}
   
+	
+	
 	public static UnInvertedField getUnInvertedField(final String field,
 			SolrIndexReader reader) throws IOException {
 		final Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
@@ -522,22 +524,31 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		final ILruMemSizeKey key = new GrobalCache.StringKey(searcher.getPartionKey() + "@@" + field + "@@"	+ LuceneUtils.crcKey(reader));
 		UnInvertedField uif = (UnInvertedField)cache.get(key);
 		if (uif == null) {
+			Object lockobj=LOCK.get(key);
+			if(lockobj==null)
+			{
+				lockobj=new Object();
+				LOCK.put(key, lockobj);
+			}
+			
+			final Object lockthr=lockobj;
+			
+			
 			ExecutorCompletionService<UnivertPool> serv=new ExecutorCompletionService<UnivertPool>(pool);
 			Callable<UnivertPool> task = new Callable<UnivertPool>() {
 			      public UnivertPool call() throws Exception {
 						UnivertPool rtnuif=new  UnivertPool();
-//					TryLock lock=new TryLock(searcher.getFieldcacheDir());
 					try{
-//						lock.tryLock();
-						rtnuif.uni =  (UnInvertedField)cache.get(key);
-						if (rtnuif.uni == null) {
-							rtnuif.uni = new UnInvertedField(field, searcher,searcher.getReader());
-							cache.put(key, rtnuif.uni);
+						synchronized (lockthr) {
+							rtnuif.uni =  (UnInvertedField)cache.get(key);
+							if (rtnuif.uni == null) {
+								rtnuif.uni = new UnInvertedField(field, searcher,searcher.getReader());
+								cache.put(key, rtnuif.uni);
+							}
 						}
 					}catch(IOException e){
 						rtnuif.e=e;
 					}finally{
-//						lock.unlock();
 						rtnuif.isfinish.set(true);
 					}
 					return rtnuif;
@@ -571,29 +582,39 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		IOException e=null;
 	}
 
+	private static Cache<ILruMemSizeKey, Object> LOCK = Cache.synchronizedCache(new SimpleLRUCache<ILruMemSizeKey, Object>(256));
 
+	
 	public static UnInvertedField getUnInvertedField(final String field,final SegmentReader reader,String partion,final IndexSchema schema,final boolean isreadDouble) throws IOException
 	{
 		final Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
-		final ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+String.valueOf(isreadDouble)+"@"+partion + "@" + field + "@"	+reader.getStringCacheKey()+"@"+reader.uuid+"@"+ LuceneUtils.crcKey(reader)+"@"+reader.getSegmentName());
+		final ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+String.valueOf(isreadDouble) + "@" + field + "@"	+reader.getStringCacheKey()+"@"+reader.getSegmentName());
 		UnInvertedField uif = (UnInvertedField)cache.get(key);
 		if (uif == null) {
+			Object lockobj=LOCK.get(key);
+			if(lockobj==null)
+			{
+				lockobj=new Object();
+				LOCK.put(key, lockobj);
+			}
+			
+			final Object lockthr=lockobj;
+			
 			ExecutorCompletionService<UnivertPool> serv=new ExecutorCompletionService<UnivertPool>(pool);
 			Callable<UnivertPool> task = new Callable<UnivertPool>() {
 			      public UnivertPool call() throws Exception {
 					UnivertPool rtnuif=new  UnivertPool();
-//					TryLock lock=new TryLock(reader.directory());
 					try{
-//						lock.tryLock();
-						rtnuif.uni =  (UnInvertedField)cache.get(key);
-						if (rtnuif.uni == null) {
-							rtnuif.uni = new UnInvertedField(field, reader,schema,isreadDouble);
-							cache.put(key, rtnuif.uni);
+						synchronized (lockthr) {
+							rtnuif.uni =  (UnInvertedField)cache.get(key);
+							if (rtnuif.uni == null) {
+								rtnuif.uni = new UnInvertedField(field, reader,schema,isreadDouble);
+								cache.put(key, rtnuif.uni);
+							}
 						}
 					}catch(IOException e){
 						rtnuif.e=e;
 					}finally{
-//						lock.unlock();
 						rtnuif.isfinish.set(true);
 					}
 					return rtnuif;

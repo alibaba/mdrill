@@ -44,6 +44,8 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
 
+import org.apache.lucene.util.cache.Cache;
+import org.apache.lucene.util.cache.SimpleLRUCache;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerFactory;
@@ -58,6 +60,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.search.QParserPlugin;
+
+import com.alimama.mdrill.utils.UniqConfig;
 
 /**
  * @since solr 1.3
@@ -645,8 +649,8 @@ public class SolrResourceLoader implements ResourceLoader
 				+ "]";
 	}
   }
-  private static java.util.concurrent.ConcurrentHashMap<PartionKey,Long> cacheFlushKeyMap=new ConcurrentHashMap<SolrResourceLoader.PartionKey, Long>();
-  
+	private static Cache<PartionKey,Long> cacheFlushKeyMap = Cache.synchronizedCache(new SimpleLRUCache<PartionKey,Long>(1024));
+
  
 
   public static void SetCacheFlushKey(PartionKey p,long key)
@@ -656,10 +660,6 @@ public class SolrResourceLoader implements ResourceLoader
 	  if(p!=null)
 	  {
 		  cacheFlushKeyMap.put(p, key);
-		  if(cacheFlushKeyMap.size()>1024)
-		  {
-			  cacheFlushKeyMap.clear();
-		  }
 	  }
 	  
   }
@@ -684,7 +684,13 @@ public class SolrResourceLoader implements ResourceLoader
 			  return rtn;
 		  }
 	  }
-	  return SolrResourceLoader.cacheFlushKey.get();
+	  long rtn= SolrResourceLoader.cacheFlushKey.get();
+	  
+	  if(p!=null)
+	  {
+		  cacheFlushKeyMap.put(p, rtn);
+	  }
+	  return rtn;
   }
   
   

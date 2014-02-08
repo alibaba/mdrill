@@ -14,6 +14,10 @@ public String getIpAddr(HttpServletRequest request) {
         
         
           Cookie[] cookies = request.getCookies(); 
+          if(cookies==null)
+          {
+          	return ip;
+          }
 			  for(int i=0;i<cookies.length;i++){
 			      if (cookies[i].getValue().indexOf("ip")>=0||cookies[i].getName().indexOf("ip")>=0){
 			          ip =ip+ ","+cookies[i].getValue();

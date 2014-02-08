@@ -2,8 +2,11 @@ package com.alimama.mdrill.hdfsDirectory;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.zip.CRC32;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,8 +22,11 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LinkFSDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.cache.Cache;
+import org.apache.lucene.util.cache.SimpleLRUCache;
 
 import com.alimama.mdrill.buffer.BlockBufferInput;
+import com.alimama.mdrill.buffer.CacheKeyBuffer;
 
 
 public class FileSystemDirectory extends Directory {
@@ -32,6 +38,78 @@ public class FileSystemDirectory extends Directory {
     private boolean isAllowMove=false;
     
     private boolean isUsedBlockBuffer=false;
+    
+	private Cache<CacheKeyBuffer, String> CACHE_BUFFER = Cache.synchronizedCache(new SimpleLRUCache<CacheKeyBuffer, String>(64));
+	public synchronized String  getCacheKey() {
+		CacheKeyBuffer kkk = new CacheKeyBuffer(new String[0], this.dir_uuid,System.currentTimeMillis() / 600000l,this.getP());
+
+		String rtn = CACHE_BUFFER.get(kkk);
+		if (rtn == null) {
+			String[] filelist = null;
+			try {
+				filelist = this.listAll();
+			} catch (Throwable e) {
+				logger.error("listAll", e);
+			}
+
+			rtn = getCacheKey(filelist);
+			CACHE_BUFFER.put(kkk, rtn);
+		}
+
+		return rtn;
+	}
+    
+	  private static SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+
+	public synchronized String getCacheKey(String[] filelist) {
+		CacheKeyBuffer kkk = new CacheKeyBuffer(filelist, this.dir_uuid,
+				System.currentTimeMillis() / 600000l,this.getP());
+
+		String rtn = CACHE_BUFFER.get(kkk);
+		if (rtn == null) {
+
+			StringBuffer buff = new StringBuffer();
+			buff.append(this.getClass().getName()).append("_");
+			buff.append(this.directory.toString()).append("_");
+
+			CRC32 crc32 = new CRC32();
+			crc32.update(0);
+			long filesize = 0;
+			long filemodify = 0;
+
+			if (filelist != null) {
+				buff.append(filelist.length).append("_");
+				for (String s : filelist) {
+					crc32.update(new String(s).getBytes());
+					FileStatus fstatus=null;
+					try {
+						fstatus=this.fileStatus(s) ;
+					} catch (Throwable e) {
+						fstatus=null;
+						logger.error("fileStatus", e);
+					}
+					if(fstatus!=null)
+					{
+						filesize += fstatus.getLen();
+						filemodify = Math.max(filemodify, fstatus.getModificationTime());
+					}
+
+				
+				}
+			}
+			long crcvalue = crc32.getValue();
+			buff.append(crcvalue).append("_");
+			buff.append(filesize).append("_");
+			buff.append(filemodify).append("_");
+			buff.append(format.format(new Date(filemodify)));
+			rtn = buff.toString();
+			CACHE_BUFFER.put(kkk, rtn);
+
+		}
+
+		return rtn;
+
+	}
     
     
     public boolean isUsedBlockBuffer() {
@@ -190,6 +268,15 @@ public class FileSystemDirectory extends Directory {
 	}
 	return fs.getFileStatus(f).getLen();
     }
+    
+    private FileStatus fileStatus(String name) throws IOException {
+    	Path f=this.links.get(name);
+    	if(f==null)
+    	{
+    	    f=new Path(directory, name);
+    	}
+    	return fs.getFileStatus(f);
+        }
 
     /*
      * (non-Javadoc)
@@ -262,7 +349,7 @@ public class FileSystemDirectory extends Directory {
 	FileSystemIndexInput rtn= new FileSystemIndexInput(f, bufferSize);
 	if(this.isUsedBlockBuffer()&&name.indexOf("frq")>=0)
 	{
-		return new BlockBufferInput(rtn,f.toString(),this.getP());
+		return new BlockBufferInput(rtn,this,name,this.getP());
 	}
 	
 	return rtn;

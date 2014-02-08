@@ -197,27 +197,21 @@ public class TermInfosReader implements Closeable {
 			  
 			  if(directory instanceof FSDirectory)
 		      {
-		    	  FSDirectory dddir=(FSDirectory)directory;
-		    	  String absPath=dddir.getDirectory().getAbsolutePath();
-		    	  
-		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),absPath+"@"+quickTis,directory.getP());
-		    		
+		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),directory,quickTis,directory.getP());
 				  if(quicktisInput.isQuickTxtMode.get())
 		    	  {
-					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),absPath+"@"+quickTisTxt,directory.getP());
-					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),absPath+"@"+quickTisVal,directory.getP());
+					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),directory,quickTisTxt,directory.getP());
+					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),directory,quickTisVal,directory.getP());
 		    	  }
 		    }else if(directory instanceof FileSystemDirectory)
 		      {
-		    	FileSystemDirectory dddir=(FileSystemDirectory)directory;
-		    	  String absPath=dddir.directory.toString();
 		    	  
-		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),absPath+"@"+quickTis,directory.getP());
+		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),directory,quickTis,directory.getP());
 		    		
 				  if(quicktisInput.isQuickTxtMode.get())
 		    	  {
-					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),absPath+"@"+quickTisTxt,directory.getP());
-					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),absPath+"@"+quickTisVal,directory.getP());
+					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),directory,quickTisTxt,directory.getP());
+					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),directory,quickTisVal,directory.getP());
 		    	  }
 		    }else{
 			    	quicktisInput.quicktisInput=directory.openInput(quickTis, readBufferSize);
@@ -263,15 +257,11 @@ public class TermInfosReader implements Closeable {
      
       if(directory instanceof FSDirectory)
       {
-    	  FSDirectory dddir=(FSDirectory)directory;
-    	  String absPath=dddir.getDirectory().getAbsolutePath();
-    	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),absPath+"@"+filename,directory.getP());
+    	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),directory,filename,directory.getP());
     	  tiiInput=directory.openInput(indexFileName, readBufferSize); 
     }if(directory instanceof FileSystemDirectory)
     {
-    	FileSystemDirectory dddir=(FileSystemDirectory)directory;
-  	  String absPath=dddir.directory.toString();
-  	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),absPath+"@"+filename,directory.getP());
+  	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),directory,filename,directory.getP());
   	  tiiInput=directory.openInput(indexFileName, readBufferSize); 
   }else{
     	  tisInput=directory.openInput(filename,readBufferSize);

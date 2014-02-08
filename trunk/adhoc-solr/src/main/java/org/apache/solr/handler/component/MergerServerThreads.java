@@ -21,7 +21,7 @@ public class MergerServerThreads {
 	public static ExecutorService[] EXECUTE = new ExecutorService[UniqConfig.getMergerRequestMaxDepth()];
 	static {
 		for (int i = 0; i < EXECUTE.length; i++) {
-			EXECUTE[i] = new ThreadPoolExecutor(Math.max(UniqConfig.getMergerRequestThreads()/3, 1), UniqConfig.getMergerRequestThreads(),
+			EXECUTE[i] = new ThreadPoolExecutor(Math.max(UniqConfig.getMergerRequestThreads()/2, 1), UniqConfig.getMergerRequestThreads(),
                     300L, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<Runnable>());
 			log.info("set ####### " + i);

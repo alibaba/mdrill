@@ -21,13 +21,21 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection;
+import java.util.zip.CRC32;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.index.TermInfosWriter;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.cache.Cache;
+import org.apache.lucene.util.cache.SimpleLRUCache;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.schema.IndexSchema;
+
+import com.alimama.mdrill.buffer.CacheKeyBuffer;
+import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 
 /** A Directory is a flat list of files.  Files may be written once, when they
  * are created.  Once a file is created it may only be opened for read, or
@@ -46,10 +54,70 @@ import org.apache.solr.schema.IndexSchema;
  *
  */
 public abstract class Directory implements Closeable {
+    private static final Log logger = LogFactory.getLog(Directory.class);
 
 	public String dir_uuid=java.util.UUID.randomUUID().toString();
 	private IndexSchema schema=null;
 	private SolrCore core=null;
+	
+	private Cache<CacheKeyBuffer, String> CACHE_BUFFER = Cache.synchronizedCache(new SimpleLRUCache<CacheKeyBuffer, String>(64));
+
+	public synchronized String  getCacheKey() {
+		CacheKeyBuffer kkk = new CacheKeyBuffer(new String[0], this.dir_uuid,System.currentTimeMillis() / 600000l,this.getP());
+
+		String rtn = CACHE_BUFFER.get(kkk);
+		if (rtn == null) {
+			String[] filelist = null;
+			try {
+				filelist = this.listAll();
+			} catch (Throwable e) {
+				logger.error("listAll", e);
+			}
+
+			rtn = getCacheKey(filelist);
+			CACHE_BUFFER.put(kkk, rtn);
+		}
+
+		return rtn;
+	}
+	public synchronized String getCacheKey(String[] filelist)
+    {
+		
+		CacheKeyBuffer kkk = new CacheKeyBuffer(filelist, this.dir_uuid,
+				System.currentTimeMillis() / 600000l,this.getP());
+
+		String rtn = CACHE_BUFFER.get(kkk);
+		if (rtn == null) {
+    	StringBuffer buff=new StringBuffer();
+    	buff.append(this.getClass().getName()).append("_");
+    	buff.append(this.dir_uuid).append("_");
+		CRC32 crc32 = new CRC32();
+		crc32.update(0);
+		long filesize=0;
+    	if(filelist!=null)
+    	{
+    		buff.append(filelist.length).append("_");
+    		for(String s:filelist)
+    		{
+        		crc32.update(new String(s).getBytes());
+        		try{
+        			filesize+=this.fileLength(s);
+        		}catch(Throwable e)
+        		{
+        			logger.error("filelength",e);
+        		}
+    		}
+    	}
+		long crcvalue = crc32.getValue();
+		buff.append(crcvalue).append("_");
+		buff.append(filesize).append("_");
+		rtn = buff.toString();
+		CACHE_BUFFER.put(kkk, rtn);
+
+	}
+
+	return rtn;
+    }
 	
 	private PartionKey p=null;
 	

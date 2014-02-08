@@ -3,8 +3,8 @@ package com.alimama.mdrill.buffer;
 import java.io.IOException;
 
 import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.request.uninverted.GrobalCache;
 import org.slf4j.Logger;
@@ -35,7 +35,9 @@ public class BlockBufferInput extends BufferedIndexInput {
 	private Descriptor descriptor;
 	private boolean isOpen;
 	private boolean isClone;
-	private Object key;
+	private String filename;
+	private Directory dir;
+
 	
 	private PartionKey p=null;
 
@@ -43,11 +45,12 @@ public class BlockBufferInput extends BufferedIndexInput {
 	public blockData lastbuff =new blockData(null, 0);
 	public Long lastBlockIndex = -1l;
 	
-	public BlockBufferInput(IndexInput input,Object key,PartionKey p) {
+	public BlockBufferInput(IndexInput input,Directory dir,String filename,PartionKey p) {
 		super("BlockBufferInput", 1024);
 		this.descriptor = new Descriptor(input);
 		this.isOpen = true;
-		this.key=key;
+		this.dir=dir;
+		this.filename=filename;
 		this.p=p;
 	}
 	
@@ -65,7 +68,7 @@ public class BlockBufferInput extends BufferedIndexInput {
 		}
 		
 		if(blockdata==null){
-			block blk=new block(this.key, blockIndex,this.p);
+			block blk=new block(this.dir,this.filename, blockIndex,this.p);
 			blockdata=(blockData) GrobalCache.fieldValueCache.get(blk);
 			if (blockdata == null) {
 				synchronized (lock) {
@@ -188,18 +191,20 @@ public class BlockBufferInput extends BufferedIndexInput {
 	{
 
 		public IndexInput input;
-		public String key;
+		public String fname;
 		private PartionKey p=null;
+		public Directory d;
 
 		public PartionKey getP() {
 			return p;
 		}
 
-		public KeyInput(IndexInput input, String key,PartionKey p) {
+		public KeyInput(IndexInput input,Directory d, String fname,PartionKey p) {
 			super("KeyInput");
 			this.input = input;
-			this.key = key;
+			this.fname = fname;
 			this.p=p;
+			this.d=d;
 		}
 
 		@Override

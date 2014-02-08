@@ -4,6 +4,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.store.Directory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
@@ -40,29 +41,25 @@ public class BlockBufferMalloc {
 				}
 	}
 	public static class block implements GrobalCache.ILruMemSizeKey{
-		private Object key;
 		private long index;
-		private long flushkey=0;
-		public block(Object key, long pos,PartionKey p) {
+		private String flushkey="";
+		public block(Directory dir,String filename,long pos,PartionKey p) {
 			super();
-			this.key = key;
 			this.index = pos;
-			if(p==null)
-			{
-				this.flushkey=SolrResourceLoader.getCacheFlushKey(null);
-			}else{
-				this.flushkey=SolrResourceLoader.getCacheFlushKey(p);
-			}
+			String[] filelist=new String[]{filename};
+			flushkey=dir.getCacheKey(filelist);
 		}
-		
-
+		@Override
+		public String toString() {
+			return "block [index=" + index + ", flushkey=" + flushkey + "]";
+		}
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + (int) (flushkey ^ (flushkey >>> 32));
+			result = prime * result
+					+ ((flushkey == null) ? 0 : flushkey.hashCode());
 			result = prime * result + (int) (index ^ (index >>> 32));
-			result = prime * result + ((key == null) ? 0 : key.hashCode());
 			return result;
 		}
 		@Override
@@ -74,22 +71,18 @@ public class BlockBufferMalloc {
 			if (getClass() != obj.getClass())
 				return false;
 			block other = (block) obj;
-			if (flushkey != other.flushkey)
+			if (flushkey == null) {
+				if (other.flushkey != null)
+					return false;
+			} else if (!flushkey.equals(other.flushkey))
 				return false;
 			if (index != other.index)
 				return false;
-			if (key == null) {
-				if (other.key != null)
-					return false;
-			} else if (!key.equals(other.key))
-				return false;
 			return true;
 		}
-		@Override
-		public String toString() {
-			return "block [key=" + key + ", index=" + index + ", flushkey="
-					+ flushkey + "]";
-		}
+		
+		
+
 		
 		
 	}

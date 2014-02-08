@@ -81,7 +81,7 @@
  higo.partion.type.rpt_quanjing_tanxclick: "default"
  higo.partion.type.rpt_quanjing_tanxpv: "default"
  higo.partion.type.s_ods_mm_adzones: "default"
-
+ higo.mode.s_ods_mm_adzones: "@fieldcontains:status=A@" 
 
  
  higo.mode.tanx_pv: "@realtime@cleanPartions:99@"

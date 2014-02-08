@@ -23,16 +23,26 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import static java.util.Collections.synchronizedSet;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.zip.CRC32;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.cache.Cache;
+import org.apache.lucene.util.cache.SimpleLRUCache;
+
+import com.alimama.mdrill.buffer.CacheKeyBuffer;
+import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
 
 /**
  * <a name="subclasses"/>
@@ -111,6 +121,7 @@ import org.apache.lucene.util.Constants;
  * @see Directory
  */
 public abstract class FSDirectory extends Directory {
+    private static final Log logger = LogFactory.getLog(FSDirectory.class);
 
   /**
    * Default read chunk size.  This is a conditional default: on 32bit JVMs, it defaults to 100 MB.  On 64bit JVMs, it's
@@ -128,6 +139,75 @@ public abstract class FSDirectory extends Directory {
   private static File getCanonicalPath(File file) throws IOException {
     return new File(file.getCanonicalPath());
   }
+  
+	private Cache<CacheKeyBuffer, String> CACHE_BUFFER = Cache.synchronizedCache(new SimpleLRUCache<CacheKeyBuffer, String>(64));
+
+	public synchronized String  getCacheKey() {
+		CacheKeyBuffer kkk = new CacheKeyBuffer(new String[0], this.dir_uuid,System.currentTimeMillis() / 600000l,this.getP());
+
+		String rtn = CACHE_BUFFER.get(kkk);
+		if (rtn == null) {
+			String[] filelist = null;
+			try {
+				filelist = this.listAll();
+			} catch (Throwable e) {
+				logger.error("listAll", e);
+			}
+
+			rtn = getCacheKey(filelist);
+			CACHE_BUFFER.put(kkk, rtn);
+		}
+
+		return rtn;
+	}
+  
+  
+  private static SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+
+  public synchronized String getCacheKey(String[] filelist)
+ {
+	  CacheKeyBuffer kkk = new CacheKeyBuffer(filelist, this.dir_uuid,
+				System.currentTimeMillis() / 600000l,this.getP());
+
+		String rtn = CACHE_BUFFER.get(kkk);
+		if (rtn == null) {
+		StringBuffer buff = new StringBuffer();
+		buff.append(this.getClass().getName()).append("_");
+		buff.append(this.directory.getAbsolutePath()).append("_");
+		CRC32 crc32 = new CRC32();
+		crc32.update(0);
+		long filesize = 0;
+		long filemodify = 0;
+
+		if (filelist != null) {
+			buff.append(filelist.length).append("_");
+			for (String s : filelist) {
+				crc32.update(new String(s).getBytes());
+				try {
+					filesize += this.fileLength(s);
+				} catch (Throwable e) {
+					logger.error("filelength", e);
+				}
+
+				try {
+					filemodify = Math.max(filemodify, this.fileModified(s));
+				} catch (Throwable e) {
+					logger.error("filelength", e);
+				}
+			}
+		}
+		long crcvalue = crc32.getValue();
+		buff.append(crcvalue).append("_");
+		buff.append(filesize).append("_");
+		buff.append(filemodify).append("_");
+		buff.append(format.format(new Date(filemodify)));
+		rtn = buff.toString();
+		CACHE_BUFFER.put(kkk, rtn);
+
+	}
+
+	return rtn;
+	}
 
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * @param path the path of the directory

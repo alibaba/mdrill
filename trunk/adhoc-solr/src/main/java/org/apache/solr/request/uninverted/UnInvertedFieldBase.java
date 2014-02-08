@@ -6,14 +6,13 @@ import org.apache.solr.request.BigReUsedBuffer;
 import org.apache.solr.request.BigReUsedBuffer.BlockArray;
 import org.apache.solr.schema.FieldType;
 
-public class UnInvertedFieldBase {
+public class UnInvertedFieldBase implements GrobalCache.ILruMemSizeCache{
 
 	public static BigReUsedBuffer<Integer> INT_BUFFER=new BigReUsedBuffer<Integer>();
 	public static BigReUsedBuffer<Short> SHORT_BUFFER=new BigReUsedBuffer<Short>();
 	public static BigReUsedBuffer<Byte> BYTE_BUFFER=new BigReUsedBuffer<Byte>();
 	public static BigReUsedBuffer<Long> LONG_BUFFER=new BigReUsedBuffer<Long>();
 	public static BigReUsedBuffer<Double> DOUBLE_BUFFER=new BigReUsedBuffer<Double>();
-	public static int CacheVersion=34;
 	
 	public AtomicInteger refCnt=new AtomicInteger(0);
 	
@@ -21,7 +20,7 @@ public class UnInvertedFieldBase {
 	public int numTermsInField;
 	public int termsInverted; // number of unique terms that were un-inverted
 	public long termInstances; // total number of references to term numbers
-	public  TermIndex ti;
+	public TermIndex ti;
 	public int total_time; // total time to uninvert the field
 
 	public UnInvertedFieldUtils.TypeIndex indexDatatype=UnInvertedFieldUtils.TypeIndex.d_int;
@@ -95,7 +94,7 @@ public class UnInvertedFieldBase {
 				}
 			}
 		}
-	private void free()
+	private void freeMem()
 	{
 		 if(isShutDown){
 			 return ;
@@ -130,14 +129,14 @@ public class UnInvertedFieldBase {
 	 public void LRUclean()
 	  {
 		  if (this.refCnt.get() == 0) {
-				this.free();
+				this.freeMem();
 			}
 	  }
 	
 	protected void finalize() throws Throwable
      {
 		super.finalize();
-        this.free();
+        this.freeMem();
      }
 	  
 		

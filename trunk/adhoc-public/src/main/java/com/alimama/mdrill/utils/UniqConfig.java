@@ -84,8 +84,9 @@ public class UniqConfig {
 	}
 	public static int getMergerRequestThreads()
 	{
-		return 25;
+		return 48;
 	}
+	
 	
 	public static int getUnivertedFieldThreads()
 	{

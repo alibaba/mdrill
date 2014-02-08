@@ -45,7 +45,7 @@ quanjing_logcheck=0;
     <script language="javascript" type="text/javascript" src="../js/json2.js"></script>
     <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../js/excanvas.min.js"></script><![endif]-->
      
-    <script  type="text/javascript" language="JavaScript" src="./tanx.js" charset="utf-8"></script>
+    <script  type="text/javascript" language="JavaScript" src="./tanx_2.js" charset="utf-8"></script>
 
 
  
@@ -175,12 +175,19 @@ z-index: 1200;
     <td>日期：</td>
     <td><input type="text" name="thedateStart" id="thedateStart" onFocus="WdatePicker({dateFmt:'yyyyMMdd'})"  />
 </td>
-
-  <td>pid:</td>
+<td>
+	<select name="matchmode" id="matchmode" onchange="tooglemode()" >
+      <option value="pid"  selected="selected">按照PID</option>
+      <option value="keyword">关键词匹配</option>
+  </select>
+</td>
+<td>
+	
+	
+<table id="pidtbl" border="0" cellspacing="0" cellpadding="0"> 
+	<td>pid:</td>
     <td> 	 	<input type="text" name="thepid" id="thepid" value="*"  />
 </td>
-
-
     <td>产品类型：</td>
     <td> 	<select name="producttype" id="producttype" >
  		<option value="all">全部</option>
@@ -188,11 +195,25 @@ z-index: 1200;
       <option value="X">交换</option>
       <option value="S">系统抄底</option>
   </select></td>
+</table>	
+	<table id="searchtbl" style="display:none" border="0" cellspacing="0" cellpadding="0">
+	<td>关键词:</td>
+    <td> 	 	<input type="text" name="searchkeyword" id="searchkeyword" value="*新浪*"  />
+</td>
+
+</table>
+	
+</td>
+
+  
       <td colspan="2" align="right"><span ><input type="button" onclick="timeseries()"  value="查看" /></span></td>
 
   </tr>
  
 </table>
+
+   	    <select id="showpidlist" style="display:none"  onchange="tooglepidlist()"></select>
+
    	    <p id="choices" style=""></p>
 
     <div id="placeholder" style="width:1200px;height:600px;">loading......</div>
@@ -262,6 +283,8 @@ var mdrilldata={};
 var g_result={};
 g_isrequestpid=false;
 
+	$("#matchmode").val("pid");
+	tooglemode();
 timeseries();
 
 

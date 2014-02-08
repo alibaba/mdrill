@@ -98,22 +98,20 @@ public class SegmentCoreReaders {
       if(cfsDir instanceof FSDirectory)
       {
     	  FSDirectory dddir=(FSDirectory)cfsDir;
-    	  String absPath=dddir.getDirectory().getAbsolutePath();
-    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), absPath+"@"+filename,cfsDir.getP());
+    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), cfsDir,filename,cfsDir.getP());
     	  if (fieldInfos.hasProx()) {
 		  String fname=IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION);
-	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), absPath+"@"+fname,cfsDir.getP());
+	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), cfsDir,fname,cfsDir.getP());
 	      } else {
 	        proxStream = null;
 	      }
       }else if(cfsDir instanceof FileSystemDirectory)
       {
     	  FileSystemDirectory dddir=(FileSystemDirectory)cfsDir;
-    	  String absPath=dddir.directory.toString();
-    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), absPath+"@"+filename,cfsDir.getP());
+    	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), cfsDir,filename,cfsDir.getP());
     	  if (fieldInfos.hasProx()) {
 		  String fname=IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION);
-	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), absPath+"@"+fname,cfsDir.getP());
+	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize),cfsDir,fname,cfsDir.getP());
 	      } else {
 	        proxStream = null;
 	      }
