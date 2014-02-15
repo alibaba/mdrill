@@ -8,6 +8,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermInfosReader;
+import org.apache.lucene.index.TermInfosReader.QuickInput;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.SimpleLRUCache;
 import org.slf4j.Logger;
@@ -135,6 +136,7 @@ public static class IndexSearch
 		int termNum=0;
 		boolean isNonText=false;
 		boolean isReadDouble=true;
+		
 		  public QuickNumberedTermEnum(TermIndex ti,TermInfosReader.QuickInput quicktisInput, long pos,int cnt,Long pos2,boolean isReadDouble) throws IOException {
 			  this.isReadDouble=isReadDouble;
 			  this.ti=ti;
@@ -238,7 +240,7 @@ public static class IndexSearch
 			  return this.doccount;
 		  }
 		  
-		  public void close()
+		  public void TermIndexTrans()
 		  {
 			  this.ti.nTerms=termNumRtn;
 			  this.ti.index=new IndexSearch();
@@ -262,6 +264,22 @@ public static class IndexSearch
 			  }else{
 				  this.ti.index.indexl=null;
 				  this.ti.index.index = lst!=null ? lst.toArray(new String[lst.size()]) : new String[0];
+			  }
+		  }
+		  
+		  public void resetQuickTis(TermInfosReader.QuickInput quicktisInput)
+		  {
+			  if(this.isNonText)
+			  {
+				  try{
+					  QuickInput thr=quicktisInput.singleThr();
+				  this.ti.index.quicktisInput.quicktisInputTxt=thr.quicktisInputTxt;
+				  }catch(Throwable e)
+				  {
+					  log.info("resetQuickTis",e);
+				  }
+				 
+
 			  }
 		  }
 	  }

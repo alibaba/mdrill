@@ -628,7 +628,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 					statcollect.getStat(), this.partstat.getPartioncount(),daystat, statcollect.getSetupTime(),
 					hbtime, this.isMergeServer);
 			LOG.info("higolog zkHeatbeat " + this.tablename + ",info:"
-					+ info.toString());
+					+ info.toShortString());
 			Worker.getCluster().higo_heartbeat(this.tablename, this.taskid,
 					info);
 		} catch (Exception e) {

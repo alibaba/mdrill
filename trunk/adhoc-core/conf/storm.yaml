@@ -35,7 +35,7 @@
  #----启动的merger server的worker数量，建议根据机器数量设定----
  higo.mergeServer.count: 11
  #----mdrill同时最多加载的分区个数，取决于内存与数据量----
- higo.cache.partions: 10
+ higo.cache.partions: 16
  #----通用的worker的jvm参数配置----
  worker.childopts: "-Xms4g -Xmx4g -Xmn2g -XX:SurvivorRatio=3 -XX:PermSize=96m -XX:MaxPermSize=256m -XX:+UseParallelGC -XX:ParallelGCThreads=16 -XX:+UseAdaptiveSizePolicy -XX:+PrintGCDetails -XX:+PrintGCTimeStamps  -Xloggc:%storm.home%/logs/gc-%port%.log "
  #----个别的worker的端口的jvm参数配置，通常用于给merger server单独配置----

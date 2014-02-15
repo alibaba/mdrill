@@ -124,5 +124,21 @@ public class SolrInfo implements Serializable{
 	return this.isMergeServer+" "+this.replicationindex+"@"+this.replication+" ["+this.hostname +"][" + localip + ":"+port+ "]["+this.stat+"] " + hdfsfolder+" ["+memInfo+"] " +" ["+yyyymmmdddhb+ "][" + yyyymmmddd + "][" + yyyymmmdddstart + "]  "+this.workport +recorecountStr +daycountStr+"<br> [" + localpath+"]<br>["+this.hdfsPath+"]<hr>";
 	
     }
+    
+    
+    public String toShortString() {
+    	SimpleDateFormat fmt=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	String yyyymmmddd=fmt.format(new Date(times));
+    	String yyyymmmdddstart=fmt.format(new Date(startTimes));
+    	String yyyymmmdddhb=fmt.format(new Date(solrhbTimes));
+    	if(this.isMergeServer)
+    	{
+    		return this.isMergeServer+" "+this.replicationindex+"@"+this.replication+" ["+this.hostname +"][" + localip + ":"+port+ "]["+this.stat+"] " +" ["+memInfo+"] " +" ["+yyyymmmdddhb+ "][" + yyyymmmddd + "][" + yyyymmmdddstart + "]  "+this.workport  +"<hr>";
+    	}
+    	
+    	    	
+    	return this.isMergeServer+" "+this.replicationindex+"@"+this.replication+" ["+this.hostname +"][" + localip + ":"+port+ "]["+this.stat+"] " + hdfsfolder+" ["+memInfo+"] " +" ["+yyyymmmdddhb+ "][" + yyyymmmddd + "][" + yyyymmmdddstart + "]  "+this.workport  +"<br> [" + localpath+"]<br>["+this.hdfsPath+"]<hr>";
+    	
+        }
 
 }

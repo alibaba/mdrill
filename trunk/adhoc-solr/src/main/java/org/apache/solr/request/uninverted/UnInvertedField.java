@@ -252,6 +252,19 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		}
 	}
 	
+	TermIndex.QuickNumberedTermEnum cachete=null;
+	private void setSegmentReader(SegmentReader reader)
+	{
+		if(this.cachete!=null)
+		{
+			try{
+			this.cachete.resetQuickTis(reader.getQuickTis());
+			}catch(Throwable e)
+			{
+				log.info("setSegmentReader",e);
+			}
+		}
+	}
 	private void uninvert(String field,SegmentReader reader,IndexSchema schema,boolean isreadDouble) throws IOException {
 		UnInvertedField.log.info("####UnInverted#### SegmentReader begin");
 		this.field = field;
@@ -294,7 +307,8 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 					TermIndex.QuickNumberedTermEnum te=ti.getEnumerator(reader,reader.getQuickTis(),pos,cnt,posval,isreadDouble);
 					this.setSingleValue(te,reader, key,isreadDouble);
 					numTermsInField = te.getTermNumber();
-					te.close();
+					te.TermIndexTrans();
+					cachete=te;
 					isbyQuick=true;
 				}
 				
@@ -633,6 +647,7 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 			}
 		   
 		}
+		uif.setSegmentReader(reader);
 		uif.refCnt.incrementAndGet();
 		return uif;
 	}

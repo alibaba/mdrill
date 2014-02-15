@@ -670,7 +670,7 @@ public final class SolrCore implements SolrInfoMBean {
   private Object searcherLock = new Object();  // the sync object for the searcher
 //  private final int maxWarmingSearchers;  // max number of on-deck searchers allowed
 
-  private static Integer cacheSize = 10;
+  private static Integer cacheSize = 16;
   private static Integer cacheSizeHb = 4;
   private static final Object listlock=new Object();
   public static Cache<String,RefCounted<SolrIndexSearcher>> searchCache=null;

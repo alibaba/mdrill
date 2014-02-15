@@ -402,7 +402,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
 			    "solrservice".toString(), hdfsforder, bindport,
 			    statcollect.getStat(), new HashMap<String, ShardCount>(), new HashMap<String, ShardCount>(), this.statcollect.getSetupTime(),
 			     hbtime, this.isMergeServer);
-		    LOG.info("higolog zkHeatbeat " + this.tablename + ",info:"  + info.toString());
+		    LOG.info("higolog zkHeatbeat " + this.tablename + ",info:"  + info.toShortString());
 		    Worker.getCluster().higo_heartbeat(this.tablename, this.taskid, info);
 		} catch (Exception e) {
 		    LOG.error(StormUtils.stringify_error(e));
