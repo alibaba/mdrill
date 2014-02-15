@@ -1,6 +1,12 @@
 package com.alimama.mdrillImport;
 
+import java.util.List;
 import java.util.Map;
+
+import com.alimama.mdrill.topology.MdrillDefaultTaskAssignment;
+import com.alimama.mdrill.topology.MdrillTaskAssignment;
+import com.alipay.bluewhale.core.custom.CustomAssignment;
+import com.alipay.bluewhale.core.utils.StormUtils;
 
 
 import backtype.storm.Config;
@@ -28,6 +34,13 @@ public class Topology {
 		String peinding=args[4];
 		conf.setMaxSpoutPending(Integer.parseInt(peinding));
 		
+		
+		List<String> assignment=(List<String>) stormconf.get(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_DEFAULT+"."+topologyName);
+		String assignmentports=String.valueOf(stormconf.get(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_PORTS+"."+topologyName));
+		conf.put(CustomAssignment.TOPOLOGY_CUSTOM_ASSIGNMENT, MdrillDefaultTaskAssignment.class.getName());
+		conf.put(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_DEFAULT, assignment);
+		conf.put(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_PORTS, assignmentports);
+
 		TopologyBuilder builder = new TopologyBuilder();
 		
 		if(args.length>=6)

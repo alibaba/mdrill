@@ -15,11 +15,7 @@ public class SupervisorPortType {
 		for (String p : ports) {
 			this.msPorts.add(Integer.parseInt(p.trim()));
 		}
-		
-		String[] rports = String.valueOf(topology_conf.get(MdrillTaskAssignment.REALTIME_PORTS)).trim().split(",");
-		for (String p : rports) {
-			this.rPorts.add(Integer.parseInt(p.trim()));
-		}
+	
 	}
 	
 	boolean isMergerPort(int p)

@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,6 +23,7 @@ import backtype.storm.generated.StormTopology;
 import backtype.storm.utils.ThriftTopologyUtils;
 import backtype.storm.utils.Utils;
 
+import com.alimama.mdrill.utils.UniqConfig;
 import com.alipay.bluewhale.core.callback.RunnableCallback;
 import com.alipay.bluewhale.core.cluster.StormClusterState;
 import com.alipay.bluewhale.core.cluster.StormConfig;
@@ -74,83 +76,89 @@ public class NimbusUtils {
 	 *            Boolean: isScratch is false unless rebalancing the topology
 	 * @throws IOException
 	 */
-	public static void mkAssignments(NimbusData data, String topologyid,
+	public static  void mkAssignments(NimbusData data, String topologyid,
 			boolean isScratch) throws IOException {
-		LOG.debug("Determining assignment for " + topologyid);
-		Map<?, ?> conf = data.getConf();
-		StormClusterState stormClusterState = data.getStormClusterState();
-		//定义zk callback事件
-		RunnableCallback callback =new TransitionZkCallback(data, topologyid);
-		//获取所有的supervisor节点信息。
-		Map<String, SupervisorInfo> supInfos = allSupervisorInfo(stormClusterState, callback);
-		//获取<supervisorid,hostname>map集合，例如：node->host {"4b83cd41-e863-4bd6-b26d-3e27e5ff7799" "dw-perf-3.alipay.net","b8f1664d-5555-4950-8139-5098fb109a81" "dw-perf-2.alipay.net"}
-		Map<String, String> nodeHost = getNodeHost(supInfos);
-		//获取指定topologyid的assignment信息。
-		Assignment existingAssignment = stormClusterState.assignment_info(topologyid, null);
-		//计算获取topology任务对应新的NodePort
-
-		Map<Integer, NodePort> taskNodePort = computeNewTaskToNodePort(data,
-				topologyid, existingAssignment, stormClusterState, callback,
-				supInfos, isScratch);
-
-		Map<String, String> allNodeHost = new HashMap<String, String>();
+			LOG.debug("Determining assignment for " + topologyid);
+			Map<?, ?> conf = data.getConf();
+			StormClusterState stormClusterState = data.getStormClusterState();
+			//定义zk callback事件
+			RunnableCallback callback =new TransitionZkCallback(data, topologyid);
+			//获取所有的supervisor节点信息。
+			Map<String, SupervisorInfo> supInfos = allSupervisorInfo(stormClusterState, callback);
+			//获取<supervisorid,hostname>map集合，例如：node->host {"4b83cd41-e863-4bd6-b26d-3e27e5ff7799" "dw-perf-3.alipay.net","b8f1664d-5555-4950-8139-5098fb109a81" "dw-perf-2.alipay.net"}
+			Map<String, String> nodeHost = getNodeHost(supInfos);
+			//获取指定topologyid的assignment信息。
+			Assignment existingAssignment = stormClusterState.assignment_info(topologyid, null);
+			//计算获取topology任务对应新的NodePort
+	
+			
+			Map<Integer, NodePort> taskNodePort = computeNewTaskToNodePort(data,
+					topologyid, existingAssignment, stormClusterState, callback,
+					supInfos, isScratch);
+	
 		
-		if (existingAssignment != null){
-		    allNodeHost = existingAssignment.getNodeHost();
-		}
-		
-		if (nodeHost != null){
-		    allNodeHost.putAll(nodeHost);
-		}
-            
-		Set<Integer> reassignIds = null;
-		if (existingAssignment != null && existingAssignment.getTaskToNodeport() != null){
-		    reassignIds = changeIds(existingAssignment.getTaskToNodeport(),
-				taskNodePort);
-		}else{
-		    //FIXME changeIds必须执行，否则startTimes->taskid有可能为null
-		    reassignIds = changeIds(new HashMap<Integer, NodePort>(),
-				taskNodePort);
-		}
-
-		//TODO int类型？是否存在异常
-		int nowSecs = TimeUtils.current_time_secs();
-
-		//初始化开始时间
-		Map<Integer, Integer> startTimes = new HashMap<Integer, Integer>();
-		if (existingAssignment != null){
-		    Map<Integer, Integer> taskStartTimeSecs = existingAssignment.getTaskStartTimeSecs();
-		    if (taskStartTimeSecs!= null){
-		        startTimes.putAll(taskStartTimeSecs);
-		    }
-		}
-		if (reassignIds != null){
-		    for (Iterator<Integer> it = reassignIds.iterator(); it.hasNext();) {
-			Integer entry = it.next();
-			startTimes.put(entry, nowSecs);
-		    }
-		}
-		
-		
-		//select-keys all-node->host (map first (vals task->node+port))
-		if (taskNodePort != null){
-		    Set<Entry<Integer, NodePort>> entryNodeHost = taskNodePort.entrySet();
-		    for (Iterator<Entry<Integer, NodePort>> it = entryNodeHost.iterator(); it.hasNext();) {
-		    	    Entry<Integer, NodePort> entry = it.next();
-			    if (!allNodeHost.containsKey((entry.getValue()).getNode())) {
-				    allNodeHost.remove((entry.getValue()).getNode());
+			Map<String, String> allNodeHost = new HashMap<String, String>();
+			
+			if (existingAssignment != null){
+			    allNodeHost = existingAssignment.getNodeHost();//这样是防止supervisor挂了，task还能依然工作？
+			}
+			
+			if (nodeHost != null){
+			    allNodeHost.putAll(nodeHost);
+			}
+			Set<Integer> reassignIds = null;
+			if (existingAssignment != null && existingAssignment.getTaskToNodeport() != null){
+			    reassignIds = changeIds(existingAssignment.getTaskToNodeport(),taskNodePort);
+			}else{
+			    //FIXME changeIds必须执行，否则startTimes->taskid有可能为null
+			    reassignIds = changeIds(new HashMap<Integer, NodePort>(),taskNodePort);
+			}
+	
+	
+			//初始化开始时间
+			Map<Integer, Integer> startTimes = new HashMap<Integer, Integer>();
+			if (existingAssignment != null){
+			    Map<Integer, Integer> taskStartTimeSecs = existingAssignment.getTaskStartTimeSecs();
+			    if (taskStartTimeSecs!= null){
+			        startTimes.putAll(taskStartTimeSecs);
 			    }
-		    }
-		}
-		Assignment assignment = new Assignment(StormConfig.masterStormdistRoot(
-				conf, topologyid), taskNodePort, allNodeHost, startTimes);
-		if (assignment.equals(existingAssignment)) {
-			LOG.debug("Assignment for " + topologyid + " hasn't changed");
-		} else {
-			LOG.info("Setting new assignment for storm id " + topologyid + ": "
-					+ assignment);
-			stormClusterState.set_assignment(topologyid, assignment);
-		}
+			}
+			//如果重新分配了，则要重置初始化时间
+			if (reassignIds != null){
+				int nowSecs = TimeUtils.current_time_secs();
+			    for (Integer reassignid:reassignIds) {
+			    	startTimes.put(reassignid, nowSecs);
+			    }
+			}
+			
+			
+			//select-keys all-node->host (map first (vals task->node+port))
+			Map<String, String> storeNodeHosts = new HashMap<String, String>();
+	
+			if (taskNodePort != null){
+				HashSet<String> toSaveHosts=new HashSet<String>();
+			    for (Entry<Integer, NodePort> entry:taskNodePort.entrySet()) {
+			    	toSaveHosts.add((entry.getValue()).getNode());
+			    }
+			    
+			    for(String node:toSaveHosts)
+			    {
+			    	String host=allNodeHost.get(node);
+			    	storeNodeHosts.put(node, host);
+			    }
+			}else{
+				storeNodeHosts.putAll(allNodeHost);
+			}
+			Assignment assignment = new Assignment(StormConfig.masterStormdistRoot(
+					conf, topologyid), taskNodePort, storeNodeHosts, startTimes);
+			if (assignment.equals(existingAssignment)) {
+				LOG.debug("Assignment for " + topologyid + " hasn't changed");
+			} else {
+				LOG.info("Setting new assignment for storm id " + topologyid + ": "
+						+ assignment);
+				stormClusterState.set_assignment(topologyid, assignment);
+			}
+		
 
 	}
 
@@ -165,9 +173,7 @@ public class NimbusUtils {
 		Map<String, String> rtn = null;
 		if(supInfos!=null){
 			rtn = new HashMap<String, String>();
-			Set<Map.Entry<String, SupervisorInfo>> entrySet = supInfos.entrySet();
-			for (Iterator<Entry<String, SupervisorInfo>> it = entrySet.iterator(); it.hasNext();) {
-				Entry<String, SupervisorInfo> entry = it.next();
+			for (Entry<String, SupervisorInfo> entry:supInfos.entrySet()) {
 				SupervisorInfo superinfo = entry.getValue();
 				String supervisorid = entry.getKey();
 				rtn.put(supervisorid, superinfo.getHostName());
@@ -191,8 +197,7 @@ public class NimbusUtils {
 		Set<String> supervisorIds = StormUtils.listToSet(stormClusterState.supervisors(callback));
 		if(supervisorIds!=null){
 			rtn= new HashMap<String, SupervisorInfo>();
-			for (Iterator<String> iter = supervisorIds.iterator(); iter.hasNext();) {
-				String supervisorId = iter.next();
+			for (String supervisorId:supervisorIds) {
 				 //获取/supervisors/supervisorid的节点值
 				SupervisorInfo supervisorInfo = stormClusterState.supervisor_info(supervisorId);
 				rtn.put(supervisorId, supervisorInfo);
@@ -224,7 +229,7 @@ public class NimbusUtils {
 		//taskheartcache(Map<stormid, Map<taskid, Map<tkHbCacheTime, time>>>) 
 		ConcurrentHashMap<String, Map<Integer, Map<TkHbCacheTime, Integer>>> taskHeartbeatsCache=data.getTaskHeartbeatsCache();
 		Map<?, ?> topology_conf=readStormConf(data.getConf(),topologyid);
-		//获取所有可用Slots
+		//获取所有可用Slots,不包括当前topology timeout的端口，在后面会对timeout的端口进行add
 		Set<NodePort> availableSlots = availableSlots(supInfos, stormClusterState, callback);
 		//获取所有taskid==/tasks/topologyid/下节点列表
 		Set<Integer> allTaskIds = StormUtils.listToSet(stormClusterState.task_ids(topologyid));
@@ -247,14 +252,12 @@ public class NimbusUtils {
 	
 		if (existingAssignment != null){
 		   //获取已被分配的NodePort和task列表信息
-		    Set<Entry<NodePort, List<Integer>>> existingAssignedEntrySet = existingAssigned.entrySet();
-		    for (Iterator<Entry<NodePort, List<Integer>>> it = existingAssignedEntrySet.iterator(); it.hasNext();) {
-		            Entry<NodePort, List<Integer>> entry = it.next();
-			    Set<Integer> taskids = StormUtils.listToSet(entry.getValue());
-
-			    if (aliveIds != null && aliveIds.containsAll(taskids)) {			
-				//如果有一个taskid不存在于aliveIds中，则该NodePort上面task都会被重新分配。
-				aliveAssigned.put(entry.getKey(), entry.getValue());
+		    for (Entry<NodePort, List<Integer>> entry:existingAssigned.entrySet()) {
+		    	NodePort np=entry.getKey();
+		    	List<Integer> tasks=entry.getValue();
+			    if (aliveIds != null && aliveIds.containsAll(tasks)) {			
+			    	//如果有一个taskid不存在于aliveIds中，则该NodePort上面task都会被重新分配。
+			    	aliveAssigned.put(np, tasks);
 			    }
 		    }
 		}
@@ -272,18 +275,21 @@ public class NimbusUtils {
 		int totalSlotsToUse = Math.min(workers,
 				availableSlots.size() + aliveAssigned.size());
 
+		IAssignment customAssignment=CustomAssignment.getAssignmentInstance(topology_conf);
+
 		Map<NodePort, List<Integer>> keepAssigned =null;
 		if (!isScratch && allTaskIds!= null) {
 			//获取保持均衡的nodeport和task的分配信息
-			keepAssigned = keeperSlots(aliveAssigned, allTaskIds.size(),totalSlotsToUse);// <NodePort, List>
+	        if (customAssignment != null) {
+	        	keepAssigned=customAssignment.keeperSlots(aliveAssigned, allTaskIds.size(),totalSlotsToUse);
+	        }else{
+	        	keepAssigned = keeperSlots(aliveAssigned, allTaskIds.size(),totalSlotsToUse);// <NodePort, List>
+	        }
 		}
 		//重新分配数
 		int reassign_num=totalSlotsToUse;
 		if(keepAssigned!=null){
-			Set<Entry<NodePort, List<Integer>>> entrySet = keepAssigned.entrySet();
-			for (Iterator<Entry<NodePort, List<Integer>>> it = entrySet.iterator(); it.hasNext();) {
-				Entry<NodePort, List<Integer>> entry = it.next();
-				//获取该topology已分配但空闲的的slot
+			for (Entry<NodePort, List<Integer>> entry:keepAssigned.entrySet()) {
 				aliveAssigned.remove(entry.getKey());
 			}
 			reassign_num=totalSlotsToUse-keepAssigned.size();
@@ -296,8 +302,6 @@ public class NimbusUtils {
 		}
 		freedSlots.addAll(freedSlotstmp);
 		freedSlots.addAll(availableSlots);
-		List<NodePort> reassignSlots=null;
-		IAssignment customAssignment=CustomAssignment.getAssignmentInstance(topology_conf);
         if (customAssignment != null) {
             customAssignment.setup(topology_conf, topologyid, stormClusterState, keepAssigned,supInfos);
         }
@@ -315,12 +319,12 @@ public class NimbusUtils {
 		    //FIXME 不能直接对keepAssignedTaskSet进行removeAll,无效的 yannian add
 		    for(List<Integer> rm:keepAssignedTaskSet)
 		    {
-			reassignIds.removeAll(rm);
+		    	reassignIds.removeAll(rm);
 		    }
 		}
 		//分配未keep的task到相应的slot上面。
 		Map<Integer, NodePort> reassignment = new HashMap<Integer, NodePort>();
-
+		List<NodePort> reassignSlots=null;
 		List<NodePort> sortedFreeSlots = sortSlots(freedSlots);
             //获取排序后，需要被分配的slots节点
             if (customAssignment != null) {
@@ -354,20 +358,18 @@ public class NimbusUtils {
 		//转换获取keepAssigned，得到key为taskid，value为NodePort的map
 		Map<Integer, NodePort> stayAssignment = new HashMap<Integer, NodePort>();
 		if(keepAssigned!=null){
-		    Set<Entry<NodePort, List<Integer>>> keepAssignedEntrySet = keepAssigned.entrySet();
-		    for (Iterator<Entry<NodePort, List<Integer>>> it = keepAssignedEntrySet.iterator(); it.hasNext();) {
-			Entry<NodePort, List<Integer>> entry = it.next();
-			List<Integer> tasks = entry.getValue();
-			NodePort np = entry.getKey();
-			for (Integer taskid : tasks) {
-				stayAssignment.put(taskid, np);
-			}
+		    for (Entry<NodePort, List<Integer>> entry:keepAssigned.entrySet()) {
+				NodePort np = entry.getKey();
+				List<Integer> tasks = entry.getValue();
+				for (Integer taskid : tasks) {
+					stayAssignment.put(taskid, np);
+				}
 		    }
 		}
 
 		if (reassignment.size() > 0) {
 			LOG.info("Reassigning " + topologyid + " to " + totalSlotsToUse	+ " slots isScratch="+isScratch+",totalSlotsToUse="+totalSlotsToUse);
-			LOG.info("Reassign ids: " + reassignIds+",keepAssigned="+keepAssigned+",existingAssigned="+existingAssigned+",keepAssigned="+keepAssigned);
+			LOG.info("Reassign ids: " + reassignIds+",keepAssigned="+keepAssigned+",existingAssigned="+existingAssigned);
 			LOG.info("Available slots: " + availableSlots);
 		}
 		//汇总所有重新分配结果。
@@ -392,12 +394,12 @@ public class NimbusUtils {
 		Map<NodePort, List<Integer>> slotAssigned = StormUtils.reverse_map(taskToNodePort);
 		Map<NodePort, List<Integer>> newSlotAssigned = StormUtils.reverse_map(newtaskToNodePort);
 		Set<Integer> brandNewSlots = new HashSet<Integer>();
-		Set<Entry<NodePort, List<Integer>>> entrySet = newSlotAssigned.entrySet();
 		//返回在newtaskToNodePort，不在taskToNodePort的value值集合。
-		for (Iterator<Entry<NodePort, List<Integer>>> it = entrySet.iterator(); it.hasNext();) {
-			Entry<NodePort, List<Integer>> entry =it.next();
-			if (!slotAssigned.containsKey(entry.getKey())|| !slotAssigned.get(entry.getKey()).equals(entry.getValue())) {
-				List<Integer> lst = entry.getValue();
+		for (Entry<NodePort, List<Integer>> entry:newSlotAssigned.entrySet() ){
+			
+			List<Integer> tasks=slotAssigned.get(entry.getKey());
+			List<Integer> lst = entry.getValue();
+			if (tasks==null|| tasks.size()!=lst.size()||!lst.containsAll(tasks)) {
 				brandNewSlots.addAll(lst);
 			}
 		}
@@ -457,9 +459,7 @@ public class NimbusUtils {
 			keepers = new HashMap<NodePort, List<Integer>>();
 			Map<Integer, Integer> distribution = StormUtils.integer_divided(numTaskIds, numWorkers);
 
-			Set<Entry<NodePort, List<Integer>>> entrySet = aliveAssigned.entrySet();
-			for (Iterator<Entry<NodePort, List<Integer>>> it = entrySet.iterator(); it.hasNext();) {
-				Entry<NodePort, List<Integer>> entry = it.next();
+			for (Entry<NodePort, List<Integer>> entry:aliveAssigned.entrySet()) {
 				NodePort nodeport = entry.getKey();
 				List<Integer> tasklist = entry.getValue();
 				Integer taskCount = tasklist.size();
@@ -495,9 +495,7 @@ public class NimbusUtils {
 
 		//获取所有的Slots。例如(["b8f1664d-5555-4950-8139-5098fb109a81" 6700] ["b8f1664d-5555-4950-8139-5098fb109a81" 6701])
 		Map<String, List<Integer>> allSlots = new HashMap<String, List<Integer>>();
-		Set<Entry<String, SupervisorInfo>> entrySet = supervisorInfos.entrySet();
-		for (Iterator<Entry<String, SupervisorInfo>> it = entrySet.iterator(); it.hasNext();) {
-			Entry<String, SupervisorInfo> entry = it.next();
+		for (Entry<String, SupervisorInfo> entry:supervisorInfos.entrySet()) {
 			allSlots.put(entry.getKey(),entry.getValue().getWorkPorts());
 		}
 
@@ -505,9 +503,7 @@ public class NimbusUtils {
 		Map<String, Set<Integer>> assignedSlots = assigned_Slots(stormClusterState);
 
 		//获取可分配的slots
-		Set<Entry<String, List<Integer>>> slotsEntrySet = allSlots.entrySet();
-		for (Iterator<Entry<String, List<Integer>>> it = slotsEntrySet.iterator(); it.hasNext();) {
-			Entry<String, List<Integer>> entry = it.next();
+		for (Entry<String, List<Integer>> entry:allSlots.entrySet()) {
 			String supervisorid =entry.getKey();
 			//supervisor对应的所有port列表
 			List<Integer> s = entry.getValue();
@@ -518,9 +514,8 @@ public class NimbusUtils {
 				    s.removeAll(e);
 				}
 			}
-			for (Iterator<Integer> iter = s.iterator(); iter.hasNext();) {
-				NodePort nodeport = new NodePort(supervisorid,iter.next());
-				rtn.add(nodeport);
+			for (Integer port:s) {
+				rtn.add(new NodePort(supervisorid,port));
 			}	
 		}
 		return rtn;
@@ -580,8 +575,7 @@ public class NimbusUtils {
 		}
 		if(taskIds!=null){
 			 rtn = new HashSet<Integer>();
-			for (Iterator<Integer> it = taskIds.iterator(); it.hasNext();) {
-				int taskId = it.next();
+			for (Integer taskId:taskIds) {
 				//获取task心跳对象
 				TaskHeartbeat taskHeartbeat = stormClusterState.task_heartbeat(topologyid, taskId);
 
@@ -590,47 +584,67 @@ public class NimbusUtils {
 					reportTime = taskHeartbeat.getTimeSecs();
 				}
 
-				Integer lastNimbusTime = null;
-				Integer lastReportedTime = null;
-				if (taskHeartbeatsCache.get(topologyid) != null) {
-				    Map<TkHbCacheTime, Integer> last = taskHeartbeatsCache.get(topologyid).get(taskId);
-					if(last!=null){
-						lastNimbusTime =last.get(TkHbCacheTime.nimbusTime);
-						lastReportedTime =last.get(TkHbCacheTime.taskReportedTime);	
-					}
+				Map<Integer, Map<TkHbCacheTime, Integer>> val =taskHeartbeatsCache.get(topologyid);
+				if(val==null)
+				{
+					LOG.info("topologyid is null:topologyid"+topologyid);
+				    val=new HashMap<Integer, Map<TkHbCacheTime, Integer>>();
+				    taskHeartbeatsCache.put(topologyid, val);
 				}
+				
 
+			    Map<TkHbCacheTime, Integer> last = taskHeartbeatsCache.get(topologyid).get(taskId);
+			    if(last==null)
+			    {
+			    	LOG.info("topologyid taskid is null:topologyid:"+topologyid+",taskId:"+taskId);
+			    	last = new HashMap<TkHbCacheTime, Integer>();
+					val.put(taskId, last);
+			    }
+			    
+			    Integer lastNimbusTime =last.get(TkHbCacheTime.nimbusTime);
+			    Integer lastReportedTime =last.get(TkHbCacheTime.taskReportedTime);
+			    if(reportTime!=null)
+				{
+					last.put(TkHbCacheTime.taskReportedTime, reportTime);
+				}
+			
 				//获取task启动时间
 				Integer taskStartTime =taskStartTimes.get(taskId);
 				
-			
-				
-
 				Integer nimbusTime=null;
-				if (lastNimbusTime == null || lastReportedTime != reportTime) {
+				if(lastNimbusTime==null||lastReportedTime==null)
+				{
+					nimbusTime = TimeUtils.current_time_secs();
+				}else if(!lastReportedTime.equals(reportTime))
+				{
 					nimbusTime = TimeUtils.current_time_secs();
 				}else{
 					nimbusTime = lastNimbusTime;
 				}
-				//更新cache中nimbus时间和task report时间
-				//FIXME 不能直接new
-				Map<Integer, Map<TkHbCacheTime, Integer>> val =taskHeartbeatsCache.get(topologyid);
-				if(val==null)
-				{
-				    val=new HashMap<Integer, Map<TkHbCacheTime, Integer>>();
-				}
-				Map<TkHbCacheTime, Integer> times = new HashMap<TkHbCacheTime, Integer>();
-				times.put(TkHbCacheTime.nimbusTime, nimbusTime);
-				times.put(TkHbCacheTime.taskReportedTime, reportTime);
-				val.put(taskId, times);
-				taskHeartbeatsCache.put(topologyid, val);
-
-				if (taskStartTime != null && 
-					((TimeUtils.time_delta(taskStartTime) < (Integer) conf.get(Config.NIMBUS_TASK_LAUNCH_SECS)) ||
-					(nimbusTime == null) ||
-					(TimeUtils.time_delta(nimbusTime) < (Integer) conf.get(Config.NIMBUS_TASK_TIMEOUT_SECS)))) {
-						
-					rtn.add(taskId);
+				
+				last.put(TkHbCacheTime.nimbusTime, nimbusTime);
+				if (taskStartTime != null ) {
+					boolean isLantch=TimeUtils.time_delta(taskStartTime) < (Integer) conf.get(Config.NIMBUS_TASK_LAUNCH_SECS);
+					if(isLantch)
+					{
+						rtn.add(taskId);
+						continue;
+					}
+					
+					if(nimbusTime == null)
+					{
+						rtn.add(taskId);
+						continue;
+					}
+					
+					boolean ishb=TimeUtils.time_delta(nimbusTime) < (Integer) conf.get(Config.NIMBUS_TASK_TIMEOUT_SECS);
+					
+					if(ishb)
+					{
+						rtn.add(taskId);
+					}else{
+						LOG.info("Task2 " + topologyid + ":" + taskId + " timed out taskStartTime="+String.valueOf(taskStartTime)+",nimbustime="+String.valueOf(nimbusTime));
+					}
 				} else {
 
 					LOG.info("Task " + topologyid + ":" + taskId + " timed out taskStartTime="+String.valueOf(taskStartTime)+",nimbustime="+String.valueOf(nimbusTime));
@@ -657,8 +671,7 @@ public class NimbusUtils {
 
 		if (assignments != null) {
 			rtn = new HashMap<String, Set<Integer>>();
-			for (Iterator<String> iter = assignments.iterator(); iter.hasNext();) {
-				String topologyid = (String) iter.next();
+			for (String topologyid:assignments) {
 				Assignment assignment = stormClusterState.assignment_info(topologyid,null);
 				if (assignment == null) {
 					continue;
@@ -666,18 +679,15 @@ public class NimbusUtils {
 				//例：:task->node+port {1 ["b8f1664d-5555-4950-8139-5098fb109a81" 6702], 2 ["4b83cd41-e863-4bd6-b26d-3e27e5ff7799" 6701]}
 				Map<Integer, NodePort> taskNodePort = assignment.getTaskToNodeport();
 				if(taskNodePort!=null){
-					Set<Entry<Integer, NodePort>> entrySet = taskNodePort.entrySet();
-					for (Iterator<Entry<Integer, NodePort>> it = entrySet.iterator(); it.hasNext();) {
-						Entry<Integer, NodePort> entry = it.next();
+					for (Entry<Integer, NodePort> entry:taskNodePort.entrySet()) {
 						NodePort np =entry.getValue();
-						if (!rtn.containsKey(np.getNode())) {
-							Set<Integer> tmp = new HashSet<Integer>();
-							tmp.add(np.getPort());
-							rtn.put(np.getNode(), tmp);
-						} else {
-							Set<Integer> ports = rtn.get(np.getNode());
-							ports.add(np.getPort());
+						Set<Integer> ports = rtn.get(np.getNode());
+						if(ports==null)
+						{
+							ports=new HashSet<Integer>(); 
+							rtn.put(np.getNode(), ports);
 						}
+						ports.add(np.getPort());
 					}
 				}
 			}

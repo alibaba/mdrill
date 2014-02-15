@@ -11,14 +11,35 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alimama.mdrill.utils.HadoopUtil;
 import com.alimama.mdrill.utils.IndexUtils;
 
 //review ok 2013-12-27
 public class RealTimeDirectoryParams {
-	private static String CHK_UNQ_ID=java.util.UUID.randomUUID().toString();
+	public static Logger LOG = LoggerFactory.getLogger(RealTimeDirectoryParams.class);
 
+	private static String CHK_UNQ_ID=java.util.UUID.randomUUID().toString();
+	public static String diskDirList=null;
+	public static String getDiskDirList() {
+		return diskDirList;
+	}
+
+
+	public static void setDiskDirList(int taskIndex,String diskDirList) {
+		synchronized (diskMallocLock) {
+			RealTimeDirectoryParams.diskDirList = diskDirList;
+			RealTimeDirectoryParams.taskIndex = taskIndex;
+		}
+
+	}
+
+
+	public static int taskIndex=0;
+	private static Object diskMallocLock=new Object();
+	
 	public SolrCore core;
 	public PartionKey Partion;
 	public String baseDir;
@@ -30,6 +51,31 @@ public class RealTimeDirectoryParams {
 		return conf;
 	}
 	
+	
+	public String getIndexMalloc(int hashcode)
+	{
+		synchronized (diskMallocLock) {
+			if(diskDirList!=null)
+			{
+				try {
+					
+				  	Configuration conf=this.getConf();
+					FileSystem lfs=FileSystem.getLocal(conf);
+					
+				String partionDisk = IndexUtils.getPath(RealTimeDirectoryParams.diskDirList, taskIndex,hashcode,lfs);
+				String tablename=this.Partion==null?"default":this.Partion.tablename;
+				String partionName=this.Partion==null?"default":this.Partion.partion;
+				Path localPartionStorePath = new Path(new Path(partionDisk, "higo"),tablename + "/" + partionName + "/" + taskIndex );
+				lfs.mkdirs(localPartionStorePath);
+				return localPartionStorePath.toString();
+				} catch (IOException e) {
+					LOG.error("getIndexMalloc",e);
+				}
+			}
+		}
+		
+		return this.baseDir;
+	}
 	public String getLogStr()
 	{
 		StringBuffer buff=new StringBuffer();

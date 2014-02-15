@@ -13,8 +13,6 @@ import org.apache.solr.request.compare.SelectDetailRow;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import com.alimama.mdrill.hdfsDirectory.FileSystemDirectory;
-
 public class MdrillParseDetailFdt {
     private static final Log logger = LogFactory.getLog(MdrillParseDetailFdt.class);
 

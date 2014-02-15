@@ -309,20 +309,12 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 	
 	public synchronized void addDocument(SolrInputDocument doc,boolean writelog) throws CorruptIndexException, LockObtainFailedException, IOException
 	{
-		if("mm_12229823_1573806_11174236".equals(doc.getFieldValue("pid")))
-		{
-			LOG.info("####addDocument 1 :"+doc+","+String.valueOf(writelog));
-		}
 		
 		if(RealTimeDirectorUtils.maybeReplication(doc))
 		{
 			return ;
 		}
 		
-		if("mm_12229823_1573806_11174236".equals(doc.getFieldValue("pid")))
-		{
-			LOG.info("####addDocument 2 :"+doc+","+String.valueOf(writelog));
-		}
 	
 		if(writelog)
 		{

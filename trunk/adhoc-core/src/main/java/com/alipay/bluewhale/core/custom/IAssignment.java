@@ -15,7 +15,9 @@ import com.alipay.bluewhale.core.daemon.supervisor.SupervisorInfo;
  * @version $Id: IAssignment.java, v 0.1 2012-4-28 обнГ4:48:35 yannian Exp $
  */
 public interface IAssignment {
-
+	public Map<NodePort, List<Integer>> keeperSlots(
+			Map<NodePort, List<Integer>> aliveAssigned, int numTaskIds,
+			int numWorkers);
     public void setup(Map topology_conf, String topologyId, StormClusterState zkCluster,
                       Map<NodePort, List<Integer>> keepAssigned,Map<String, SupervisorInfo> supInfos);
 

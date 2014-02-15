@@ -29,13 +29,11 @@ public class ImportSpout implements IRichSpout{
     public ImportSpout(String confPrefix)
     {
     	this.confPrefix=confPrefix;
-    	istanxpv=this.confPrefix.indexOf("tanx_pv")>=0;
     }
 
     int buffersize=5000;
     int intMapsize=500;
     
-    boolean istanxpv=false;
     @Override
     public void open(Map conf, TopologyContext context,SpoutOutputCollector collector) {
     	try {
@@ -46,6 +44,12 @@ public class ImportSpout implements IRichSpout{
 		}
 		int timeout=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-timeoutSpout")));
 		this.buffersize=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-spoutbuffer")));
+		
+		Object chkIntervel=conf.get(confPrefix+"-spoutIntervel");
+		if(chkIntervel!=null)
+		{
+			this.checkIntervel=Integer.parseInt(String.valueOf(chkIntervel));
+		}
 
     	this.timeoutCheck=new TimeOutCheck(timeout*1000l);
     	this.status=new SpoutStatus();
@@ -70,6 +74,9 @@ public class ImportSpout implements IRichSpout{
 	
     private static SimpleDateFormat formatHour = new SimpleDateFormat("HH:mm:ss");
 
+    int checkIntervel=1000;
+
+    
 	private boolean putdata(DataParser.DataIter log)
 	{	
     	long ts=log.getTs();
@@ -86,7 +93,7 @@ public class ImportSpout implements IRichSpout{
     		statval.merger(val);
     	}
     	
-    	if((this.status.ttInput%1000!=0))
+    	if((this.status.ttInput%this.checkIntervel!=0))
     	{
     		return false;
     	}
@@ -107,13 +114,6 @@ public class ImportSpout implements IRichSpout{
 			BoltStatKey pkey=e.getKey();
 			BoltStatVal pvalue=e.getValue();
 			
-			if(istanxpv)
-			{
-				if(pkey.list.length>=3&&"mm_12229823_1573806_11174236".equals(pkey.list[2]))
-				{
-					LOG.info("yanniandebugspout:"+pkey.toString()+"==="+pvalue.toString());
-				}
-			}
 			
     		List<Object> data = StormUtils.mk_list((Object)pkey,pvalue);
 	        collector.emit(data, SpoutUtils.uuid());

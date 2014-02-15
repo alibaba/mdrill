@@ -37,6 +37,8 @@ public class TdateFormat {
 	public static void main(String[] args) {
 		System.out.println(TdateFormat.ensureTdate("2013/01/02", ""));;
 	}
+	
+	private static Object lock=new Object();
 	/**
 	 * 
 	 * @param string
@@ -48,7 +50,12 @@ public class TdateFormat {
 			return "2099-09-09T00:00:00Z";
 
 		}
+		
+			
+		
 		try{
+			synchronized (lock) {
+
 			yyyymmdd_matcher.reset(string);
 			int len=string.length();
 			if(len==8&&yyyymmdd_matcher.find()){
@@ -84,10 +91,13 @@ public class TdateFormat {
 			    return valid_matcher.group();
 			}
 			
+			}
 			return "2099-09-09T00:00:00Z";
 			
 		}catch(Exception e){
 		}
+		
+		
 		return "2099-09-09T00:00:00Z";
 	}
 	
@@ -98,6 +108,8 @@ public class TdateFormat {
 		try{
 			int len=string.length();
 			
+			synchronized (lock) {
+
 			yyyy_mm_dd_matcher.reset(string);
 			if(len==10&&yyyy_mm_dd_matcher.find()){
 				return  yyyy_mm_dd_matcher.group(1)+"-"+yyyy_mm_dd_matcher.group(2)+"-"+yyyy_mm_dd_matcher.group(3)+"T00:00:00Z";
@@ -120,8 +132,9 @@ public class TdateFormat {
 			if(valid_matcher.find()){
 			    return valid_matcher.group();
 			}
-			
+			}
 			return "2099-09-09T00:00:00Z";
+			
 			
 		}catch(Exception e){
 		}

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+	<id>adhoc</id>
+	<formats>
+		<format>tar.gz</format>
+	</formats>
+	<fileSets>
+		<fileSet>
+			<includes>
+				<include>adhoc-core/bin/*</include>
+				<include>adhoc-core/solr/**</include>
+				<include>adhoc-core/conf/*</include>
+				<include>adhoc-core/logs</include>
+				<include>adhoc-core/log4j/*</include>
+				<include>adhoc-core/webapp/**</include>
+			</includes>
+			<excludes>
+				<exclude>**/src/**</exclude>
+				<exclude>**/target/**</exclude>
+				<exclude>**/.*/**</exclude>
+			</excludes>
+		</fileSet>
+	</fileSets>
+	<moduleSets>
+		<moduleSet>
+			<includes>
+				<include>com.alimama.dw:adhoc-wrapper</include>
+				<include>com.alimama.dw:adhoc-solr</include>
+				<include>com.alimama.dw:adhoc-mdrill</include>
+				<include>com.alimama.dw:adhoc-core</include>
+				<include>com.alimama.dw:adhoc-web</include>
+				<include>com.alimama.dw:adhoc-jdbc</include>
+				<include>com.alimama.dw:adhoc-public</include>
+				<include>com.alimama.dw:adhoc-realtime</include>
+			</includes>
+			<binaries>
+				<outputDirectory>adhoc-core/lib/</outputDirectory>
+				<unpack>false</unpack>
+				<dependencySets>
+					<dependencySet>
+						<outputDirectory>adhoc-core/lib</outputDirectory>
+					</dependencySet>
+				</dependencySets>
+			</binaries>
+		</moduleSet>
+	</moduleSets>
+
+</assembly>

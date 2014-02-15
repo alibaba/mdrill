@@ -331,6 +331,7 @@ public class WebServiceParams {
 	public static SolrQuery makeSolrQuery(GetPartions.Shards shard)
 	{
 		SolrQuery query = new SolrQuery();
+		query.setParam("showlog", "1");
 		query.setParam("shards", shard.urlShards);
 		query.setParam("mlogtime", fmt.format(new Date()));
 		query.setParam(FacetParams.MERGER_MAX_SHARDS, String.valueOf(UniqConfig.getMaxMergerShard()));

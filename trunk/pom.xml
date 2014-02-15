@@ -57,7 +57,7 @@
 				<configuration>
 					<finalName>alimama</finalName>
 					<descriptors>
-						<descriptor>adhoc-core/release.xml</descriptor>
+						<descriptor>adhoc-core/release_common.xml</descriptor>
 					</descriptors>
 		
 				</configuration>

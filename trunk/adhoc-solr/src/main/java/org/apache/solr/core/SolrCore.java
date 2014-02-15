@@ -1499,26 +1499,34 @@ public static void setSearchCacheSize(int cacheSize) {
     final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
     rsp.add("responseHeader", responseHeader);
 
-    // toLog is a local ref to the same NamedList used by the request
-//    NamedList toLog = rsp.getToLog();
-//    // for back compat, we set these now just in case other code
-//    // are expecting them during handleRequest
-//    toLog.add("webapp", req.getContext().get("webapp"));
-//    toLog.add("path", req.getContext().get("path"));
-//    toLog.add("params", "{" + req.getParamString() + "}");
-    
-    handler.handleRequest(req,rsp);
-    setResponseHeaderValues(handler,req,rsp);
-    
-//    if (log.isInfoEnabled()) {
-//      StringBuilder sb = new StringBuilder(logid);
-//      for (int i=0; i<toLog.size(); i++) {
-//        String name = toLog.getName(i);
-//        Object val = toLog.getVal(i);
-//        sb.append(name).append("=").append(val).append(" ");
-//      }
-//      log.info(sb.toString());
-//    }
+   
+	    
+	    
+	    handler.handleRequest(req,rsp);
+	    setResponseHeaderValues(handler,req,rsp);
+	    
+	    if(req.getParams().get("showlog","0").equals("1"))
+	    {
+	 // toLog is a local ref to the same NamedList used by the request
+	    NamedList toLog = rsp.getToLog();
+	    // for back compat, we set these now just in case other code
+	    // are expecting them during handleRequest
+	    toLog.add("webapp", req.getContext().get("webapp"));
+	    toLog.add("path", req.getContext().get("path"));
+	    SolrParams params=req.getParams();
+	    NamedList<Object> p=params.toNamedList();
+	    p.remove("mdrill.crc.key.get.crclist");
+	    toLog.add("params", "{" + p.toString() + "}");
+	    StringBuilder sb = new StringBuilder(logid);
+	    for (int i=0; i<toLog.size(); i++) {
+	      String name = toLog.getName(i);
+	      Object val = toLog.getVal(i);
+	      sb.append(name).append("=").append(val).append(" ");
+	    }
+	    String loginfo=sb.toString();
+	    log.info(loginfo.substring(0,Math.min(2048, loginfo.length())));
+    }
+  
 
   }
 

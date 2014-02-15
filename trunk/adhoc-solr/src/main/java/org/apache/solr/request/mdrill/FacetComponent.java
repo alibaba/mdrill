@@ -95,7 +95,7 @@ public class  FacetComponent extends SearchComponent
 	{
 	  String crcget=params.get("mdrill.crc.key.get",null);
 
-	  if(crcget!=null&&params.getBool("fetchfdt", false))
+	  if(crcget!=null&&(params.getBool("fetchfdt", false)||isdetail))
 	  {
 		  SolrIndexReader reader=searcher.getReader();
 			IndexReader.InvertParams invparam=new IndexReader.InvertParams();

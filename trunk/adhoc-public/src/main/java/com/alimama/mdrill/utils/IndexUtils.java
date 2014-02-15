@@ -1,8 +1,6 @@
 package com.alimama.mdrill.utils;
 
 import java.io.*;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.CRC32;

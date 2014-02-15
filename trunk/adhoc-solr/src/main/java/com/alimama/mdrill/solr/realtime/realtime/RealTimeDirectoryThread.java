@@ -2,8 +2,11 @@ package com.alimama.mdrill.solr.realtime.realtime;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.TimerTask;
+import java.util.zip.CRC32;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -144,11 +147,18 @@ public class RealTimeDirectoryThread {
     	RealTimeDirectorUtils.getSlowTimer().purge();
     	RealTimeDirectorUtils.getQuickTimer().purge();
     }
-    
+	public static SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMddHHmmss");
+
     public void startSyncFromHdfs(final Runnable callback) throws IOException
 	{
     	Configuration conf=params.getConf();
-    	final Path localHdfsRecover=new Path(params.baseDir,"realtime_hdfs_recover");
+    	
+    	CRC32 crc32 = new CRC32();
+		crc32.update(String.valueOf(java.util.UUID.randomUUID().toString()).getBytes());
+		Long uuid=crc32.getValue();
+		String pathname=String.valueOf(fmt.format(new Date())+"_"+status.uniqIndex.incrementAndGet()) + "_"	+ uuid;
+    	
+    	final Path localHdfsRecover=new Path(new Path(params.getIndexMalloc(pathname.hashCode()),"realtime_hdfs_recover"),pathname);
     	final Path hdfsRealtime=new Path(params.hdfsPath,"realtime");
     	
 		final FileSystem fs=FileSystem.get(conf);

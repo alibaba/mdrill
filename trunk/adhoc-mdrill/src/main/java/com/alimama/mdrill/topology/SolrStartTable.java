@@ -535,10 +535,10 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 	}
 
 	public Boolean isTimeout() {
-		Long timespan = 1000l * 60 * 40;
+		Long timespan = 1000l * 60 * 120;
 		ShardsState stat = statcollect.getStat();
 		if (stat.equals(ShardsState.SERVICE)) {
-			timespan = 1000l * 60 * 40;
+			timespan = 1000l * 60 * 120;
 		}
 		boolean istimeout= isInit.get()&&statcollect.isTimeout(timespan);
 		

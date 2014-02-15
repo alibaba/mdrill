@@ -236,9 +236,9 @@ public class RealTimeDirectoryData {
 			
 			CRC32 crc32 = new CRC32();
 			crc32.update(String.valueOf(java.util.UUID.randomUUID().toString()).getBytes());
-			File rtn = new File(new File(params.baseDir, "realtime"),
-					String.valueOf(fmt.format(new Date())+"_"+status.uniqIndex.incrementAndGet()) + "_"
-							+ crc32.getValue());
+			Long uuid=crc32.getValue();
+			String pathname=String.valueOf(fmt.format(new Date())+"_"+status.uniqIndex.incrementAndGet()) + "_"	+ uuid;
+			File rtn = new File(new File(params.getIndexMalloc(pathname.hashCode()), "realtime"),pathname);
 			if (rtn.exists()) {
 				continue;
 			}
@@ -489,10 +489,6 @@ public class RealTimeDirectoryData {
 			sdoc.remove("mdrillCmd");
 			sdoc.remove("mdrill_uuid");
 			
-			if("mm_12229823_1573806_11174236".equals(sdoc.getFieldValue("pid")))
-			{
-				LOG.info("####flushDocList :"+sdoc);
-			}
 			
 			Document lucenedoc = DocumentBuilder.toDocument(sdoc,
 					params.core.getSchema());

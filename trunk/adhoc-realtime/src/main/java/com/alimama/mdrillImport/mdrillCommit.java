@@ -67,9 +67,9 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 	}
 		
 
-	public synchronized void updateAll(HashMap<BoltStatKey, BoltStatVal> buffer,boolean istanxpv)
+	public synchronized void updateAll(HashMap<BoltStatKey, BoltStatVal> buffer)
 	{
-		this.lastts=this.getMinTs(buffer,istanxpv);
+		this.lastts=this.getMinTs(buffer);
 		this.group.updateAll(buffer, this.update);
 
 		group.maybeClean();
@@ -81,7 +81,7 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 		}
 	}
 	
-	private long[] getMinTs(HashMap<BoltStatKey, BoltStatVal> buffer,boolean istanxpv)
+	private long[] getMinTs(HashMap<BoltStatKey, BoltStatVal> buffer)
 	{
 		long logTs=System.currentTimeMillis();
 		long logTsmax=System.currentTimeMillis();
@@ -91,13 +91,6 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 			BoltStatKey key=e.getKey();
 			BoltStatVal bv=e.getValue();
 			
-			if(istanxpv)
-			{
-				if(key.list.length>=3&&"mm_12229823_1573806_11174236".equals(key.list[2]))
-				{
-					LOG.info("yanniandebuggetMinTs:"+key.toString()+"==="+bv.toString());
-				}
-			}
 			long ts=bv.getGroupts();
 			logTs=Math.min(logTs, ts);
 			logTsmax=Math.max(logTsmax, ts);

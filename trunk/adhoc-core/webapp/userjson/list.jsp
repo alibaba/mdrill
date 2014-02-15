@@ -120,11 +120,11 @@ $.post("./aside.json",requestparams,
 
 		function (data, textStatus){
 			
-			var tableInfo="<table cellpadding='1' cellspacing='0' border='1'><tr><td>表名</td><td>编号</td></tr>";
+			var tableInfo="<table cellpadding='1' cellspacing='0' border='1'><tr><td>表名</td><td>内部表名</td><td>编号</td></tr>";
 			var tablelist=data.data.navList['modules'];
     for(var i=0;i<tablelist.length;i++)
     {
-    	tableInfo+="<tr><td>"+tablelist[i]["moduleName"]+"</td><td>"+tablelist[i]["moduleId"]+"</td></tr>";
+    	tableInfo+="<tr><td>"+tablelist[i]["moduleName"]+"</td><td><a href='http://quanjing.alimama.com:9999/tableshards.jsp?tablename="+tablelist[i]["moduleTableName"]+"' target='_blank'>"+tablelist[i]["moduleTableName"]+"</a></td><td>"+tablelist[i]["moduleId"]+"</td></tr>";
     }
     
     $("#tableinfomsg").html(tableInfo);

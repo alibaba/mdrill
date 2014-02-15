@@ -53,6 +53,7 @@ public class MdrillParseDetail {
 		this.isdesc=params.getBool(FacetParams.FACET_CROSS_SORT_ISDESC, true);
 		this.crcOutputSet=params.get("mdrill.crc.key.set");
 
+
 	}
 	public fetchContaioner createContainer(String[] fields, DocSet baseDocs,SegmentReader reader,SolrIndexSearcher searcher,SolrQueryRequest req) throws IOException, ParseException
 	{
@@ -61,7 +62,7 @@ public class MdrillParseDetail {
 	public static class fetchContaioner{
 		public ShardDetailSelectDetailRowCompare cmpTermNum;
 		public ShardDetailSelectDetailRowStringCompare cmpresult;
-		public UnvertFields ufs=null;
+//		public UnvertFields ufs=null;
 		public UnvertFields sortufs=null;
 		public HigoJoinInvert[] joinInvert={};
 		public UniqTypeNum.SelectDetailSort SelectDetailSort=null;
@@ -73,10 +74,12 @@ public class MdrillParseDetail {
 		HigoJoinInvert invforSortValue=null;
 		int invforSortOffset=0;
 		UnInvertedField columnSortcif=null;
+		public String[] fields;
+		
 		public fetchContaioner(MdrillParseDetail parse,String[] fields, DocSet baseDocs,SegmentReader reader,SolrIndexSearcher searcher,SolrQueryRequest req) throws IOException, ParseException
 		{
 			this.parse=parse;
-			ufs=new UnvertFields(fields, reader,searcher.getPartionKey(),searcher.getSchema(),false);
+			this.fields=fields;
 			sortufs=new UnvertFields(new String[]{parse.sort_fl}, reader,searcher.getPartionKey(),searcher.getSchema(),true);
 			this.joinInvert=new HigoJoinInvert[parse.joinList.length];
 
@@ -111,7 +114,7 @@ public class MdrillParseDetail {
 			
 			res = new PriorityQueue<SelectDetailRow>(	this.parse.limit_offset, Collections.reverseOrder(cmpTermNum));
 			
-			this.groupbySize=ufs.length;
+			this.groupbySize=this.fields.length;
 			for(HigoJoinInvert inv:joinInvert)
 			{
 				this.groupbySize+=inv.fieldCount();
@@ -170,7 +173,6 @@ public class MdrillParseDetail {
 			{
 				this.joinInvert[i].close();
 			}
-			ufs.free();
 			sortufs.free();
 			GroupListCache.cleanFieldValueCache(groupbySize);
 			SelectDetailRow.CLEAN();

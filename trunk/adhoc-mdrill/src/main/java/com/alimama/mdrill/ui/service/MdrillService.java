@@ -193,11 +193,6 @@ public class MdrillService {
 
 		for(SolrInputDocument doc:docs)
 		{
-			if("mm_12229823_1573806_11174236".equals(doc.getFieldValue("pid")))
-			{
-				LOG.info("####yannian debug pid :"+doc);
-
-			}
 			
 			doc.setField("mdrill_uuid", uuid());
 			if(!doc.containsKey("mdrillPartion"))

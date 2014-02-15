@@ -60,7 +60,14 @@ public class MdrillTaskAssignment implements IAssignment {
 	}
 
 	
-
+	public Map<NodePort, List<Integer>> keeperSlots(
+			Map<NodePort, List<Integer>> aliveAssigned, int numTaskIds,
+			int numWorkers)
+	{
+		Map<NodePort, List<Integer>> rtn=new HashMap<NodePort, List<Integer>>();
+		rtn.putAll(aliveAssigned);
+		return rtn;
+	}
 
 	@Override
 	public List<NodePort> slotsAssignment(List<NodePort> freedSlots,

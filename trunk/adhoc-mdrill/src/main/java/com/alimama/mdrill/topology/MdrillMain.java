@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.util.List;
 import java.util.Map;
 
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
@@ -265,7 +266,6 @@ public class MdrillMain {
 		Integer shards = StormUtils
 				.parseInt(stormconf.get("higo.shards.count"));
 		
-		Integer fixassign = StormUtils.parseInt(stormconf.containsKey("higo.fixed.shards")?stormconf.get("higo.fixed.shards"):0);
 		Integer replication = StormUtils.parseInt(stormconf.containsKey("higo.shards.replication")?stormconf.get("higo.shards.replication"):1);
 		
 		Integer partions = StormUtils.parseInt(stormconf
@@ -299,19 +299,30 @@ public class MdrillMain {
 		conf.setNumWorkers(shards + msCount);
 		conf.setNumAckers(1);
 		conf.setMaxSpoutPending(100);
-		conf.put(CustomAssignment.TOPOLOGY_CUSTOM_ASSIGNMENT,MdrillTaskAssignment.class.getName());
-		conf.put(MdrillTaskAssignment.SHARD_REPLICATION, replication);
-		conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS,fixassign);
-		for(int i=1;i<=fixassign;i++)
+		
+		List<String> assignment=(List<String>) stormconf.get(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_DEFAULT+"."+topologyName);
+		String assignmentports=String.valueOf(stormconf.get(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_PORTS+"."+topologyName));
+		if((assignment==null||assignment.size()==0)&&stormconf.containsKey("higo.fixed.shards"))
 		{
-			conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS+"."+i,(String) stormconf.get("higo.fixed.shards"+"."+i));
-		}
-		conf.put(MdrillTaskAssignment.MS_PORTS,	(String) stormconf.get("higo.merge.ports"));
-		conf.put(MdrillTaskAssignment.REALTIME_PORTS,(String) stormconf.get("higo.realtime.ports"));
-		conf.put(MdrillTaskAssignment.MS_NAME, "merge");
-		conf.put(MdrillTaskAssignment.SHARD_NAME, "shard");
-		conf.put(MdrillTaskAssignment.REALTIME_NAME, "realtime");
+			//兼容旧的调度
+			Integer fixassign = StormUtils.parseInt(stormconf.containsKey("higo.fixed.shards")?stormconf.get("higo.fixed.shards"):0);
+			conf.put(CustomAssignment.TOPOLOGY_CUSTOM_ASSIGNMENT,MdrillTaskAssignment.class.getName());
+			conf.put(MdrillTaskAssignment.SHARD_REPLICATION, replication);
+			conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS,fixassign);
+			for(int i=1;i<=fixassign;i++)
+			{
+				conf.put(MdrillTaskAssignment.HIGO_FIX_SHARDS+"."+i,(String) stormconf.get("higo.fixed.shards"+"."+i));
+			}
+			conf.put(MdrillTaskAssignment.MS_PORTS,	(String) stormconf.get("higo.merge.ports"));
+			conf.put(MdrillTaskAssignment.MS_NAME, "merge");
+			conf.put(MdrillTaskAssignment.SHARD_NAME, "shard");
+			conf.put(MdrillTaskAssignment.REALTIME_NAME, "realtime");
 
+		}else{
+			conf.put(CustomAssignment.TOPOLOGY_CUSTOM_ASSIGNMENT, MdrillDefaultTaskAssignment.class.getName());
+			conf.put(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_DEFAULT, assignment);
+			conf.put(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_PORTS, assignmentports);
+		}
 		BoltParams paramsMs=new BoltParams();
 		paramsMs.compname="merge_0";
 		paramsMs.replication=1;

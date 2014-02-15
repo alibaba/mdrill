@@ -159,7 +159,7 @@ public class MdrillDetailFdt {
 										
 										if(fv!=null)
 										{
-											buff.groupbuff.append(ftlist[j].toExternal(fv));
+											buff.groupbuff.append(EncodeUtils.encode(ftlist[j].toExternal(fv)));
 										}
 										else{
 											buff.groupbuff.append(EncodeUtils.encode("-"));

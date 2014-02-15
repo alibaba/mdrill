@@ -16,12 +16,10 @@ public class ImportBolt implements IRichBolt {
 	private static Logger LOG = Logger.getLogger(ImportBolt.class);
     private static final long serialVersionUID = 1L;
     private String confPrefix;
-    boolean istanxpv=false;
 
     public ImportBolt(String confPrefix)
     {
     	this.confPrefix=confPrefix;
-    	istanxpv=this.confPrefix.indexOf("tanx_pv")>=0;
 
     }
 
@@ -36,6 +34,7 @@ public class ImportBolt implements IRichBolt {
 	private BoltStatus status=null;
     int buffersize=5000;
     int intMapsize=500;
+    int checkIntervel=1000;
 
 
     @Override
@@ -50,6 +49,12 @@ public class ImportBolt implements IRichBolt {
     	
 		int timeout=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-timeoutBolt")));
 		this.buffersize=Integer.parseInt(String.valueOf(conf.get(confPrefix+"-boltbuffer")));
+		Object chkIntervel=conf.get(confPrefix+"-boltIntervel");
+		if(chkIntervel!=null)
+		{
+			this.checkIntervel=Integer.parseInt(String.valueOf(chkIntervel));
+		}
+		
     	this.intMapsize=Math.min(this.buffersize, 1024);
 
     	this.status=new BoltStatus();
@@ -70,13 +75,6 @@ public class ImportBolt implements IRichBolt {
     	BoltStatVal bv=(BoltStatVal)input.getValue(1);
     	
     	
-    	if(istanxpv)
-		{
-			if(key.list.length>=3&&"mm_12229823_1573806_11174236".equals(key.list[2]))
-			{
-				LOG.info("yanniandebugbolt:"+key.toString()+"==="+bv.toString());
-			}
-		}
 
     	BoltStatVal statval=nolockbuffer.get(key);
     	if(statval==null)
@@ -87,7 +85,7 @@ public class ImportBolt implements IRichBolt {
     		statval.merger(bv);
     	}
     	
-    	if((this.status.InputCount%1000!=0))
+    	if((this.status.InputCount%this.checkIntervel!=0))
     	{
         	this.collector.ack(input);
 
@@ -102,7 +100,7 @@ public class ImportBolt implements IRichBolt {
     	
 	    	HashMap<BoltStatKey, BoltStatVal> buffer=nolockbuffer;
 			nolockbuffer=new HashMap<BoltStatKey, BoltStatVal>(this.intMapsize);
-			this.commit.updateAll(buffer,istanxpv);
+			this.commit.updateAll(buffer);
 		
 		LOG.info(this.confPrefix+" bolt flush:groupsize="+buffer.size()+","+this.status.toString()+","+this.commit.toDebugString());
 		this.timeoutCheck.reset();

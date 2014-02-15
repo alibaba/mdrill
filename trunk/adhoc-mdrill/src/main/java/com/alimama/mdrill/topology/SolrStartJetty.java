@@ -23,7 +23,7 @@ import backtype.storm.task.OutputCollector;
 
 import com.alipay.bluewhale.core.cluster.SolrInfo;
 import com.alipay.bluewhale.core.cluster.SolrInfo.ShardCount;
-import com.alimama.mdrill.topology.SolrStartTable.hbExecute;
+import com.alimama.mdrill.solr.realtime.realtime.RealTimeDirectoryParams;
 import com.alimama.mdrill.topology.utils.Interval;
 import com.alimama.mdrill.topology.utils.SolrStartJettyExcetionCollection;
 import com.alimama.mdrill.utils.HadoopUtil;
@@ -81,6 +81,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
 		this.taskid=taskid;
 		this.singleStorePath=IndexUtils.getPath(diskList, taskIndex,0,this.lfs);
 		HigoJoinUtils.setLocalStorePath(diskList.split(","));
+		RealTimeDirectoryParams.setDiskDirList(taskIndex, diskList);
 		SolrCore.setSearchCacheSize(partions);
 		SolrCore.setBinglogType(params.binlog);
 		LOG.info("higolog init table:"+this.tablename+",port:"+this.portbase+",taskIndex:"+this.taskIndex+",taskId:"+this.taskid+",storepath:"+this.singleStorePath);
@@ -288,7 +289,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
         
     public Boolean isTimeout()
     {
-		return isInit.get()&&statcollect.isTimeout(1000l*60*40);
+		return isInit.get()&&statcollect.isTimeout(1000l*60*120);
     }
     
     private Interval hbInterval=new Interval();;
