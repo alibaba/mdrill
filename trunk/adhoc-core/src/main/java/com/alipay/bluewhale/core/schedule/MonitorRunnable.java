@@ -4,27 +4,30 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
+
+import backtype.storm.utils.TimeCacheMap;
 
 import com.alipay.bluewhale.core.cluster.StormClusterState;
 import com.alipay.bluewhale.core.cluster.StormConfig;
 import com.alipay.bluewhale.core.daemon.NimbusData;
 import com.alipay.bluewhale.core.daemon.StatusTransition;
 import com.alipay.bluewhale.core.daemon.StatusType;
-import com.alipay.bluewhale.core.daemon.supervisor.Supervisor;
 import com.alipay.bluewhale.core.utils.PathUtils;
-import com.esotericsoftware.minlog.Log;
 
 public class MonitorRunnable implements Runnable {
 	private static Logger LOG = Logger.getLogger(MonitorRunnable.class);
 
 	private NimbusData data;
+	private AtomicLong index=new AtomicLong(0l);
 
 	public MonitorRunnable(NimbusData data) {
 		this.data = data;
 	}
 
+	TimeCacheMap<String, Long> lastneedClean=new TimeCacheMap<String, Long>(3600);
 	@Override
 	public void run() {
 		StormClusterState clusterState = data.getStormClusterState();
@@ -35,6 +38,16 @@ public class MonitorRunnable implements Runnable {
 			StatusTransition.transition(data, topologyid, false, StatusType.monitor);
 		    }
 		}
+		
+		long times=index.incrementAndGet();
+		if(times%10!=0)
+		{
+			return ;
+		}
+		if(times>10000000)
+		{
+			index.set(0l);
+		}
 
 
 		// 线程安全操作，与submitTopology和transition状态时
@@ -42,6 +55,12 @@ public class MonitorRunnable implements Runnable {
 			Set<String> to_cleanup_ids = do_cleanup(clusterState,active_topologys);
 			if (to_cleanup_ids != null && to_cleanup_ids.size() > 0) {
 				for (String storm_id : to_cleanup_ids) {
+					if(!lastneedClean.containsKey(storm_id))
+					{
+					    LOG.info("nexttime Cleaning up " + storm_id);
+					    lastneedClean.put(storm_id, System.currentTimeMillis() );
+						continue;
+					}
 				    LOG.info("Cleaning up " + storm_id);
 					clusterState.teardown_heartbeats(storm_id);
 					clusterState.teardown_task_errors(storm_id);

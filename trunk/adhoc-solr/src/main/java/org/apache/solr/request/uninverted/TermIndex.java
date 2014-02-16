@@ -267,13 +267,40 @@ public static class IndexSearch
 			  }
 		  }
 		  
+		  
+		  public void closeQuickTisInput()
+		  {
+			  try{
+
+			  if(this.ti!=null&&this.ti.index!=null&&this.ti.index.quicktisInput!=null)
+			  {
+				  this.ti.index.quicktisInput.close();
+				  this.ti.index.quicktisInput=null;
+				 
+
+			  }
+				  
+			  }catch(Throwable e)
+			  {
+				  log.info("close",e);
+
+			  }
+			  
+		  }
+		  
+		  public void close()
+		  {
+			  this.closeQuickTisInput();
+		  }
+		  
 		  public void resetQuickTis(TermInfosReader.QuickInput quicktisInput)
 		  {
+			  this.closeQuickTisInput();
 			  if(this.isNonText)
 			  {
 				  try{
 					  QuickInput thr=quicktisInput.singleThr();
-				  this.ti.index.quicktisInput.quicktisInputTxt=thr.quicktisInputTxt;
+				  this.ti.index.quicktisInput=thr;
 				  }catch(Throwable e)
 				  {
 					  log.info("resetQuickTis",e);

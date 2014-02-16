@@ -69,14 +69,14 @@ public class NimbusServer {
 		MonitorRunnable r1 = new MonitorRunnable(data);
 		
 		int monitor_freq_secs = (Integer) conf.get(Config.NIMBUS_MONITOR_FREQ_SECS);
-		scheduExec.scheduleAtFixedRate(r1, 0, monitor_freq_secs,TimeUnit.SECONDS);
+		scheduExec.scheduleAtFixedRate(r1, monitor_freq_secs, monitor_freq_secs,TimeUnit.SECONDS);
 		
 		//Schedule Nimbus inbox cleaner.清理/nimbus/inbox下过期的jar
 		String dir_location=StormConfig.masterInbox(conf);
 		int inbox_jar_expiration_secs=(Integer)conf.get(Config.NIMBUS_INBOX_JAR_EXPIRATION_SECS);
 		CleanRunnable r2 = new CleanRunnable(dir_location,inbox_jar_expiration_secs);
 		int cleanup_inbox_freq_secs = (Integer) conf.get(Config.NIMBUS_CLEANUP_INBOX_FREQ_SECS);
-		scheduExec.scheduleAtFixedRate(r2, 0, cleanup_inbox_freq_secs,TimeUnit.SECONDS);
+		scheduExec.scheduleAtFixedRate(r2, cleanup_inbox_freq_secs, cleanup_inbox_freq_secs,TimeUnit.SECONDS);
 
 		//Thrift server配置及启动操作
 		Integer thrift_port = (Integer) conf.get(Config.NIMBUS_THRIFT_PORT);

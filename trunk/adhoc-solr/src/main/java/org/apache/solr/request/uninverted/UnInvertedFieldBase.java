@@ -94,12 +94,19 @@ public class UnInvertedFieldBase implements GrobalCache.ILruMemSizeCache{
 				}
 			}
 		}
+	  
+	  public void extendFree()
+		{
+		  
+		}
 	private void freeMem()
 	{
 		 if(isShutDown){
 			 return ;
 		 }
 		isShutDown=true;
+
+		this.extendFree();
 
 		if(this.index!=null)
 		{
@@ -124,6 +131,7 @@ public class UnInvertedFieldBase implements GrobalCache.ILruMemSizeCache{
 		{
 			DOUBLE_BUFFER.free(this.termValueDouble);
 		}
+		
 	}
 	
 	 public void LRUclean()

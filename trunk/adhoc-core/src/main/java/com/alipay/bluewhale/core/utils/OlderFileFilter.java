@@ -21,9 +21,14 @@ public class OlderFileFilter implements FileFilter {
     public boolean accept(File pathname) {
 
         long current_time = System.currentTimeMillis();
-
+        long lastMonity=pathname.lastModified();
+        if(lastMonity<=0)
+        {
+        	lastMonity=current_time;
+        	
+        }
         return pathname.isFile()
-                && (pathname.lastModified() + seconds * 1000 <= current_time);
+                && (lastMonity + seconds * 1000l <= current_time);
     }
 
 }

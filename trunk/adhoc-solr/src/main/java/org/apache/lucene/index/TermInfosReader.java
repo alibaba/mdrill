@@ -117,21 +117,33 @@ public class TermInfosReader implements Closeable {
 	  public ConcurrentHashMap<Integer,Long> fieldPosVal=new ConcurrentHashMap<Integer,Long>();
 
 	  public ConcurrentHashMap<Integer,Integer> fieldCount=new ConcurrentHashMap<Integer,Integer>();
-	  
+		protected void finalize() throws Throwable
+	    {
+			super.finalize();
+			try{
+				this.close();
+			}catch(Throwable e)
+			{
+				
+			}
+	    }
 	  public void close() throws IOException
 	  {
 		  if(quicktisInput!=null)
 		  {
 			  quicktisInput.close();
+			  quicktisInput=null;
 		  }
 		  if(quicktisInputTxt!=null)
 		  {
 			  quicktisInputTxt.close();
+			  quicktisInputTxt=null;
 		  }
 		  
 		  if(quicktisInputVal!=null)
 		  {
 			  quicktisInputVal.close();
+			  quicktisInputVal=null;
 		  }
 		
 	  }

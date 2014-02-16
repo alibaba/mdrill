@@ -252,6 +252,23 @@ private void setSingleValue(TermIndex.QuickNumberedTermEnum te,SegmentReader rea
 		}
 	}
 	
+	public void extendFree()
+	{
+		try{
+		if(this.cachete!=null)
+		{
+			
+			this.cachete.close();
+			
+		}
+		}catch(Throwable e)
+		{
+			log.info("extendFree",e);
+		}
+		super.extendFree();
+
+	}
+	
 	TermIndex.QuickNumberedTermEnum cachete=null;
 	private void setSegmentReader(SegmentReader reader)
 	{
