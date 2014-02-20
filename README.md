@@ -13,6 +13,50 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 <b>6.全文检索模式：</b>在mdrill的全文检索模式数据可以直接存储在hdfs中，并且以每天160亿*70维度的数据增量提供全文检索服务（注：该模式下不能进行统计，只能进行关键词匹配查询数据明细）<br>
 
 
+<h1>mdrill数据量的增长</h1>
+<table border="1" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="197" valign="top"><p>时间点</p></td>
+    <td width="197" valign="top"><p>数据量</p></td>
+    <td width="248" valign="top"><p>事件</p></td>
+  </tr>
+  <tr>
+    <td width="197" valign="top"><p>12年12月</p></td>
+    <td width="197" valign="top"><p>小于2亿</p></td>
+    <td width="248" valign="top"><p>adhoc首次上线</p></td>
+  </tr>
+  <tr>
+    <td width="197" valign="top"><p>13年1月</p></td>
+    <td width="197" valign="top"><p>20~30亿</p></td>
+    <td width="248" valign="top"><p>由2台机器扩容到了10台</p></td>
+  </tr>
+  <tr>
+    <td width="197" valign="top"><p>13年5月2日</p></td>
+    <td width="197" valign="top"><p>100亿</p></td>
+    <td width="248" valign="top"><p>首次过百亿</p></td>
+  </tr>
+  <tr>
+    <td width="197" valign="top"><p>13年7月24日 </p></td>
+    <td width="197" valign="top"><p>400亿</p></td>
+    <td width="248" valign="top"><p>首次开源</p></td>
+  </tr>
+  <tr>
+    <td width="197" valign="top"><p>13年11月 </p></td>
+    <td width="197" valign="top"><p>1000亿</p></td>
+    <td width="248" valign="top"><p>全文检索模式ods_allpv_ad_d上线</p></td>
+  </tr>
+  <tr>
+    <td width="197" valign="top"><p>13年12月</p></td>
+    <td width="197" valign="top"><p>1500亿</p></td>
+    <td width="248" valign="top"><p>实时数据以及无线数据的接入</p></td>
+  </tr>
+  <tr>
+    <td width="197" valign="top"><p>14年2月</p></td>
+    <td width="197" valign="top"><p>3200亿</p></td>
+    <td width="248" valign="top"><p>目前只有11台机器，硬盘使用率30%</p></td>
+  </tr>
+</table>
+
 <h1> 发行日志</h1>
  2013.07.24 version 0.18-beta  初始化版本  <br>
  2013.08.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
