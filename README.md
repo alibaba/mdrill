@@ -47,7 +47,7 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 
 
 
-<li><a hfef="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">LICENSE</a></li>
+<li><a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">LICENSE</a></li>
 </ul>
 
 <h1>mdrill Core contributors</h1>
