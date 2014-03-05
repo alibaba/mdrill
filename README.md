@@ -77,7 +77,6 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
  2014.03.05 version 0.20.9-beta bugfix <a href="https://github.com/alibaba/mdrill/wiki/0.20.9">see detail</a>  (<b>推荐版本</b>。 <a href="http://yunpan.taobao.com/share/link/862RqRFhx" target="_blank">点击这里下载</a> 。依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
 
  
- http://yunpan.taobao.com/share/link/862RqRFhx
  
  <h1>版本源码路径</h1>
  https://github.com/alibaba/mdrill/tree/master/release  <br>
