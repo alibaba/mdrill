@@ -838,6 +838,7 @@ public static void setSearchCacheSize(int cacheSize) {
 					boolean rtn= size() > 16;
 					if(rtn)
 					{
+						eldest.getValue().mergerFinal();
 						eldest.getValue().syncHdfs();
 						eldest.getValue().close();
 					}

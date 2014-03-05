@@ -63,7 +63,7 @@ public class SegmentTermDocs implements TermDocs {
     this.freqStream = null;
     if(buffer>10240&&parent.core.freqStream instanceof KeyInput) {
 	    	KeyInput kin=(KeyInput)parent.core.freqStream;
-	    	this.freqStream=new BlockBufferInput((IndexInput)kin.input.clone(), kin.d,kin.fname,kin.getP());
+	    	this.freqStream=BlockBufferInput.MaybeInstance((IndexInput)kin.input.clone(), kin.d,kin.fname,kin.getP());
 	    	log.info("####KeyInput#####="+buffer);
     } else  {
     	if(parent.core.freqStream instanceof KeyInput)

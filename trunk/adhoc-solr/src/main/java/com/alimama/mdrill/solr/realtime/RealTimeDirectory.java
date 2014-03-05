@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -206,6 +205,18 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 		}
 	}
 	
+	public void mergerFinal()
+	{
+		synchronized (rlock.lock) {
+			this.data.flushToDisk();
+			boolean ismerger=this.data.maybeMergerFinal();
+			if(ismerger)
+			{
+				needFlushDfs.set(true);
+			}
+		}
+	}
+	
 	public synchronized void syncHdfs()
 	{
 		if(!needFlushDfs.get())
@@ -228,6 +239,9 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 				break;
 			}
 		}
+		
+		
+		
 		
 		needFlushDfs.set(false);
 		
@@ -303,9 +317,9 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 		this.addDocument(doc,true);
 	}
 
-	long editlogtime=System.currentTimeMillis();
+	private long editlogtime=System.currentTimeMillis();
 	
-	AtomicInteger addIntervel=new AtomicInteger(0);
+	private AtomicInteger addIntervel=new AtomicInteger(0);
 	
 	public synchronized void addDocument(SolrInputDocument doc,boolean writelog) throws CorruptIndexException, LockObtainFailedException, IOException
 	{
@@ -315,7 +329,7 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 			return ;
 		}
 		
-	
+		this.status.lastAddDocumentTime.set(System.currentTimeMillis());
 		if(writelog)
 		{
 			try {

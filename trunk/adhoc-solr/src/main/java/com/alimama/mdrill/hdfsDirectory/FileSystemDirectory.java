@@ -349,7 +349,7 @@ public class FileSystemDirectory extends Directory {
 	FileSystemIndexInput rtn= new FileSystemIndexInput(f, bufferSize);
 	if(this.isUsedBlockBuffer()&&name.indexOf("frq")>=0)
 	{
-		return new BlockBufferInput(rtn,this,name,this.getP());
+		return BlockBufferInput.MaybeInstance(rtn,this,name,this.getP());
 	}
 	
 	return rtn;

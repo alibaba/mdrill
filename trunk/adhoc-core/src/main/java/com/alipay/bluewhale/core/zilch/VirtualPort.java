@@ -53,13 +53,27 @@ public class VirtualPort {
 			Map<Integer, Socket> mapping_atom, Integer port, String debugurl) {
 		synchronized (mapping_atom) {
 			if (!mapping_atom.containsKey(port)) {
-				LOG.info("Connecting to virtual port " + port + ",bind="
-						+ debugurl);
+				for(int i=0;i<62;i++) {
+					try {
+						LOG.info("Connecting to virtual port " + port
+								+ ",bind=" + debugurl);
 
-				Socket socket = ZeroMq.socket(context, ZeroMq.push);
-				String vurl = virtual_url(port);
-				socket = ZeroMq.connect(socket, vurl);
-				mapping_atom.put(port, socket);
+						Socket socket = ZeroMq.socket(context, ZeroMq.push);
+						String vurl = virtual_url(port);
+						socket = ZeroMq.connect(socket, vurl);
+						mapping_atom.put(port, socket);
+						break;
+					} catch (org.zeromq.ZMQException e) {
+						LOG.info("Connecting error "+i,e);
+						if(i>=60)
+						{
+							throw e;
+						}
+						try {
+							Thread.sleep(1000l*10);
+						} catch (InterruptedException e1) {
+						}					}
+				}
 			}
 
 			return mapping_atom.get(port);
@@ -106,15 +120,16 @@ public class VirtualPort {
 			Set<Integer> valid_ports) {
 
 		Socket socket = ZeroMq.socket(context, ZeroMq.pull);
-		for(int i=0;i<61;i++)
+		for(int i=0;i<605;i++)
 		{
 			try{
 			ZeroMq.bind(socket, url);
+			LOG.info("bind:"+url);
 			break;
 			}catch(org.zeromq.ZMQException e)
 			{
-				LOG.info("zeromqBind error",e);
-				if(i>=60)
+				LOG.info("zeromqBind error"+i,e);
+				if(i>=600)
 				{
 					throw e;
 				}

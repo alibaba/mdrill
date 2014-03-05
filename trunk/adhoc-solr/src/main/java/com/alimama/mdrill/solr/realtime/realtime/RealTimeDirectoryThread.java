@@ -103,7 +103,6 @@ public class RealTimeDirectoryThread {
 	private void doclistSync() {
 		long len=1000l;
 		final lastParams lasttime = new lastParams();
-		
 		TimerTask task=new TimerTask() {
 			@Override
 			public void run() {
@@ -116,12 +115,16 @@ public class RealTimeDirectoryThread {
 						return ;
 					}
 					long nowtime = System.currentTimeMillis();
+
 					if (size >= UniqConfig.RealTimeDoclistBuffer()|| (lasttime.getTimeout()) < nowtime) {
 						mainThread.flushDocList();
 						lasttime.lasttime = System.currentTimeMillis();
 						long ts = lasttime.lasttime - nowtime;
 						LOG.info("flushDocList timetake:" + (ts / 1000));
 					}
+					
+					
+					
 				} catch (Throwable ex) {
 					LOG.error("flushDocList", ex);
 				}
@@ -131,12 +134,39 @@ public class RealTimeDirectoryThread {
 		RealTimeDirectorUtils.getQuickTimer().schedule(task, len, len);
 	}
 	
+	private void mergerOne() {
+		long len=1000l*600;
+		final long timeoutone=1000l*UniqConfig.RealTimeMergerOneTimelen();
+		TimerTask task=new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					long nowtime = System.currentTimeMillis();
+					long diff=nowtime-status.lastAddDocumentTime.get();
+					if(diff>=timeoutone)
+					{
+						mainThread.mergerFinal();
+						status.lastAddDocumentTime.set(System.currentTimeMillis());
+						LOG.info("flushDocList timetake:" + (diff / 1000));
+					}
+
+					
+				} catch (Throwable ex) {
+					LOG.error("flushDocList", ex);
+				}
+			}
+		};
+		taskList.add(task);
+		RealTimeDirectorUtils.getSlowTimer().schedule(task, len, len);
+	}
+	
 	
     public void start()
     {
     	this.initPurgerThread();	
 		this.syncHdfs();
 		this.doclistSync();
+		this.mergerOne();
     }
     
     public void close()

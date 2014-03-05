@@ -122,9 +122,12 @@ public class AdhocOfflineService {
 				while ((line = bf.readLine()) != null) {
 					bytesRead += line.getBytes().length;
 					String towrite=line;
-					if(line.indexOf("\001")>=0||line.indexOf("\t")>=0)
+					if(line.indexOf("\001")>=0)
 					{
-						towrite=line.replaceAll(",", "\\\",\\\"").replaceAll("\001", ",").replaceAll("\t", ",").replaceAll("\"", "");
+						towrite=line.replaceAll(",", "_").replaceAll("\001", ",").replaceAll("\t", "_").replaceAll("\"", "");
+					}else if(line.indexOf("\t")>=0)
+					{
+						towrite=line.replaceAll(",", "_").replaceAll("\001", "_").replaceAll("\t", ",").replaceAll("\"", "");
 					}
 					if(!towrite.isEmpty())
 					{
@@ -179,6 +182,9 @@ public class AdhocOfflineService {
 			hpart="ds";
 		}
 		if (projectName.equals("st_tanx_x_core_gateway")) {
+			hpart="ds";
+		}
+		if (projectName.equals("r_rpt_tanx_amif_adhoc_adzone")) {
 			hpart="ds";
 		}
 		queryStr = WebServiceParams.query(queryStr);
@@ -384,6 +390,8 @@ public class AdhocOfflineService {
 			 hql=hql+" limit "+limit;
  
 		 }
+		 
+		 hql=hql.replaceAll("dist\\((.*)\\)", "count(distinct($1))");
 		
 	
 		String md5 = MD5.getMD5(hql);

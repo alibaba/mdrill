@@ -257,7 +257,7 @@ public class MdrillDetail {
 								buff.groupbuff.append(EncodeUtils.encode(fieldValue[j]));
 							}
 							
-							for(int j=fields.length+1;j<cols.length;j++)
+							for(int j=(fields.length+2);j<cols.length;j++)
 							{
 								buff.groupbuff.append(UniqConfig.GroupJoinString());
 								buff.groupbuff.append(cols[j]);

@@ -184,7 +184,7 @@ $.post("./aside.json",requestparams,
 	String checkuser= String.valueOf(request.getParameter("checkuser"));
 	String checkpwd= String.valueOf(request.getParameter("checkpwd"));
 	
-	if(checkpwd.equals(getMD5(checkuser+"1qazxcvfr432wsde"))&&(checkuser.equals("yannian.mu")||checkuser.equals("xuner.zr")||checkuser.equals("zhangzhuang.sbb")||checkuser.equals("chengjian.cqf")||checkuser.equals("linyun.jly")))
+	if(checkpwd.equals(getMD5(checkuser+"1qazxcvfr432wsde"))&&(checkuser.equals("yannian.mu")||checkuser.equals("xuner.zr")||checkuser.equals("zhangzhuang.sbb")||checkuser.equals("chengjian.cqf")||checkuser.equals("linyun.jly")||checkuser.equals("lingning")))
 	{
 
 	String tp= String.valueOf(request.getParameter("type"));

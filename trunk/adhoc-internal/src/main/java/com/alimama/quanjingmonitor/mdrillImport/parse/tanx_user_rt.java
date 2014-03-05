@@ -113,7 +113,7 @@ public class tanx_user_rt extends com.alimama.mdrillImport.DataParser{
 		}
 		
 	}
-	
+
 
 	
 

@@ -45,7 +45,23 @@ public class BlockBufferInput extends BufferedIndexInput {
 	public blockData lastbuff =new blockData(null, 0);
 	public Long lastBlockIndex = -1l;
 	
-	public BlockBufferInput(IndexInput input,Directory dir,String filename,PartionKey p) {
+	public static IndexInput MaybeInstance(IndexInput input,Directory dir,String filename,PartionKey p)
+	{
+		
+		if(dir instanceof org.apache.lucene.store.LinkMMapDirectory)
+		{
+			return input;
+		}
+		
+		if(dir instanceof org.apache.lucene.store.MMapDirectory)
+		{
+			return input;
+		}
+		
+		return new BlockBufferInput(input, dir, filename, p);
+	}
+	
+	private BlockBufferInput(IndexInput input,Directory dir,String filename,PartionKey p) {
 		super("BlockBufferInput", 1024);
 		this.descriptor = new Descriptor(input);
 		this.isOpen = true;

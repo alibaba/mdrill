@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.apache.solr.common.util.NamedList;
 
 import com.alimama.mdrill.distinct.DistinctCount;
+import com.alimama.mdrill.distinct.DistinctCount.DistinctCountAutoAjuest;
+import com.alimama.mdrill.utils.UniqConfig;
 
 /**
  * 用于记录groupby的每条记录以及统计值
@@ -56,6 +56,29 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 	}
 	
 	
+	public void setDist(DistinctCountAutoAjuest autoDist)
+	{
+		if(dist!=null)
+		{
+			for(int i=0;i<dist.size();i++)
+			{
+				autoDist.put(Arrays.asList(this.key,new Integer(i)),dist.get(i));
+			}
+		}
+	}
+	
+	public void removeDist(DistinctCountAutoAjuest autoDist)
+	{
+		if(dist!=null)
+		{
+			for(int i=0;i<dist.size();i++)
+			{
+				autoDist.remove(Arrays.asList(this.key,new Integer(i)));
+
+			}
+		}
+	}
+
 	public void ToCrcSet(MergerGroupByGroupbyRowCompare cmp,Map<Long,String> cache)
 	{
 		this.key.ToCrcSet(cmp,cache);
@@ -67,6 +90,7 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 	
 	public GroupbyRow(ArrayList<Object> nst)
 	{
+
 		this.key=new ColumnKey((ArrayList<Object>)nst.get(0));
 		ArrayList<byte[]> compress=(ArrayList<byte[]>) nst.get(2);
 		this.stat=(ArrayList<ArrayList<Double>>) nst.get(3);
@@ -76,7 +100,8 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 		this.dist=new ArrayList<DistinctCount>(compresssize);
 		for(int i=0;i<compresssize;i++)
 		{
-			this.dist.add(new DistinctCount(compress.get(i)));
+			DistinctCount dc=new DistinctCount(compress.get(i));
+			this.dist.add(dc);
 		}
 	}
 	
@@ -256,6 +281,11 @@ public class GroupbyRow implements Comparable<GroupbyRow>, GroupbyItem{
 	public void addDistinct(Integer field, DistinctCount value) {
 		DistinctCount w = dist.get(field);
 		w.merge(value);
+	}
+	
+	
+	public void setDistinct(Integer field, DistinctCount value) {
+		dist.set(field, value);
 	}
 	
 	public Long getValue() {

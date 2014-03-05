@@ -20,7 +20,9 @@ public class tanx_pv extends com.alimama.mdrillImport.DataParser{
 
 	private volatile long laststartts=System.currentTimeMillis()/1000-TS_MAX;
 	private volatile long lastendts=System.currentTimeMillis()/1000+TS_MAX;
-	@Override
+	
+
+
 	public DataIter parseLine(String line) throws InvalidEntryException {
 		
 		try {

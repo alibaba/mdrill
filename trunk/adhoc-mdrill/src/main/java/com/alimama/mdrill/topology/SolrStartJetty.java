@@ -454,10 +454,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
     
     
     public boolean isStop() {
-		Boolean rtn = this.isTimeout();
-		if (rtn) {
-		    this.collector.reportError(new RuntimeException("timeout:" + this.tablename));
-		}
+		Boolean rtn = isInit.get()&&statcollect.isTimeout(1000l*60*5);
 		return rtn;
     }
 

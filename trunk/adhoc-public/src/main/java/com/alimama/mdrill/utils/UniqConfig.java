@@ -28,6 +28,11 @@ public class UniqConfig {
 		return 5000;
 	}
 	
+	public static int RealTimeMergerOneTimelen()
+	{
+		return 3600*1;
+	}
+	
 
 	public static int RealTimeHdfsFlush()
 	{
@@ -148,5 +153,9 @@ public class UniqConfig {
 		return 10010;
 	}
 	
+	public static Integer DistinctCountSize()
+	{
+		return 10000*100;
+	}
 	
 }

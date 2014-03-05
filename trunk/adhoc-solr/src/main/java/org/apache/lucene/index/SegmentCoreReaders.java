@@ -101,7 +101,7 @@ public class SegmentCoreReaders {
     	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), cfsDir,filename,cfsDir.getP());
     	  if (fieldInfos.hasProx()) {
 		  String fname=IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION);
-	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize), cfsDir,fname,cfsDir.getP());
+	        proxStream = BlockBufferInput.MaybeInstance(cfsDir.openInput(fname, readBufferSize), cfsDir,fname,cfsDir.getP());
 	      } else {
 	        proxStream = null;
 	      }
@@ -111,7 +111,7 @@ public class SegmentCoreReaders {
     	  freqStream = new BlockBufferInput.KeyInput(cfsDir.openInput(filename, readBufferSize), cfsDir,filename,cfsDir.getP());
     	  if (fieldInfos.hasProx()) {
 		  String fname=IndexFileNames.segmentFileName(segment, IndexFileNames.PROX_EXTENSION);
-	        proxStream = new BlockBufferInput(cfsDir.openInput(fname, readBufferSize),cfsDir,fname,cfsDir.getP());
+	        proxStream = BlockBufferInput.MaybeInstance(cfsDir.openInput(fname, readBufferSize),cfsDir,fname,cfsDir.getP());
 	      } else {
 	        proxStream = null;
 	      }

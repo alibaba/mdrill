@@ -209,21 +209,21 @@ public class TermInfosReader implements Closeable {
 			  
 			  if(directory instanceof FSDirectory)
 		      {
-		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),directory,quickTis,directory.getP());
+		    	  quicktisInput.quicktisInput=BlockBufferInput.MaybeInstance(directory.openInput(quickTis,readBufferSize),directory,quickTis,directory.getP());
 				  if(quicktisInput.isQuickTxtMode.get())
 		    	  {
-					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),directory,quickTisTxt,directory.getP());
-					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),directory,quickTisVal,directory.getP());
+					  quicktisInput.quicktisInputTxt=BlockBufferInput.MaybeInstance(directory.openInput(quickTisTxt,readBufferSize),directory,quickTisTxt,directory.getP());
+					  quicktisInput.quicktisInputVal=BlockBufferInput.MaybeInstance(directory.openInput(quickTisVal,readBufferSize),directory,quickTisVal,directory.getP());
 		    	  }
 		    }else if(directory instanceof FileSystemDirectory)
 		      {
 		    	  
-		    	  quicktisInput.quicktisInput=new BlockBufferInput(directory.openInput(quickTis,readBufferSize),directory,quickTis,directory.getP());
+		    	  quicktisInput.quicktisInput=BlockBufferInput.MaybeInstance(directory.openInput(quickTis,readBufferSize),directory,quickTis,directory.getP());
 		    		
 				  if(quicktisInput.isQuickTxtMode.get())
 		    	  {
-					  quicktisInput.quicktisInputTxt=new BlockBufferInput(directory.openInput(quickTisTxt,readBufferSize),directory,quickTisTxt,directory.getP());
-					  quicktisInput.quicktisInputVal=new BlockBufferInput(directory.openInput(quickTisVal,readBufferSize),directory,quickTisVal,directory.getP());
+					  quicktisInput.quicktisInputTxt=BlockBufferInput.MaybeInstance(directory.openInput(quickTisTxt,readBufferSize),directory,quickTisTxt,directory.getP());
+					  quicktisInput.quicktisInputVal=BlockBufferInput.MaybeInstance(directory.openInput(quickTisVal,readBufferSize),directory,quickTisVal,directory.getP());
 		    	  }
 		    }else{
 			    	quicktisInput.quicktisInput=directory.openInput(quickTis, readBufferSize);
@@ -269,11 +269,11 @@ public class TermInfosReader implements Closeable {
      
       if(directory instanceof FSDirectory)
       {
-    	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),directory,filename,directory.getP());
+    	  tisInput=BlockBufferInput.MaybeInstance(directory.openInput(filename,readBufferSize),directory,filename,directory.getP());
     	  tiiInput=directory.openInput(indexFileName, readBufferSize); 
     }if(directory instanceof FileSystemDirectory)
     {
-  	  tisInput=new BlockBufferInput(directory.openInput(filename,readBufferSize),directory,filename,directory.getP());
+  	  tisInput=BlockBufferInput.MaybeInstance(directory.openInput(filename,readBufferSize),directory,filename,directory.getP());
   	  tiiInput=directory.openInput(indexFileName, readBufferSize); 
   }else{
     	  tisInput=directory.openInput(filename,readBufferSize);

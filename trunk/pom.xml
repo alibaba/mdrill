@@ -32,10 +32,6 @@
 			<id>clojars</id>
 			<url>http://clojars.org/repo/</url>
 		</repository>
-	<repository>
-      		<id>taobao.com</id>
-      		<url>http://mvnrepo.taobao.ali.com/mvn/repository</url>
-    	</repository>
 		
 	</repositories>
 	<build>

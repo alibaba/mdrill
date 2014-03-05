@@ -1,6 +1,7 @@
 package com.alimama.mdrill.topology;
 
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
@@ -109,15 +110,21 @@ public class SolrStart implements StopCheck, SolrStartInterface {
 
 	@Override
 	public boolean isStop() {
-		if (jetty.isStop()) {
+		if(this.isTimeout())
+		{
 			return true;
 		}
+		
 		for (SolrStartTable table : tables) {
-			if (table.isStop()) {
-				return true;
+			if (!table.isStop()) {
+				return false;
 			}
 		}
-		return false;
+		for (SolrStartTable table : tables) {
+			table.reportError("timeout");
+		}
+
+		return true;
 	}
 
 	@Override

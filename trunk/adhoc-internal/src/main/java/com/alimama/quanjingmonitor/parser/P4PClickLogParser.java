@@ -13,11 +13,11 @@ public class P4PClickLogParser
     }
 
     @Override
-    public Object parse(String raw)
+    public Object parse(Object raw)
 	throws InvalidEntryException
     {
 	try {
-	    ClickLog p4pclicklog = com.taobao.loganalyzer.input.click.parser.ClickLogParser.parse(raw);
+	    ClickLog p4pclicklog = com.taobao.loganalyzer.input.click.parser.ClickLogParser.parse((String)raw);
 	    if (p4pclicklog == null)
 	    {
 	    	throw new InvalidEntryException("Invalid log `" + raw + "'");

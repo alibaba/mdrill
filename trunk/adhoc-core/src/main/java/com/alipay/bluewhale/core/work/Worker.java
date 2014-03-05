@@ -112,6 +112,7 @@ public class Worker {
 	public Worker(Map conf, IContext mq_context, String topology_id,
 			String supervisor_id, int port, String worker_id)
 			throws Exception {
+		
 		LOG.info("Launching worker for " + topology_id + " on " + supervisor_id
 				+ ":" + port + " with id " + worker_id + " and conf " + conf);
 
@@ -174,6 +175,14 @@ public class Worker {
 
 	public WorkerShutdown execute() throws Exception {
 
+		
+		
+
+		// 执行创建虚拟端口对象，worker接收发送过来的tuple,然后根据task_id，分发给本地的相关task(通过zeromo的本地模式)
+		WorkerVirtualPort virtual_port = new WorkerVirtualPort(conf,
+				supervisorId, topologyId, port, mqContext, taskids);
+		Shutdownable virtual_port_shutdown = virtual_port.launch();
+
 		TopologyContext systemTopology = systemContext.make(null);
 
 		// 刷新链接
@@ -229,10 +238,6 @@ public class Worker {
 
 		AsyncLoopThread[] threads = { refreshconn, refreshzk, hb, dr };
 
-		// 执行创建虚拟端口对象，worker接收发送过来的tuple,然后根据task_id，分发给本地的相关task(通过zeromo的本地模式)
-		WorkerVirtualPort virtual_port = new WorkerVirtualPort(conf,
-				supervisorId, topologyId, port, mqContext, taskids);
-		Shutdownable virtual_port_shutdown = virtual_port.launch();
 
 		return new WorkerShutdown(shutdowntasks, active, nodeportSocket,
 				virtual_port_shutdown, mqContext, threads, zkCluster,
@@ -286,15 +291,11 @@ public class Worker {
 			sd.join();
 			LOG.info("WorkerShutdown topology_id=" + topology_id + ",port_str="
 					+ port_str);
-		} catch (RuntimeException e) {
+		}  catch (Throwable e) {
 			LOG.error("make worker error" ,e);
 			LOG.info("WorkerShutdown topology_id=" + topology_id + ",port_str="
 					+ port_str);
-
-		} catch (Exception e) {
-			LOG.error("make worker error" ,e);
-			LOG.info("WorkerShutdown topology_id=" + topology_id + ",port_str="
-					+ port_str);
+			System.exit(0);
 
 		}
 	}

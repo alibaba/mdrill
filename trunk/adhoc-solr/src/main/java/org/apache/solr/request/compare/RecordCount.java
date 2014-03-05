@@ -17,10 +17,12 @@ public class RecordCount implements GroupbyItem{
 	public RecordCount() {}
 	public RecordCount(ArrayList<Object> nst)
 	{
+		try{
 		String oversize=(String) nst.get(0);
 		this.isoversize="yes".equals(oversize);
 		this.maxUniqSize=(Integer) nst.get(2);
 		this.uniq.addAll((Collection<? extends ArrayList<Integer>>) nst.get(3));
+		}catch(Throwable e){}
 	}
 	
 	public void shardsMerge(GroupbyItem g)

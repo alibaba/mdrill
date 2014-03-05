@@ -44,7 +44,6 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
     
     private int thedateIndex=-1;
 
-   
     
     @Override
     public void setup(Context context) throws IOException, InterruptedException {
@@ -59,6 +58,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 
 		String mode=conf.get("mdrill.table.mode","");
 		HashMap<String,ArrayList<String>> contanis=new HashMap<String, ArrayList<String>>();
+		
 		if(mode.indexOf("@fieldcontains:")>=0)
 		{
 			
@@ -98,14 +98,27 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 		String custfields=conf.get("higo.column.custfields","");
 		usedthedate=conf.getBoolean("higo.column.userthedate", usedthedate);
 		this.thedate=null;
-		if(usedthedate)
-		{
 		 InputSplit inputSplit = context.getInputSplit();
 	     Path filepath = ((FileSplit) inputSplit).getPath();
+	     
+	     if(filepath!=null)
+	     {
+	    	 String pash=filepath.toString();
+	 		 this.Index=pash.hashCode()%1000000;
+	 		 if(this.Index<0)
+	 		 {
+	 			this.Index*=-1;
+	 		 }
+	 		 
+	     }
+		if(usedthedate)
+		{
+		
 	     String inputbase = conf.get("higo.input.base");
 	     this.thedate=JobIndexPublic.parseThedate(new Path(inputbase),filepath);
  		System.out.println("thedatepath: " + thedate+"@"+filepath.toString() +"@"+inputbase + "");
 		}
+		
 
 		
 		if(custfields==null||custfields.isEmpty())
@@ -253,7 +266,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
 			}
     	}
     	
-    	if(usedthedate&&thedateIndex>0)
+    	if(usedthedate&&thedateIndex>=0)
     	{	
     		if(thedate!=null)
     		{
@@ -312,6 +325,7 @@ public class IndexMapper extends   Mapper<WritableComparable, Text, PairWriteabl
     	}
     	
     	context.write(new PairWriteable(this.Index++), new DocumentMap(res));
+
     	
     	if(this.isuniqcheck&&uniqfieldIndex>0&&res[uniqfieldIndex]!=null)
     	{

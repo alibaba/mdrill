@@ -76,7 +76,7 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 		int ramsize=group.size();
 		if(ramsize>buffersize)
 		{
-			LOG.info("fourceTimeout:"+this.toDebugString());
+			LOG.info(this.confPrefix+" fourceTimeout:"+this.toDebugString());
 			group.fourceClean();
 		}
 	}

@@ -22,7 +22,7 @@ public class DistinctCountExample {
 		for(int j=1;j<10;j++)
 		{
 			DistinctCount dc=new DistinctCount();
-			dc.setMaxUniqSize(1000);
+			dc.setMaxUniqSize(10000);
 			for(int i=0;i<uniq*j;i++)
 			{
 				dc.set("test_bit_"+i);

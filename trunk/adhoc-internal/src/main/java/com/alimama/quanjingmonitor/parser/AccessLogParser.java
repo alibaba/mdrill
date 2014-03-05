@@ -68,12 +68,12 @@ public class AccessLogParser
 	   public String name;
    }
    
-	public Object parse(String raw) throws InvalidEntryException {
+	public Object parse(Object raw) throws InvalidEntryException {
 		try {
 			if (raw == null) {
 				throw new InvalidEntryException("Invalid log `" + String.valueOf(raw) + "'");
 			}
-			String[] cols=raw.split("[ ]+",-1);
+			String[] cols=((String)raw).split("[ ]+",-1);
 			
 			if (cols.length<7) {
 				throw new InvalidEntryException("Invalid log `" + raw + "'");

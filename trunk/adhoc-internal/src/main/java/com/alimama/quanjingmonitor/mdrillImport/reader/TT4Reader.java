@@ -11,9 +11,6 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.alibaba.tt.exception.TTQueueException;
-import com.alibaba.tt.exception.TTQueueSafemodeException;
-import com.alibaba.tt.exception.TTSubChangedException;
 import com.alibaba.tt.log.TTLog;
 import com.alibaba.tt.log.TTLogInput;
 import com.alibaba.tt.log.impl.TTLogBlock;
@@ -24,6 +21,8 @@ import com.alibaba.tt.queue.impl.MessageKey;
 import com.alibaba.tt.queue.impl.TTQueueClusterImpl;
 import com.alimama.mdrillImport.ImportReader.RawDataReader;
 import com.alimama.quanjingmonitor.tt.DynaClassLoader;
+
+
 
 public class TT4Reader extends RawDataReader {
 	static {
@@ -123,10 +122,8 @@ public class TT4Reader extends RawDataReader {
 
     private final static int NEW_ENTRIES_COUNT = 20;
 
-	
-	@Override
-	public List<String> read() throws IOException {
-
+	public TTLogBlock readBlock()
+	{
 		TTLogBlock block = null;
 		try {
 			block = _inStreamInput.read();
@@ -134,6 +131,13 @@ public class TT4Reader extends RawDataReader {
 			LOG.error("ttreaderror",e);
 			block=null;
 		} 
+		
+		return block;
+	}
+	@Override
+	public List<Object> read() throws IOException {
+
+		TTLogBlock block = this.readBlock();
 		if (block == null) {
 			return null;
 		}
@@ -141,7 +145,7 @@ public class TT4Reader extends RawDataReader {
 		MessageKey key = block.getKey();
 		key.ack();
 
-		List<String> list = new ArrayList<String>(NEW_ENTRIES_COUNT);
+		List<Object> list = new ArrayList<Object>(NEW_ENTRIES_COUNT);
 		String buffer = new String(block.getBuffer());
 		for (String mesgStr : buffer.split("[\n\r]", -1)) {
 			list.add(mesgStr);

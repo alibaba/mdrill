@@ -70,6 +70,7 @@
       <artifactId>p4pclick</artifactId>
       <version>1.2.6</version>
     </dependency>
+    
 
     		
      
@@ -78,6 +79,18 @@
         	<artifactId>libthrift</artifactId>
         	<version>0.8.0</version>
         </dependency>
+        
+        
+        <dependency>
+<groupId>com.google.protobuf</groupId>
+<artifactId>protobuf-java</artifactId>
+<version>2.4.1</version>
+</dependency> 
+<dependency>
+<groupId>com.taobao.timetunnel</groupId>
+<artifactId>message-parser</artifactId>
+<version>1.0.0</version>
+</dependency>
 
 
   </dependencies>

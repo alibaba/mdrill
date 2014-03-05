@@ -2,6 +2,8 @@ package org.apache.solr.request.compare;
 
 import java.util.ArrayList;
 
+import com.alimama.mdrill.distinct.DistinctCount.DistinctCountAutoAjuest;
+
 
 public class GroupbyAgent implements GroupbyItem{
 	private final GroupbyItem groupby;

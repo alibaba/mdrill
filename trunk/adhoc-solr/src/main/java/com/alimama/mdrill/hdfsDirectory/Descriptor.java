@@ -121,7 +121,7 @@ public class Descriptor {
 	    	{
 	    		this.in.close();
 	    		
-	        	logger.info("close "+this.file.getName()+" tlSum="+tlSum+",tlCount="+tlCount);
+//	        	logger.info("close "+this.file.getName()+" tlSum="+tlSum+",tlCount="+tlCount);
 	        	tlCount=0;
 		    	tlSum=0;
 	    		this.in=null;

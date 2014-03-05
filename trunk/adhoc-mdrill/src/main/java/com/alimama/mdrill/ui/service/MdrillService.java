@@ -28,7 +28,6 @@ import org.apache.solr.request.compare.GroupbyRow;
 import backtype.storm.utils.Utils;
 
 import com.alipay.bluewhale.core.cluster.SolrInfo.ShardCount;
-import com.alimama.mdrill.index.utils.TdateFormat;
 import com.alimama.mdrill.json.JSONArray;
 import com.alimama.mdrill.json.JSONException;
 import com.alimama.mdrill.json.JSONObject;
@@ -552,6 +551,110 @@ public class MdrillService {
 		
 		return rtn.substring(0,Math.min(rtn.length(), 10240));
 	}
+	
+	
+	
+	private static void resultGroupBy(ArrayList<String> fqList,
+			GetPartions.Shards shard, int start, int rows, final SortParam sortType,
+			ArrayList<String> groupbyFields, ArrayList<String> showFields,
+			HashSet<String> commonStatMap,
+			HashSet<String> distStatFieldMap,HigoJoinParams[] joins,SolrQuery query,JSONObject jsonObj,CommonsHttpSolrServer server) throws SolrServerException, JSONException
+	{
+		int extandRows=100;
+		if(distStatFieldMap.size()>0)
+		{
+			extandRows=50;
+		}
+		
+		int minstart = start;
+		int maxEend = rows;
+		if (sortType.isStatNum) {
+			minstart = start - extandRows;
+			if (minstart < 0) {
+				minstart = 0;
+			}
+			maxEend = Math.min(rows + extandRows,UniqConfig.defaultCrossMaxLimit());
+		}
+		WebServiceParams.setGroupByQuery(query, fqList, groupbyFields,
+				minstart, maxEend, distStatFieldMap, commonStatMap, sortType,joins,null);
+		LOG.info("queryinfo:"+shard.urlMain + "/select/?" + cutString(query.toString()));
+		query.set("mdrill.isRestat", false);
+
+		QueryResponse qr = WebServiceParams.fetchGroupCrcQr(query, server);
+		
+//		jsonObj.put("__timedebug", qr.getTimetaken().toString());
+		LinkedHashMap<String,GroupbyRow> groupValueCache=WebServiceParams.setGroupByResult(query,jsonObj, qr, groupbyFields, showFields,joins,null);
+		
+		boolean isUseRefetch=jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10)&&groupValueCache.size()<=UniqConfig.defaultCrossMaxLimit()&&jsonObj.getString("code").equals("1");
+		if((distStatFieldMap.size()>0)||isUseRefetch)
+		{
+			try{
+			query = WebServiceParams.makeSolrQuery(shard);
+			WebServiceParams.setGroupByQuery(query, fqList, groupbyFields,
+					0, Math.min(groupValueCache.size()*10,UniqConfig.defaultCrossMaxLimit()), distStatFieldMap, commonStatMap, sortType,joins,groupValueCache);
+			LOG.info("queryinfo_pre:"+shard.urlMain + "/select/?" + cutString(query.toString()));
+			
+			query.set("mdrill.isRestat", true);
+			QueryResponse qr2 = server.query(query, SolrRequest.METHOD.POST);
+//			jsonObj.put("__timedebug_qr2", qr2.getTimetaken().toString());
+			WebServiceParams.setGroupByResult(query,jsonObj, qr2, groupbyFields, showFields,joins,groupValueCache);
+			}catch(Exception e2)
+			{
+				LOG.error("queryinfo_pre_exception",e2);
+
+			}
+		}
+		
+		
+		if(jsonObj.getString("code").equals("1")&&sortType.isStatNum)
+		{
+			JSONArray jsonArray=jsonObj.getJSONObject("data").getJSONArray("docs");
+			ArrayList<JSONObject> results=new ArrayList<JSONObject>();
+			boolean iscontains=true;
+			for(int i=0;i<jsonArray.length();i++)
+			{
+				JSONObject obj=jsonArray.getJSONObject(i);
+				if(!obj.has(sortType.sortRow))
+				{
+					iscontains=false;
+				}
+				results.add(obj);
+			}
+			final boolean isdesc=sortType.order.toLowerCase().equals("true");
+			if(sortType.isStatNum&&iscontains&&jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10))
+			{
+				Collections.sort(results, new Comparator<JSONObject>() {
+					@Override
+					public int compare(JSONObject o1, JSONObject o2) {
+						int rtn=0;
+						try {
+							rtn = Double.compare(ParseDouble(o1.get(sortType.sortRow)), ParseDouble(o2.get(sortType.sortRow)));
+						} catch (JSONException e) {
+						}
+						if(isdesc)
+						{
+							rtn*=-1;
+						}
+						return rtn;
+					}
+				}
+				);
+			}
+			
+			JSONArray rtnarr=new JSONArray();
+			int actualstart=start-minstart;
+			int actualend=rows+actualstart;
+			for(int i=actualstart;i<results.size()&&i<actualend;i++)
+			{
+				rtnarr.put(results.get(i));
+			}
+			
+			jsonObj.getJSONObject("data").put("docs", rtnarr);
+		}
+		
+
+	
+	}
 
 	private static String result(TablePartion part,String callback, ArrayList<String> fqList,
 			GetPartions.Shards shard, int start, int rows, final SortParam sortType,
@@ -573,89 +676,7 @@ public class MdrillService {
 		}
 		try {
 			if (groupbyFields.size() > 0) {
-				int minstart = start;
-				int maxEend = rows;
-				if (sortType.isStatNum) {
-					minstart = start - 100;
-					if (minstart < 0) {
-						minstart = 0;
-					}
-					maxEend = Math.min(rows + 100,UniqConfig.defaultCrossMaxLimit());
-				}
-				WebServiceParams.setGroupByQuery(query, fqList, groupbyFields,
-						minstart, maxEend, distStatFieldMap, commonStatMap, sortType,joins,null);
-				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + cutString(query.toString()));
-				
-				QueryResponse qr = WebServiceParams.fetchGroupCrcQr(query, server);
-				
-//				jsonObj.put("__timedebug", qr.getTimetaken().toString());
-				LinkedHashMap<String,GroupbyRow> groupValueCache=WebServiceParams.setGroupByResult(query,jsonObj, qr, groupbyFields, showFields,joins,null);
-				
-				if(jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10)&&groupValueCache.size()<=UniqConfig.defaultCrossMaxLimit()&&jsonObj.getString("code").equals("1"))
-				{
-					try{
-					query = WebServiceParams.makeSolrQuery(shard);
-					WebServiceParams.setGroupByQuery(query, fqList, groupbyFields,
-							0, Math.min(groupValueCache.size()*10,UniqConfig.defaultCrossMaxLimit()), distStatFieldMap, commonStatMap, sortType,joins,groupValueCache);
-					LOG.info("queryinfo_pre:"+shard.urlMain + "/select/?" + cutString(query.toString()));
-					QueryResponse qr2 = server.query(query, SolrRequest.METHOD.POST);
-//					jsonObj.put("__timedebug_qr2", qr2.getTimetaken().toString());
-					WebServiceParams.setGroupByResult(query,jsonObj, qr2, groupbyFields, showFields,joins,groupValueCache);
-					}catch(Exception e2)
-					{
-						LOG.error("queryinfo_pre_exception",e2);
-
-					}
-				}
-				
-				
-				if(jsonObj.getString("code").equals("1")&&sortType.isStatNum)
-				{
-					JSONArray jsonArray=jsonObj.getJSONObject("data").getJSONArray("docs");
-					ArrayList<JSONObject> results=new ArrayList<JSONObject>();
-					boolean iscontains=true;
-					for(int i=0;i<jsonArray.length();i++)
-					{
-						JSONObject obj=jsonArray.getJSONObject(i);
-						if(!obj.has(sortType.sortRow))
-						{
-							iscontains=false;
-						}
-						results.add(obj);
-					}
-					final boolean isdesc=sortType.order.toLowerCase().equals("true");
-					if(sortType.isStatNum&&iscontains&&jsonObj.getLong("total")>(UniqConfig.defaultCrossMaxLimit()-10))
-					{
-						Collections.sort(results, new Comparator<JSONObject>() {
-							@Override
-							public int compare(JSONObject o1, JSONObject o2) {
-								int rtn=0;
-								try {
-									rtn = Double.compare(ParseDouble(o1.get(sortType.sortRow)), ParseDouble(o2.get(sortType.sortRow)));
-								} catch (JSONException e) {
-								}
-								if(isdesc)
-								{
-									rtn*=-1;
-								}
-								return rtn;
-							}
-						}
-						);
-					}
-					
-					JSONArray rtnarr=new JSONArray();
-					int actualstart=start-minstart;
-					int actualend=rows+actualstart;
-					for(int i=actualstart;i<results.size()&&i<actualend;i++)
-					{
-						rtnarr.put(results.get(i));
-					}
-					
-					jsonObj.getJSONObject("data").put("docs", rtnarr);
-				}
-				
-
+				resultGroupBy(fqList, shard, start, rows, sortType, groupbyFields, showFields, commonStatMap, distStatFieldMap, joins, query, jsonObj, server);
 			} else if (commonStatMap.size() > 0
 					|| distStatFieldMap.size() > 0) {
 				ArrayList<String> groupFieldsEmpty = WebServiceParams
@@ -665,8 +686,6 @@ public class MdrillService {
 						commonStatMap, sortType,joins,null);
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + cutString(query.toString()));
 				QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
-//				jsonObj.put("__timedebug", qr.getTimetaken().toString());
-
 				WebServiceParams.setGroupByResult(query,jsonObj, qr, groupbyFields,showFields,joins,null);
 			} else {
 				WebServiceParams.setDetailByQuery(
@@ -675,8 +694,6 @@ public class MdrillService {
 				LOG.info("queryinfo:"+shard.urlMain + "/select/?" + cutString(query.toString()));
 				
 				QueryResponse qr = WebServiceParams.fetchDetailCrcQr(query, server);
-//				jsonObj.put("__timedebug", qr.getTimetaken().toString());
-
 				WebServiceParams.setDetailResult(jsonObj, qr, showFields,joins);
 			}
 

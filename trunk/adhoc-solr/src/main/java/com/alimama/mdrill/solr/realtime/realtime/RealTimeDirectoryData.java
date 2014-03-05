@@ -246,6 +246,59 @@ public class RealTimeDirectoryData {
 			return rtn.getAbsolutePath();
 		}
 	}
+	
+	//--历史的索引应该最终合并成唯一的一个--
+	public boolean maybeMergerFinal()
+	{
+		boolean ismerger=false;
+		try{
+			while(true)
+			{
+				if(this.diskDirector.size()<=1)
+				{
+					break ;
+				}
+				ismerger=true;
+				ArrayList<Pair> pairlist=new ArrayList<Pair>();
+				ArrayList<DirectoryInfo> dinfolist=new ArrayList<DirectoryInfo>();
+				ArrayList<Pair> list=this.getSortList();
+				for(int i=0;i<list.size()&&i<UniqConfig.RealTimeMergeFactor();i++)
+				{
+					Pair p=list.get(i);
+					pairlist.add(p);
+					dinfolist.add(p.value);
+				}
+				
+				DirectoryInfo d=new DirectoryInfo();
+				String path=this.mallocPath();
+				d.d=LinkFSDirectory.open(new File(path),true);
+				d.tp=DirectoryInfo.DirTpe.file;
+				this.merger(dinfolist, d);
+				
+				StringBuffer lastkey=new StringBuffer();
+				if(pairlist.size()>0)
+				{
+					for(Pair lastPair:pairlist)
+					{
+						this.maybeDelayClear(lastPair.value);
+						diskDirector.remove(lastPair.key);
+						lastkey.append(String.valueOf(lastPair.key)).append(",");
+					}
+				}
+				diskDirector.put(path, d);
+				LOG.info("####maybeMergerFinal####put =>"+String.valueOf(path) +",remove:"+lastkey.toString());
+				this.status.needRemakeLinks.set(true);
+			}
+
+		}catch(Throwable e)
+		{
+			LOG.error("####maybeMergerFinal####",e);
+		}finally{
+			this.status.needRemakeLinks.set(true);
+		}
+		
+		return ismerger;
+	}
 
 	public void mergerRam(DirectoryInfo expire) throws CorruptIndexException, IOException
 	{

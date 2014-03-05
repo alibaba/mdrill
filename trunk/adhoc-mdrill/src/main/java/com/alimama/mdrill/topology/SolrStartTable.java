@@ -205,6 +205,13 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 	}
 	
 	
+	public void reportError(String msg)
+	
+	{
+		this.collector.reportError(new RuntimeException("timeout:" + this.tablename));
+
+	}
+	
 	private String cleanPartionDays()
 	{
 		String tablemode=this.getTableMode();
@@ -534,11 +541,14 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 	
 	}
 
-	public Boolean isTimeout() {
-		Long timespan = 1000l * 60 * 120;
+	
+	private boolean checkTimeout(int mini)
+	{
+
+		Long timespan = 1000l * 60 *  mini;
 		ShardsState stat = statcollect.getStat();
 		if (stat.equals(ShardsState.SERVICE)) {
-			timespan = 1000l * 60 * 120;
+			timespan = 1000l * 60 *  mini;
 		}
 		boolean istimeout= isInit.get()&&statcollect.isTimeout(timespan);
 		
@@ -552,7 +562,9 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 		}
 		
 		return istimeout;
+	
 	}
+	public Boolean isTimeout() {return checkTimeout(120);}
 
 	private Interval hbInterval=new Interval();;
 
@@ -670,10 +682,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 	}
 
 	public boolean isStop() {
-		Boolean rtn = this.isTimeout();
-		if (rtn) {
-			this.collector.reportError(new RuntimeException("timeout:" + this.tablename));
-		}
+		Boolean rtn = this.checkTimeout(15);
 		return rtn;
 	}
 	

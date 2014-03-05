@@ -168,7 +168,7 @@ z-index: 1200;
 </div>  
 
 <div style="font-size:50px; border:double; width:210px; text-align:center; vertical-align:middle">全景监控</div>
- 	<h1>TANX外投流量指标/<a style="color:#551890" href="./tanx_table.jsp">TANX外投流量数据排行</a>/<a style="color:#551890" href="http://110.75.67.162:9999/quanjing/" target="_blank">P4P流量和系统监控</a></h1>
+ 	<h1><a style="color:#551890" href="./3_8_realtime.jsp">3.8生活节</a>/TANX外投流量指标/<a style="color:#551890" href="./tanx_table.jsp">TANX外投流量数据排行</a></h1>
  	<h2>pv/<a style="color:#551890" href="./tanxclick.jsp">点击</a>/<a style="color:#551890" href="./tanxrate.jsp">点击率</a>/<a style="color:#551890" href="./tanxpvsum.jsp">pv累积</a>/<a style="color:#551890" href="./tanxclicksum.jsp">点击累积</a>/<a style="color:#551890" href="./tanxratesum.jsp">累积点击率</a>/<a style="color:#551890" href="./tanxdiff.jsp">波动</a></h2>
  <table  border="0" cellspacing="0" cellpadding="0">
   <tr>
@@ -186,7 +186,7 @@ z-index: 1200;
 	
 <table id="pidtbl" border="0" cellspacing="0" cellpadding="0"> 
 	<td>pid:</td>
-    <td> 	 	<input type="text" name="thepid" id="thepid" value="*"  />
+    <td> 	 	<input type="text" name="thepid" id="thepid" value="mm_13087935_2078460_8374317"  />
 </td>
     <td>产品类型：</td>
     <td> 	<select name="producttype" id="producttype" >

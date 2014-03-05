@@ -35,7 +35,7 @@ public class ImportReader
 				     int readerIndex, int readerCount)
 		    throws IOException;
 	
-		public abstract List<String> read()
+		public abstract List<Object> read()
 		    throws IOException;
 	
 		public abstract void close()
@@ -58,10 +58,10 @@ public class ImportReader
 
 
 	public synchronized List read() throws IOException {
-		List<String> rawData = rawDataReader.read();
+		List<Object> rawData = rawDataReader.read();
 		List entries = new ArrayList(NEW_ENTRIES_COUNT);
 		if (rawData != null&&rawData.size()>0) {
-			for (String str : rawData) {
+			for (Object str : rawData) {
 
 				try {
 					stat.printlog(str);
@@ -111,6 +111,9 @@ public class ImportReader
 		public long print = 0;
 		long printts = System.currentTimeMillis() / 300000;
 
+		public void printlog(Object s) {
+			
+		}
 		public void printlog(String s) {
 			print++;
 
@@ -129,6 +132,11 @@ public class ImportReader
 
 			}
 		}
+		public void debugError(Object s) {
+			
+		}
+
+			
 
 		public void debugError(String s) {
 			debuglines++;

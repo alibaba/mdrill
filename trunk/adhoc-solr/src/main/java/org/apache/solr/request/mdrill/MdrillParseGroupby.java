@@ -32,6 +32,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import com.alimama.mdrill.distinct.DistinctCount;
+import com.alimama.mdrill.distinct.DistinctCount.DistinctCountAutoAjuest;
 import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
@@ -43,6 +44,7 @@ public class MdrillParseGroupby {
 	public String[] distFS ;
 	public int limit_offset=0;
 	public int limit_offset_maxgroups=0;
+	public int limit_offset_maxgroups_merger=0;
 	public Integer maxlimit=10010;
 	public String[] joinList ;
 	public String[] preGroupList ;
@@ -61,6 +63,7 @@ public class MdrillParseGroupby {
 		int limit = params.getInt(FacetParams.FACET_CROSS_LIMIT, 100);
 		this.limit_offset=this.offset+limit;
 		this.limit_offset_maxgroups=UniqConfig.ShardMaxGroups();
+		this.limit_offset_maxgroups_merger=UniqConfig.shardMergerCount();
 		this.sort_fl=params.get(FacetParams.FACET_CROSS_SORT_FL,null);
 		this.sort_type=params.get(FacetParams.FACET_CROSS_SORT_TYPE,"index");
 		this.isdesc=params.getBool(FacetParams.FACET_CROSS_SORT_ISDESC, true);
@@ -72,6 +75,12 @@ public class MdrillParseGroupby {
 		{
 			this.joinList= new String[0];
 		}
+		
+//		if(this.sort_type.equals("dist"))
+//		{
+//			this.limit_offset_maxgroups=25600;
+//			this.limit_offset_maxgroups_merger=128;
+//		}
 		
 		this.crcOutputSet=params.get("mdrill.crc.key.set");
 
@@ -91,6 +100,14 @@ public class MdrillParseGroupby {
 	public boolean hasStat()
 	{
 		return this.crossFs !=null&&this.crossFs.length>0;
+	}
+	
+	public boolean isMustSetDistResult()
+	{
+		boolean isfetchStat=this.params.getBool("mdrill.isRestat", false);
+		boolean issortByDist=this.sort_type.equals("dist");
+		return isfetchStat||issortByDist;
+
 	}
 	
 	public boolean hasDist()
@@ -116,6 +133,8 @@ public class MdrillParseGroupby {
 		public MdrillParseGroupby parse;
 		public DocSet baseDocs;
 		public HigoJoinUtils.MakeGroups make;
+		
+		public DistinctCountAutoAjuest autoDist=new DistinctCountAutoAjuest(UniqConfig.DistinctCountSize());
 		public  fetchContaioner(MdrillParseGroupby parse,String[] fields, DocSet baseDocs,SegmentReader reader,SolrIndexSearcher searcher,SolrQueryRequest req) throws IOException, ParseException
 		{
 			this.parse=parse;
@@ -231,7 +250,7 @@ public class MdrillParseGroupby {
 			for (int i:this.distufs.listIndex) {
 				UnvertFile uf=this.distufs.cols[i];
 				double value = uf.uif.quickToDouble(doc,uf.filetype,uf.ti);
-				cnt.dist[i].set(String.valueOf(value));
+				cnt.dist[i].set(value);
 			}
 		}
 		
@@ -244,13 +263,22 @@ public class MdrillParseGroupby {
 		{
 			if(emptyrow==null)
 			{
-				emptyrow=this.createRow();
+				emptyrow=this.createRow(new Integer(0));
 			}
 			
 			return emptyrow;
 		}
 		
-		public RefRow createRow()
+		public void freeRow(Object key) {
+			if (this.parse.distFS != null) {
+				for (int i = 0; i < this.parse.distFS.length; i++) {
+					autoDist.remove(Arrays.asList(key, i));
+
+				}
+			}
+		}
+		
+		public RefRow createRow(Object key)
 		{
 			RefRow cnt=new RefRow();
 	      	  if(this.parse.crossFs!=null)
@@ -267,7 +295,7 @@ public class MdrillParseGroupby {
 	     		  cnt.dist=new DistinctCount[this.parse.distFS.length];
 	     		  for(int i=0;i<this.parse.distFS.length;i++)
 	     		  {
-	     			  cnt.dist[i]=new DistinctCount();
+	     			  cnt.dist[i]=autoDist.create(Arrays.asList(key,i));
 	     		  }
 	     	  }
 	      	 

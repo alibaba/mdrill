@@ -15,17 +15,21 @@ public abstract class DataParser implements Parser{
 		this.context=context;
 	}
 	private static final long serialVersionUID = 1L;
-	public Object parse(String raw)
+	public Object parse(Object raw)
 	throws InvalidEntryException {
-		return this.parseLine(raw);
+		return this.parseObject(raw);
 	}
 
 	
 	public abstract String[] getGroupName();
 	public abstract String[] getSumName();
 	public abstract String getTableName();
-
-	public abstract  DataIter parseLine(String line) throws InvalidEntryException;
+	public DataIter parseObject(Object line) throws InvalidEntryException {
+		return this.parseLine(line==null?null:(String)line);
+	}
+	public   DataIter parseLine(String line) throws InvalidEntryException{
+		return null;
+	}
 	
 	public static interface DataIter {
 		public boolean next();

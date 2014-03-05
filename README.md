@@ -10,7 +10,7 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 <b>3.支持实时数据导入：</b>在仅有10台机器的情况下，支持每天10亿级别（高峰每小时2亿）的实时导入。<br>
 <b>4.响应时间快：</b>列存储、倒排索引、高效的数据压缩、内存计算，各种缓存、分区、分布式处理等等这些技术，使得mdrill可以仅在几秒到几十秒的时间分析百亿级别的数据。<br>
 <b>5.低成本：</b>目前在阿里adhoc仅仅使用10台48G内存的PC机，但确存储了超过千亿规模的数据。<br>
-<b>6.全文检索模式：</b>在mdrill的全文检索模式数据可以直接存储在hdfs中，并且以每天160亿*70维度的数据增量提供全文检索服务（注：该模式下不能进行统计，只能进行关键词匹配查询数据明细）<br>
+<b>6.全文检索模式：</b>强大的条件设置，任意组合，无论难易秒级预览，每天160亿的数据随意筛选。<br>
 
 
 <h1>mdrill数据量的增长</h1>
@@ -73,8 +73,11 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
  2014.01.14 version 0.20.5-alpha bug fix (<a href="http://yunpan.cn/QzP6H2vfgW5k8" target="_blank">下载</a>) <br>
  2014.01.26 version 0.20.6-alpha bug fix (<a href="http://yunpan.taobao.com/share/link/N62RcRYGa" target="_blank">下载</a>) <br>
  2014.02.08 version 0.20.7-alpha cache改进 <a href="https://github.com/alibaba/mdrill/wiki/0.20.7">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/662RdRlqL" target="_blank">点击这里下载</a> 。) <br>
- 2014.02.18 version 0.20.8.3-alpha bugfix&&重写调度&&优化 <a href="https://github.com/alibaba/mdrill/wiki/0.20.8">see detail</a>  (<b>推荐版本</b>。 <a href="http://yunpan.taobao.com/share/link/862RiROZx" target="_blank">点击这里下载</a> 。依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
+ 2014.02.18 version 0.20.8.3-alpha bugfix&&重写调度&&优化 <a href="https://github.com/alibaba/mdrill/wiki/0.20.8">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/862RiROZx" target="_blank">点击这里下载</a><br>
+ 2014.03.05 version 0.20.9-beta bugfix <a href="https://github.com/alibaba/mdrill/wiki/0.20.9">see detail</a>  (<b>推荐版本</b>。 <a href="http://yunpan.taobao.com/share/link/862RqRFhx" target="_blank">点击这里下载</a> 。依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
 
+ 
+ http://yunpan.taobao.com/share/link/862RqRFhx
  
  <h1>版本源码路径</h1>
  https://github.com/alibaba/mdrill/tree/master/release  <br>

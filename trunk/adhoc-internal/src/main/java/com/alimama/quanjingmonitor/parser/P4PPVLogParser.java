@@ -19,10 +19,10 @@ public class P4PPVLogParser
     }
 
 
-	public Object parse(String raw) throws InvalidEntryException {
+	public Object parse(Object raw) throws InvalidEntryException {
 		try {
 			P4PPVLog p4ppvlog = com.taobao.loganalyzer.input.p4ppv.parser.P4PPVLogParser
-					.parse(raw);
+					.parse((String)raw);
 			
 			if (p4ppvlog == null) {
 				throw new InvalidEntryException("Invalid log `" + raw + "'");

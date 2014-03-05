@@ -407,8 +407,11 @@ public class WebServiceParams {
 				
 				Map stormconf = Utils.readStormConfig();
 				String hdpConf=(String) stormconf.get("hadoop.conf.dir");
+				Integer maxReplicaton=(Integer) stormconf.get("higo.fq.max.replication");
+				
 				Configuration conf=new Configuration();
 				HadoopBaseUtils.grabConfiguration(hdpConf, conf);	
+				conf.setInt("dfs.replication", maxReplicaton);
 				  FileSystem fs = FileSystem.get(conf);
 				  IndexUtils.truncate(fs, new Path(upFolder));
 				 FSDataOutputStream output= fs.create( new Path(upFolder),true);		
@@ -689,7 +692,7 @@ public static OperateType parseOperateType(int operate)
 		{
 			boolean isNotIn=(operate==7 || operate==8);
 			String[] listStrs = filterListStr(ft,value2.split(","));
-			if(listStrs.length > 20&&!isNotIn){
+			if(listStrs.length > 200&&!isNotIn){
 				return uploadInHdfs(listStrs, key, shard);
 			}else{
 				StringBuffer sb = new StringBuffer();

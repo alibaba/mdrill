@@ -1154,7 +1154,7 @@ z-index: 1200;
 </div>  
 <div style="font-size:50px; border:double; width:210px; text-align:center; vertical-align:middle">全景监控</div>
 
- 	<h1><a style="color:#551890" href="./tanxpv.jsp">TANX外投流量指标</a>/TANX外投流量数据排行/<a href="http://110.75.67.162:9999/quanjing/" target="_blank">P4P流量和系统监控</a></h1>
+ 	<h1><a style="color:#551890" href="./3_8_realtime.jsp">3.8生活节</a>/<a style="color:#551890" href="./tanxpv.jsp">TANX外投流量指标</a>/TANX外投流量数据排行</h1>
 
  
  	<table  border="0" cellspacing="0" cellpadding="0">

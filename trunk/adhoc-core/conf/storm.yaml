@@ -32,6 +32,8 @@
  
  #----基于冗余的ha,设置为1表示没有冗余，如果设置为2，则冗余号位0,1----
  higo.shards.replication: 1
+ higo.fq.max.replication: 18
+ 
  #----启动的merger server的worker数量，建议根据机器数量设定----
  higo.mergeServer.count: 11
  #----mdrill同时最多加载的分区个数，取决于内存与数据量----
@@ -86,7 +88,164 @@
      - "heartbeat:0;adhoc2.kgb.cm6:6604;6605"
      - "merge:0;adhoc2.kgb.cm6:6604;6605"
   
-
+ mdrill.task.ports.random_fortest: "6901~6902"
+ mdrill.task.assignment.random_fortest:
+     - "random"
+     
+     
+ mdrill.task.ports.p4p_pv2topology: "6901"
+ mdrill.task.assignment.p4p_pv2topology:
+     - "map_tanx_pv:0~2;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:3~5;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:6~8;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:9~11;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:12~14;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:15~17;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:18~20;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:21~23;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:24~26;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_tanx_pv:27~29;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_tanx_pv:30~31;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "reduce_tanx_pv:0~1;adhocbak.kgb.cm6:6801~6802;6804~6805"
+     - "reduce_tanx_pv:2;adhoc8.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:3;adhoc7.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:4;adhoc6.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:5;adhoc5.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:6;adhoc4.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:7;adhoc3.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:8;adhoc2.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:9;adhoc1.kgb.cm6:6801;6804"
+     - "reduce_tanx_pv:10;tiansuan2.kgb.cm4:6801;6804"
+     - "reduce_tanx_pv:11;tiansuan1.kgb.cm4:6801;6804"
+     - "map_tanx_click_zhitou:0;adhocbak.kgb.cm6:6803;6806"
+     - "map_tanx_click_zhitou:1;adhoc8.kgb.cm6:6803;6806"
+     - "map_tanx_click_rt:0;adhoc7.kgb.cm6:6803;6806"
+     - "map_tanx_click_rt:1;adhoc6.kgb.cm6:6803;6806"
+     - "map_tanx_user_rt:0;adhoc5.kgb.cm6:6803;6806"
+     - "map_tanx_user_rt:1;adhoc4.kgb.cm6:6803;6806"
+     - "map_munion_r_taobao_com_click_data:0;adhoc5.kgb.cm6:6803;6806"
+     - "map_munion_r_taobao_com_click_data:1;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_munion_r_taobao_com_click_data:0~1;adhocbak.kgb.cm6:6801~6802;6804~6805"
+     - "reduce_munion_r_taobao_com_click_data:2;adhoc8.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:3;adhoc7.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:4;adhoc6.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:5;adhoc5.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:6;adhoc4.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:7;adhoc3.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:8;adhoc2.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:9;adhoc1.kgb.cm6:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:10;tiansuan2.kgb.cm4:6801;6804"
+     - "reduce_munion_r_taobao_com_click_data:11;tiansuan1.kgb.cm4:6801;6804"
+     - "reduce_tanx_click_zhitou:0~1;adhocbak.kgb.cm6:6802~6803;6805~6806"
+     - "reduce_tanx_click_zhitou:2;adhoc8.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:3;adhoc7.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:4;adhoc6.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:5;adhoc5.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:6;adhoc4.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:7;adhoc3.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:8;adhoc2.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:9;adhoc1.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_zhitou:10;tiansuan2.kgb.cm4:6802;6805"
+     - "reduce_tanx_click_zhitou:11;tiansuan1.kgb.cm4:6802;6805"
+     - "reduce_tanx_click_rt:0~1;adhocbak.kgb.cm6:6802~6803;6805~6806"
+     - "reduce_tanx_click_rt:2;adhoc8.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:3;adhoc7.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:4;adhoc6.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:5;adhoc5.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:6;adhoc4.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:7;adhoc3.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:8;adhoc2.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:9;adhoc1.kgb.cm6:6802;6805"
+     - "reduce_tanx_click_rt:10;tiansuan2.kgb.cm4:6802;6805"
+     - "reduce_tanx_click_rt:11;tiansuan1.kgb.cm4:6802;6805"
+     - "reduce_tanx_user_rt:0~1;adhocbak.kgb.cm6:6801,6803;6804,6806"
+     - "reduce_tanx_user_rt:2;adhoc8.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:3;adhoc7.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:4;adhoc6.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:5;adhoc5.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:6;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:7;adhoc3.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:8;adhoc2.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:9;adhoc1.kgb.cm6:6803;6806"
+     - "reduce_tanx_user_rt:10;tiansuan2.kgb.cm4:6803;6806"
+     - "reduce_tanx_user_rt:11;tiansuan1.kgb.cm4:6803;6806"
+     - "__acker:0~2;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:3~5;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:6~8;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:9~11;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:12~14;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:15~17;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:18~20;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:21~23;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:24~26;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "__acker:27~29;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "__acker:30~31;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "map_app_log_parse:0~2;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:3~5;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:6~8;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:9~11;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:12~14;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:15~17;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:18~20;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:21~23;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:24~26;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_app_log_parse:27~29;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_app_log_parse:30~31;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "reduce_app_log_parse:0~1;adhocbak.kgb.cm6:6801~6802;6804~6805"
+     - "reduce_app_log_parse:2;adhoc8.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:3;adhoc7.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:4;adhoc6.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:5;adhoc5.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:6;adhoc4.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:7;adhoc3.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:8;adhoc2.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:9;adhoc1.kgb.cm6:6802;6805"
+     - "reduce_app_log_parse:10;tiansuan2.kgb.cm4:6802;6805"
+     - "reduce_app_log_parse:11;tiansuan1.kgb.cm4:6802;6805"
+     - "map_aplus_wireless:0~2;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:3~5;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:6~8;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:9~11;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:12~14;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:15~17;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:18~20;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:21~23;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:24~26;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_wireless:27~29;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_aplus_wireless:30~31;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "reduce_aplus_wireless:0~1;adhocbak.kgb.cm6:6801~6802;6804~6805"
+     - "reduce_aplus_wireless:2;adhoc8.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:3;adhoc7.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:4;adhoc6.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:5;adhoc5.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:6;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:7;adhoc3.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:8;adhoc2.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:9;adhoc1.kgb.cm6:6803;6806"
+     - "reduce_aplus_wireless:10;tiansuan2.kgb.cm4:6803;6806"
+     - "reduce_aplus_wireless:11;tiansuan1.kgb.cm4:6803;6806"
+     - "map_aplus_text:0~2;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:3~5;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:6~8;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:9~11;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:12~14;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:15~17;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:18~20;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:21~23;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:24~26;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_aplus_text:27~29;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_aplus_text:30~31;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "reduce_aplus_text:0~1;adhocbak.kgb.cm6:6801~6802;6804~6805"
+     - "reduce_aplus_text:2;adhoc8.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:3;adhoc7.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:4;adhoc6.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:5;adhoc5.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:6;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:7;adhoc3.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:8;adhoc2.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:9;adhoc1.kgb.cm6:6803;6806"
+     - "reduce_aplus_text:10;tiansuan2.kgb.cm4:6803;6806"
+     - "reduce_aplus_text:11;tiansuan1.kgb.cm4:6803;6806"
   
  #----mdrill个别表的分区设定，这里为rpt_seller_all_m表----
  
@@ -108,6 +267,11 @@
  higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_4: "day"
  higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_4: "@nonzipout@nothedate@"
  
+ 
+ higo.partion.type.rpt_adpmp_activity_pc_offline_h: "day"
+ higo.partion.type.rpt_adpmp_activity_wireless_offline_h: "day"
+ 
+ 
  #---注意只有分区类型为day的时候才能配置nothedate参数----
  higo.partion.type.fact_wirelesspv_clickcosteffect1_adhoc_d: "day"
  higo.mode.fact_wirelesspv_clickcosteffect1_adhoc_d: "@nonzipout@nothedate@"
@@ -125,9 +289,6 @@
  higo.index.parallel.r_rpt_cps_luna_item: 10
 
 
-
-
-
  ####--实时模式相关配置--####
  #----binlog记录的位置，默认为local如果hdfs稳定可以写hdfs----
  higo.realtime.binlog: "local"
@@ -138,7 +299,7 @@
  higo.partion.type.s_ods_mm_adzones: "default"
  higo.mode.s_ods_mm_adzones: "@fieldcontains:status=A@" 
 
- higo.mode.tanx_pv: "@realtime@cleanPartions:99@"
+ higo.mode.tanx_pv: "@realtime@cleanPartionDays:15@"
  higo.partion.type.tanx_pv: "day"
  tanx_pv-log: "tanx_pv"
  tanx_pv-subid: "01061423317TVV8KSN"
@@ -159,7 +320,87 @@
  tanx_pv-timeoutCommit: 100
  
  
- higo.mode.tanx_click: "@realtime@cleanPartions:99@"
+ 
+ 
+ higo.mode.rpt_adpmp_3_8_online: "@realtime@cleanPartionDays:15@"
+ higo.partion.type.rpt_adpmp_3_8_online: "day"
+ 
+ app_log_parse-log: "app_log_parse"
+ app_log_parse-subid: "0221101731NC71Q4R5"
+ app_log_parse-accesskey: "a73202b7-9762-4edb-a22e-df180925aa6e"
+ app_log_parse-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.app_log_parse"
+ app_log_parse-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ app_log_parse-commitbatch: 200
+ app_log_parse-commitbuffer: 2000
+ app_log_parse-spoutbuffer: 3000
+ app_log_parse-boltbuffer: 500
+ app_log_parse-boltIntervel: 5
+ app_log_parse-spoutIntervel: 10
+ app_log_parse-threads: 32
+ app_log_parse-threads_reduce: 12
+ app_log_parse-mode: "merger"
+ app_log_parse-timeoutSpout: 60
+ app_log_parse-timeoutBolt: 30
+ app_log_parse-timeoutCommit: 60
+ 
+ aplus_wireless-log: "aplus_wireless"
+ aplus_wireless-subid: "0223181520RLPFUSYO"
+ aplus_wireless-accesskey: "1a20b686-f213-4457-b4fa-d500129c0f42"
+ aplus_wireless-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.aplus_wireless"
+ aplus_wireless-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.AplusTT4Reader"
+ aplus_wireless-commitbatch: 200
+ aplus_wireless-commitbuffer: 2000
+ aplus_wireless-spoutbuffer: 3000
+ aplus_wireless-boltbuffer: 500
+ aplus_wireless-boltIntervel: 5
+ aplus_wireless-spoutIntervel: 10
+ aplus_wireless-threads: 32
+ aplus_wireless-threads_reduce: 12
+ aplus_wireless-mode: "merger"
+ aplus_wireless-timeoutSpout: 60
+ aplus_wireless-timeoutBolt: 30
+ aplus_wireless-timeoutCommit: 100
+ 
+ aplus_text-log: "aplus_text"
+ aplus_text-subid: "02231816198QCX20MX"
+ aplus_text-accesskey: "4c6a28da-129e-4182-9247-bb0a164093b5"
+ aplus_text-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.aplus_text"
+ aplus_text-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ aplus_text-commitbatch: 200
+ aplus_text-commitbuffer: 2000
+ aplus_text-spoutbuffer: 3000
+ aplus_text-boltbuffer: 500
+ aplus_text-boltIntervel: 5
+ aplus_text-spoutIntervel: 10
+ aplus_text-threads: 32
+ aplus_text-threads_reduce: 12
+ aplus_text-mode: "merger"
+ aplus_text-timeoutSpout: 60
+ aplus_text-timeoutBolt: 30
+ aplus_text-timeoutCommit: 100
+ 
+  
+ munion_r_taobao_com_click_data-log: "munion_r_taobao_com_click_data"
+ munion_r_taobao_com_click_data-subid: "022318171773V1HE4A"
+ munion_r_taobao_com_click_data-accesskey: "7d7ed2b9-cef7-4fbb-ba1d-fde60d094b7f"
+ munion_r_taobao_com_click_data-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.munion_r_taobao_com_click_data"
+ munion_r_taobao_com_click_data-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ munion_r_taobao_com_click_data-commitbatch: 200
+ munion_r_taobao_com_click_data-commitbuffer: 2000
+ munion_r_taobao_com_click_data-spoutbuffer: 500
+ munion_r_taobao_com_click_data-boltbuffer: 500
+ munion_r_taobao_com_click_data-boltIntervel: 5
+ munion_r_taobao_com_click_data-spoutIntervel: 50
+ munion_r_taobao_com_click_data-threads: 2
+ munion_r_taobao_com_click_data-threads_reduce: 12
+ munion_r_taobao_com_click_data-mode: "merger"
+ munion_r_taobao_com_click_data-timeoutSpout: 30
+ munion_r_taobao_com_click_data-timeoutBolt: 20
+ munion_r_taobao_com_click_data-timeoutCommit: 60
+ 
+ 
+ 
+ higo.mode.tanx_click: "@realtime@cleanPartionDays:15@"
  higo.partion.type.tanx_click: "day"
  
  tanx_click_zhitou-log: "tanx_click_zhitou"
@@ -218,9 +459,7 @@
  
  
  
- mdrill.task.ports.p4p_pv2topology: "6801~6806"
- mdrill.task.assignment.p4p_pv2topology:
-     - "random"
+ 
   
  ####蓝鲸各种心跳间隔配置-一般不需要改动####
  nimbus.task.timeout.secs: 30

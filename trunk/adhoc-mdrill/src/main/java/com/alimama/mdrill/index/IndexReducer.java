@@ -280,13 +280,12 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 		if (form == null) {
 			return false;
 		}
-		long formSize = form.totalSizeInBytes();
 		Integer docs=form.getNumDocs();
 		if(docs<=0)
 		{
 			return false;
 		}
-		if ((docs>=1000&&formSize>minsize)||fource||docs>=10000) {
+		if ((docs>=1000&&form.totalSizeInBytes()>minsize)||fource||docs>=10000) {
 			try{
 
 			context.getCounter("higo", "docCount").increment(docs);;

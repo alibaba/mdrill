@@ -31,12 +31,13 @@ public class ImportSpoutLocal implements IRichSpout{
     	this.confPrefix=confPrefix;
     }
 	private ArrayList<SolrInputDocument> doclist=null;
-	private Object doclistLock=new Object();
+	private Object doclistLock=null;
 
 
     int buffersize=5000;
     @Override
     public void open(Map conf, TopologyContext context,SpoutOutputCollector collector) {
+    	doclistLock=new Object();
     	try {
 			parse=(DataParser) Class.forName(String.valueOf(conf.get(this.confPrefix+"-parse"))).newInstance();
 			parse.init(true, conf, context);

@@ -50,6 +50,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 
+import com.alimama.mdrill.distinct.DistinctCount.DistinctCountAutoAjuest;
+import com.alimama.mdrill.utils.UniqConfig;
+
 
 public class  FacetComponent extends SearchComponent
 {
@@ -437,6 +440,8 @@ public class  FacetComponent extends SearchComponent
     public HashMap<ColumnKey,GroupbyRow> counts = new HashMap<ColumnKey,GroupbyRow>(128);
     public ArrayList<SelectDetailRow> countsDetail = new ArrayList<SelectDetailRow>(128);
     
+	 DistinctCountAutoAjuest autoDist=new DistinctCountAutoAjuest(UniqConfig.DistinctCountSize());
+
     public GroupbyItem recordcount=null;
     DistribFieldFacet(SolrParams localParams, String facetStr) {
       super(localParams, facetStr);
@@ -471,6 +476,7 @@ public class  FacetComponent extends SearchComponent
 				GroupbyRow row=(GroupbyRow) p.getRaw();
 				GroupbyRow sfc = counts.get(row.getKey());
 				if (sfc == null) {
+					row.setDist(autoDist);
 					counts.put(row.getKey(), row);
 				} else {
 					sfc.shardsMerge(row);

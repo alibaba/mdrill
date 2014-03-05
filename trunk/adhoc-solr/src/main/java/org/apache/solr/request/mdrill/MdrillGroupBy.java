@@ -18,6 +18,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
+import com.alimama.mdrill.distinct.DistinctCount.DistinctCountAutoAjuest;
 import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 
@@ -84,6 +85,9 @@ public class MdrillGroupBy {
 	{
 		GroupListCache.GroupList group = GroupListCache.GroupList.INSTANCE(container.groupListCache, container.groupbySize);
 		QuickHashMap<GroupListCache.GroupList,RefRow> groups=new QuickHashMap<GroupListCache.GroupList,RefRow>(this.parse.limit_offset_maxgroups+1);
+		
+		
+		boolean issetDist=this.parse.isMustSetDistResult();
 		if(container.groupNonEmptySize==0)
 		{
 			group.reset();
@@ -104,14 +108,20 @@ public class MdrillGroupBy {
 					while (iter.hasNext()) {
 						int doc = iter.nextDoc();
 						cnt.val++;
-						container.updateDist(cnt, doc);
+						if(issetDist)
+						{
+							container.updateDist(cnt, doc);
+						}
 					}
 				}else{
 					while (iter.hasNext()) {
 						int doc = iter.nextDoc();
 						cnt.val++;
 						container.updateStat(cnt, doc);
+						if(issetDist)
+						{
 						container.updateDist(cnt, doc);
+						}
 					}
 				}
 			}
@@ -150,7 +160,10 @@ public class MdrillGroupBy {
 					if (container.toGroupsByJoin(doc, group)&&container.pre.contains(group)) {
 						RefRow cnt = this.makeOrGetGroup(groups, group);
 						cnt.val++;
-						container.updateDist(cnt, doc);
+						if(issetDist)
+						{
+							container.updateDist(cnt, doc);
+						}
 						this.delayPut(groups, cnt, group);
 					}
 				
@@ -163,7 +176,10 @@ public class MdrillGroupBy {
 						RefRow cnt = this.makeOrGetGroup(groups, group);
 						cnt.val++;
 						container.updateStat(cnt, doc);
-						container.updateDist(cnt, doc);
+						if(issetDist)
+						{
+							container.updateDist(cnt, doc);
+						}
 						this.delayPut(groups, cnt, group);
 					}
 				
@@ -207,6 +223,7 @@ public class MdrillGroupBy {
 		for(GroupListCache.GroupList torm:toremove)
 		{
 			groups.remove(torm);
+			this.container.freeRow(torm);
 			this.container.groupListCache.add(torm);
 			cnt1++;
 		}
@@ -262,6 +279,7 @@ public class MdrillGroupBy {
 		return res;
 	}
 		  
+
 	private void setCrossRow(RefRow ref,String groupname) throws ParseException, IOException
 	  {
 		  this.recordCount.setCrcRecord(groupname);
@@ -291,7 +309,7 @@ public class MdrillGroupBy {
 			{
 				for(int i=0;i<this.parse.distFS.length;i++)
 				{
-					row.addDistinct(i, ref.dist[i]);
+					row.setDistinct(i, ref.dist[i]);
 				}
 			}
 			
@@ -371,6 +389,8 @@ public class MdrillGroupBy {
 				cnt.delayPut=false;
 				groups.put(group.copy( this.container.groupListCache), cnt);
 
+			}else{
+				this.container.freeRow(group);
 			}
 		}
 	}
@@ -380,7 +400,7 @@ public class MdrillGroupBy {
 		if (cnt == null) {
 			if (groups.size() >= this.parse.limit_offset_maxgroups) {
 				mergercount++;
-				if (mergercount >= UniqConfig.shardMergerCount()) {
+				if (mergercount >= this.parse.limit_offset_maxgroups_merger) {
 					return this.container.getEmptyRow();
 				}
 				this.recordCount.setCrcRecord("-");
@@ -388,7 +408,7 @@ public class MdrillGroupBy {
 				TopMaps(groups);
 			}
 
-			cnt = this.container.createRow();
+			cnt = this.container.createRow(group);
 			if (smallestShardGroup == null) {
 				groups.put(group.copy(this.container.groupListCache), cnt);
 			} else {
