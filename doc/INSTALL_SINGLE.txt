@@ -1,0 +1,178 @@
+作者：范宜坚
+
+注意：1.本文档针对的安装包只在64位CentOS 6.3操作系统测试通过！
+      2.更加系统的安装方法，请看https://github.com/alibaba/mdrill
+
+1.配置操作系统
+1.1 # vi /etc/sysconfig/network
+        修改HOSTNAME=master.chinaj.com
+        
+1.2 # vi /etc/hosts 
+        增加192.168.1.8 master.chinaj.com
+
+1.3 # vi /etc/selinux/config
+        修改SELINUX=disabled
+
+1.4 配置好yum(/etc/yum.repos.d) 注：非常重要，很多软件都是基于yum安装
+
+1.5 设置无密码登录
+    # ssh-keygen -t rsa
+    # mv /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+    # ssh master.chinaj.com uptime  注：测试配置是否正确，建议一定要执行
+
+1.6 安装java
+    # yum install java-1.6.0-openjdk java-1.6.0-openjdk-devel
+
+1.7 增加环境变量
+    # vi /root/.bashrc
+        alias grep="grep --color=always"
+        export HADOOP_HOME=/usr/local/hadoop-0.20.2
+        export HADOOP_CONF_DIR=$HADOOP_HOME/conf
+        export JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64
+        export PATH=$PATH:$HADOOP_HOME/bin:$JAVA_HOME/bin:/usr/local/mdrill-0.20.9/bin
+    
+    # source /root/.bashrc 注：使用环境变量生效
+
+1.8 上传src.tgz到/root，并解压到/usr/local
+    # tar zxvf /root/src.tgz -C /usr/local
+    # cd /usr/local/src
+    # tar zxvf install.tgz -C /usr/local
+    # yum localinstall zeromq-2.1.7-1.el6.x86_64.rpm jzmq-2.1.0-1.el6.x86_64.rpm
+
+1.9 重启服务器
+    # reboot
+
+2.配置支撑软件
+2.1 配置zookeeper
+    # vi /usr/local/zookeeper-3.4.5/conf/zoo.cfg # 下方两个参数，可以根据自己的情况进行定制
+        dataDir=/data/zookeeper
+        server.1=master.chinaj.com:2888:3888
+
+    # mkdir -p /data/zookeeper
+
+    # cd /usr/local/zookeeper-3.4.5/bin/
+    # ./zkServer.sh start
+    # ./zkServer.sh status 注：正常情况下的显示
+    JMX enabled by default
+    Using config: /usr/local/zookeeper-3.4.5/bin/../conf/zoo.cfg
+    Mode: standalone
+
+2.2 配置hadoop
+    # mkdir -p /data/hadoop
+    注：以下几个配置文件内容很简单，需要改的内容只有目录和域名
+    # vi /usr/local/hadoop-0.20.2/conf/core-site.xml
+    # vi /usr/local/hadoop-0.20.2/conf/hdfs-site.xml
+    # vi /usr/local/hadoop-0.20.2/conf/mapred-site.xml
+    # vi /usr/local/hadoop-0.20.2/conf/masters
+    # vi /usr/local/hadoop-0.20.2/conf/slaves
+
+    # hadoop namenode -format
+    # start-all.sh
+    # hadoop dfsadmin -report 注：正常情况下的显示
+    Configured Capacity: 20639866880 (19.22 GB)
+    Present Capacity: 16372936704 (15.25 GB)
+    DFS Remaining: 16372203520 (15.25 GB)
+    DFS Used: 733184 (716 KB)
+    DFS Used%: 0%
+    Under replicated blocks: 0
+    Blocks with corrupt replicas: 0
+    Missing blocks: 0
+
+    -------------------------------------------------
+    Datanodes available: 1 (1 total, 0 dead)
+
+    Name: 192.168.1.8:50010
+    Decommission Status : Normal
+    Configured Capacity: 20639866880 (19.22 GB)
+    DFS Used: 733184 (716 KB)
+    Non DFS Used: 4266930176 (3.97 GB)
+    DFS Remaining: 16372203520(15.25 GB)
+    DFS Used%: 0%
+    DFS Remaining%: 79.32%
+    Last contact: Fri Mar 07 15:06:34 CST 2014
+
+2.3 配置mdrill
+    # mkdir -p /data/disk/mdrill
+    # vi /usr/local/mdrill-0.20.9/conf/storm.yaml
+
+    # nohup bluewhale nimbus &
+    # nohup bluewhale supervisor &
+    # nohup bluewhale mdrillui 1107 ../lib/adhoc-web-0.18-beta.jar ./ui &
+    启动完之后，查看/usr/local/mdrill-0.20.9/logs/里面的日志，检查是否有报错。
+
+3. 导入离线数据
+    # hadoop fs -mkdir /group/tbads/p4pdata/hive_data/rpt/rpt_p4padhoc_product/dt=20140306
+    # hadoop fs -put /usr/local/src/001.txt /group/tbads/p4pdata/hive_data/rpt/rpt_p4padhoc_product/dt=20140306/001.txt
+    # hadoop fs -cat /group/tbads/p4pdata/hive_data/rpt/rpt_p4padhoc_product/dt=20140306/001.txt          注：正常情况下的显示
+    20140306        子落1   test@alipay.com P4P-客户
+    20140306        子落2   test@alipay.com P4P-客户
+    20140306        子落3   test@alipay.com P4P-客户
+    20140306        子落4   test@alipay.com P4P-客户
+
+    # bluewhale mdrill create /usr/local/src/rpt_p4padhoc_product.sql       注：正常情况下的显示
+    higo execute [create, /usr/local/src/rpt_p4padhoc_product.sql]
+
+    <field name="thedate" type="string" indexed="true" stored="false"  omitTermFreqAndPositions="true" />
+    <field name="name" type="string" indexed="true" stored="false"  omitTermFreqAndPositions="true" />
+    <field name="email" type="string" indexed="true" stored="false"  omitTermFreqAndPositions="true" />
+    <field name="is_p4pvip" type="string" indexed="true" stored="false"  omitTermFreqAndPositions="true" />
+
+    create succ at /group/tbdp-etao-adhoc/p4padhoc/tablelist/rpt_p4padhoc_product
+    
+    # bluewhale mdrill index rpt_p4padhoc_product /group/tbads/p4pdata/hive_data/rpt/rpt_p4padhoc_product 1 20140306 txt tab         注：正常情况下的显示
+    higo execute [index, rpt_p4padhoc_product, /group/tbads/p4pdata/hive_data/rpt/rpt_p4padhoc_product, 1, 20140306, txt, tab]
+    11111111 vertify:>>>last>>>>>current>>partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657<<<<
+    22222  vertify:201403>>>partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657<<<<
+    333333 vertify:201403>>>partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657>>>partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657>>>><<<<
+    tmpjars:/usr/local/mdrill-0.20.9/lib/adhoc-solr-0.18-beta.jar,/usr/local/mdrill-0.20.9/lib/commons-httpclient-3.0.1.jar,/usr/local/mdrill-0.20.9/lib/commons-io-1.4.jar,/usr/local/mdrill-0.20.9/lib/slf4j-api-1.5.6.jar,/usr/local/mdrill-0.20.9/lib/adhoc-public-0.18-beta.jar,/usr/local/mdrill-0.20.9/lib/adhoc-wrapper-0.18-beta.jar@@@@@file:/usr/local/mdrill-0.20.9/lib/adhoc-solr-0.18-beta.jar,file:/usr/local/mdrill-0.20.9/lib/commons-httpclient-3.0.1.jar,file:/usr/local/mdrill-0.20.9/lib/commons-io-1.4.jar,file:/usr/local/mdrill-0.20.9/lib/slf4j-api-1.5.6.jar,file:/usr/local/mdrill-0.20.9/lib/adhoc-public-0.18-beta.jar,file:/usr/local/mdrill-0.20.9/lib/adhoc-wrapper-0.18-beta.jar
+    /group/tbads/p4pdata/hive_data/rpt/rpt_p4padhoc_product/*20140306*/*
+    output:/group/tbdp-etao-adhoc/p4padhoc/tablelist/rpt_p4padhoc_product/tmp/d93727c0-d54d-46b1-a9f7-8205a90089fb/201403@*p4padhoc/tablelist/rpt_p4padhoc_product/tmp*201403
+    tmp:/group/tbdp-etao-adhoc/p4padhoc/tablelist/rpt_p4padhoc_product/tmp/d93727c0-d54d-46b1-a9f7-8205a90089fb/201403_smallIndex
+    thedate string true false
+    name string true false
+    email string true false
+    is_p4pvip string true false
+    higo_uuid tlong true true
+    14/03/07 14:13:59 INFO input.FileInputFormat: Total input paths to process : 1
+    14/03/07 14:13:59 INFO mapred.JobClient: Running job: job_201403071409_0001
+    14/03/07 14:14:00 INFO mapred.JobClient:  map 0% reduce 0%
+    14/03/07 14:14:11 INFO mapred.JobClient:  map 100% reduce 0%
+    14/03/07 14:14:26 INFO mapred.JobClient:  map 100% reduce 100%
+    ... 省略大部分
+    14/03/07 14:14:58 INFO mapred.JobClient:     Map input records=1
+    14/03/07 14:14:58 INFO mapred.JobClient:     Reduce shuffle bytes=0
+    14/03/07 14:14:58 INFO mapred.JobClient:     Reduce output records=1
+    14/03/07 14:14:58 INFO mapred.JobClient:     Spilled Records=2
+    14/03/07 14:14:58 INFO mapred.JobClient:     Map output bytes=138
+    14/03/07 14:14:58 INFO mapred.JobClient:     Combine input records=0
+    14/03/07 14:14:58 INFO mapred.JobClient:     Map output records=1
+    14/03/07 14:14:58 INFO mapred.JobClient:     Reduce input records=1
+    44444 vertify:201403>>>partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657<<<partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657<<<<
+    11111111 vertify:>>>last>>>partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657>>current>>partionV201301008@001@201403@1@1@-1950960726@20140307@20140306@176@1@20140307_141317_657@20140307_141317_657<<<<
+
+    # bluewhale mdrill table rpt_p4padhoc_product     注：正常情况下的显示
+    higo execute [table, rpt_p4padhoc_product]
+    14/03/07 14:15:33 INFO imps.CuratorFrameworkImpl: Starting
+    14/03/07 14:15:33 INFO zookeeper.ZooKeeper: Client environment:zookeeper.version=3.4.5-1392090, built on 09/30/2012 17:52 GMT
+    14/03/07 14:15:33 INFO zookeeper.ZooKeeper: Client environment:host.name=master.chinaj.com
+    14/03/07 14:15:33 INFO zookeeper.ZooKeeper: Client environment:java.version=1.6.0_24
+    ... 省略大部分
+    14/03/07 14:15:33 INFO storm.StormSubmitter: Finished submitting topology: adhoc
+    start complete 
+
+4. 测试
+4.1 # service iptables stop
+
+4.2 http://192.168.1.8:1107/mdrill.jsp
+海狗数据表 --> 能够看到rpt_p4padhoc_product和adhoc;点击rpt_p4padhoc_product监控的查看，可以看到
+    进程数:2
+    总记录数=5
+    分区记录数：
+    201403=5
+    =0
+    起始分区每天记录数：
+    day:20140306@0=4
+    起始分区每天有效shard数：
+    20140306@0=1
+    
+4.3 http://192.168.1.8:1107/sql.jsp 点击提交查询，能够查出数据来，则说明安装已经大功告成！
