@@ -53,7 +53,13 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
   <tr>
     <td width="197" valign="top"><p>14年2月</p></td>
     <td width="197" valign="top"><p>3200亿</p></td>
-    <td width="248" valign="top"><p>目前只有11台机器，硬盘使用率30%</p></td>
+    <td width="248" valign="top"><p>11台机器，硬盘使用率30%</p></td>
+  </tr>
+  
+  <tr>
+    <td width="197" valign="top"><p>14年3月28日</p></td>
+    <td width="197" valign="top"><p>4900亿</p></td>
+    <td width="248" valign="top"><p>11台机器，硬盘使用率60%</p></td>
   </tr>
 </table>
 
@@ -75,12 +81,9 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
  2014.02.08 version 0.20.7-alpha cache改进 <a href="https://github.com/alibaba/mdrill/wiki/0.20.7">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/662RdRlqL" target="_blank">点击这里下载</a> 。) <br>
  2014.02.18 version 0.20.8.3-alpha bugfix&&重写调度&&优化 <a href="https://github.com/alibaba/mdrill/wiki/0.20.8">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/862RiROZx" target="_blank">点击这里下载</a>)<br>
  2014.03.05 version 0.20.9-beta bugfix <a href="https://github.com/alibaba/mdrill/wiki/0.20.9">see detail</a>  (<b>推荐版本</b>。 <a href="http://yunpan.taobao.com/share/link/862RqRFhx" target="_blank">点击这里下载</a> 。依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
+ 2014.03.28 version 0.21.1-alpha update模式的开发  (开发中的版本，请不要使用。<a href="http://yunpan.taobao.com/share/link/863R1R43x" target="_blank">点击这里获取源码</a> ) <br>
 
  
- 
- <h1>版本源码路径</h1>
- https://github.com/alibaba/mdrill/tree/master/release  <br>
-
 
 <h1>资源列表</h1>
 <ul>
