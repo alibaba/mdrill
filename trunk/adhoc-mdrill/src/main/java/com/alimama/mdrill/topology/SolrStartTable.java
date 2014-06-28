@@ -26,6 +26,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
 
+import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.OutputCollector;
 
 import com.alimama.mdrill.partion.GetPartions;
@@ -53,7 +54,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 	private int taskIndex;
 	private String tablename;
 	private Integer taskid;
-	private OutputCollector collector;
+	private SpoutOutputCollector collector;
 	private SolrStartJetty solrservice;
 	private boolean isMergeServer = false;
 
@@ -84,7 +85,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 		String tablemode=String.valueOf(this.stormConf.get("higo.mode."+this.tablename));
 		SolrCore.setTablemode(this.tablename, tablemode);
 	}
-	public SolrStartTable(	BoltParams params,OutputCollector collector, Configuration conf,
+	public SolrStartTable(	BoltParams params,SpoutOutputCollector collector, Configuration conf,
 			String solrhome, String diskList, int taskIndex, String tblName,
 			Integer taskid, SolrStartJetty solrservice) throws Exception {
 		this.params=params;
@@ -208,7 +209,7 @@ public class SolrStartTable implements StopCheck, SolrStartInterface {
 	public void reportError(String msg)
 	
 	{
-		this.collector.reportError(new RuntimeException("timeout:" + this.tablename));
+		throw new RuntimeException("timeout:" + this.tablename);
 
 	}
 	

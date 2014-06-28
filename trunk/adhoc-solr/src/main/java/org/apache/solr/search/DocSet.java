@@ -182,6 +182,7 @@ abstract class DocSetBase implements DocSet {
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Unsupported Operation");
   }
 
+
   /**
    * @throws SolrException Base implementation does not allow modifications
    */

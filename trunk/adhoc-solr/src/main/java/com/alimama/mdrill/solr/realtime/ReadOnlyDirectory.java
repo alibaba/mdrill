@@ -82,18 +82,7 @@ public class ReadOnlyDirectory implements MdrillDirectory{
 	private void fresh() throws IOException
 	{
 		diskDirector.clear();
-		Configuration conf=this.getConf();
-		FileSystem fs=FileSystem.get(conf);
-		
-		
-		Configuration conf_timeout=this.getConf();
-		conf_timeout.setInt("dfs.socket.timeout", 5000);
-		FileSystem fstimeout=FileSystem.get(conf_timeout);
-		
-		
-		fs.mkdirs(new Path(hdfsPath).getParent());
-
-		
+			
 		path.mkdirs();
 		File links=new File(path,"indexLinks");
 		if(links.exists())
@@ -106,6 +95,15 @@ public class ReadOnlyDirectory implements MdrillDirectory{
 		    	{
 		    		if(s1.startsWith("@hdfs@"))
 		    		{
+		    			Configuration conf=this.getConf();
+		    			FileSystem fs=FileSystem.get(conf);
+		    			
+		    			
+		    			Configuration conf_timeout=this.getConf();
+		    			conf_timeout.setInt("dfs.socket.timeout", 5000);
+		    			FileSystem fstimeout=FileSystem.get(conf_timeout);
+		    			
+//		    			fs.mkdirs(new Path(hdfsPath).getParent());
 		    			Path p=new Path(s1.replaceAll("@hdfs@", ""));
 		    			Path p2=new Path(p.getParent(),"sigment/"+p.getName());
 

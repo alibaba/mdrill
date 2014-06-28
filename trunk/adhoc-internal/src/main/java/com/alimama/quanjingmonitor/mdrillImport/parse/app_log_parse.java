@@ -2,7 +2,10 @@ package com.alimama.quanjingmonitor.mdrillImport.parse;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
 import com.alimama.mdrill.json.JSONException;
@@ -81,6 +84,82 @@ public class app_log_parse extends com.alimama.mdrillImport.DataParser{
 			
 			return b.toString();
 	 }
+	
+     private String matchGet(String s,Pattern pat,int index)
+     {
+    	 if(s==null)
+    	 {
+    		 return null;
+    	 }
+         Matcher mat = pat.matcher(s);
+
+    	 while (mat.find()) {
+	           return mat.group(index);
+	        }
+    	 return null;
+     }
+     
+     private String get_json_object(String s,String key)
+     {
+    	 if(s==null)
+    	 {
+    		 return null;
+    	 }
+    	 try{
+    		 JSONObject obj= new JSONObject(s);
+    		 if(obj.has(key))
+    		 {
+    			 return String.valueOf(obj.get(key));
+    		 }
+    	 }catch(Throwable e)
+    	 {
+    		 return null;
+    	 }
+    	 
+    	 return null;
+     }
+     
+     
+     
+     private static Pattern pat_arg1=Pattern.compile("(.*)(point|_sb)=(\\{.*\\})(.*)");
+     private static Pattern pat_reserves=Pattern.compile("(.*)(_sb|point)=(\\{.*\\})(.*)");
+     private static Pattern pat_args=Pattern.compile("(.*)(_sb|point)=(\\{.*\\})(.*)");
+     private static Pattern pat_last=Pattern.compile("(\\w+)[#]*(.*)");
+
+	 private String parseGet(String arg1,String reserves,String args,String key)
+	 {
+		 String rtn=null;
+		 if(rtn==null&&arg1!=null&&arg1.indexOf(key)>=0)
+		 {
+			 String lower_decode_arg1=decodeString(String.valueOf(arg1)).toLowerCase();
+			 rtn=get_json_object(matchGet(lower_decode_arg1,pat_arg1,3),key);
+		 }
+		 
+		 if(rtn==null&&reserves!=null&&reserves.indexOf(key)>=0)
+		 {
+			 String lower_decode_reserves=decodeString(String.valueOf(reserves)).toLowerCase();
+			 rtn=get_json_object(matchGet(lower_decode_reserves,pat_reserves,3),key);
+		 }
+		 
+		 if(rtn==null&&args!=null&&args.indexOf(key)>=0)
+		 {
+			 String lower_decode_args=decodeString(String.valueOf(args)).toLowerCase();
+			 rtn=get_json_object(matchGet(lower_decode_args,pat_args,3),key);
+		 }
+		 
+		 if(rtn==null)
+		 {
+			 return null;
+		 }
+		 
+		 return matchGet(rtn,pat_last,1);	
+	 }
+	 
+	 private boolean isempty(String refpid)
+	 {
+		 return refpid==null||refpid.isEmpty()||refpid.length()<5||refpid.length()>500;
+	 }
+	 
 	@Override
 	public DataIter parseLine(String line) throws InvalidEntryException {
 		
@@ -114,7 +193,6 @@ public class app_log_parse extends com.alimama.mdrillImport.DataParser{
 			if(!match_app_key)
 			{
 				return null;
-
 			}
 			
 			boolean match_event_id="21032".equals(event_id)||"2001".equals(event_id)||"30001".equals(event_id);
@@ -140,11 +218,6 @@ public class app_log_parse extends com.alimama.mdrillImport.DataParser{
 				this.lines=0;
 			}
 
-			if(clicklog[29].isEmpty()||clicklog[29].length()<5||clicklog[29].indexOf("_sb")<0)
-			{
-				return null;
-			}
-			
 			long ts = Long.parseLong(clicklog[40]);
 			this.lines_sb++;
 			if(this.lines_sb>5000)
@@ -156,111 +229,26 @@ public class app_log_parse extends com.alimama.mdrillImport.DataParser{
 					timediff=nowts;
 					LOG.info("parseLine_sb_"+formatDayMin.format(new Date(ts*1000))+" "+formatRows(clicklog));
 				}
-				
 			}
-			
 
 			if(ts<laststartts||ts>lastendts)
 			{
 				return null;
 			}
+				
+			String refpid=parseGet(arg1, reserves, args, "refpid");;
+			String ad_id=parseGet(arg1, reserves, args, "ad_id");;
 			
-			JSONObject json=parseSb(clicklog[29]);
-			String refpid=null;
-			String ad_id=null;
-			if(match_refpid)
+			boolean iswireless=true;
+			if(refpid==null&&ad_id!=null)
 			{
-				if(json.has("refpid"))
-				{
-					refpid=String.valueOf(json.get("refpid"));
-				}
+				String strday=formatDay.format(new Date(ts*1000));
+				refpid=FetchAdid2Pid.fetch().get(strday+"@"+String.valueOf(ad_id));
+				iswireless=false;
 			}
 			
-			
-			
-			if(match_ad_id)
+			if(isempty(refpid))
 			{
-				if(json.has("ad_id"))
-				{
-					ad_id=String.valueOf(json.get("ad_id"));
-				}
-			}
-			
-			
-			
-			try {
-				if(match_refpid)
-				{
-					if (refpid == null || refpid.isEmpty() || refpid.length() < 5
-							|| refpid.length() > 500) {
-						refpid = getName(args, "refpid");
-					}
-					
-					if (refpid == null || refpid.isEmpty() || refpid.length() < 5
-							|| refpid.length() > 500) {
-						if(arg1.indexOf("refpid")>=0)
-						{
-							JSONObject jsonstr = new JSONObject(arg1);
-							if (jsonstr.has("refpid")) {
-								refpid = String.valueOf(jsonstr.get("refpid"));
-							}
-						}
-					}
-					
-				}
-				
-				
-				if(match_ad_id)
-				{
-					
-					if (ad_id == null || ad_id.isEmpty() || ad_id.length() < 5
-							|| ad_id.length() > 500) {
-						ad_id = getName(args, "ad_id");
-					}
-	
-					
-					if (ad_id == null || ad_id.isEmpty() || ad_id.length() < 5
-							|| ad_id.length() > 500) {
-						if(arg1.indexOf("ad_id")>=0)
-						{
-							JSONObject jsonstr = new JSONObject(arg1);
-							if (jsonstr.has("ad_id")) {
-								ad_id = String.valueOf(jsonstr.get("ad_id"));
-							}
-						}
-					}
-				
-				}
-			}catch(Throwable e)
-			 {
-				 	this.lines_sb2++;
-					if(this.lines_sb2>100)
-					{
-						this.lines_sb2=0;
-						long nowts=System.currentTimeMillis();
-						if(nowts-timediff2>30000)
-						{
-							timediff2=nowts;
-							LOG.info("parse error :"+formatDayMin.format(new Date(ts*1000))+" "+formatRows(clicklog),e);
-						}
-					}
-			 }
-			
-			
-			
-			if(refpid==null||refpid.isEmpty()||refpid.length()<5||refpid.length()>500)
-			{
-				if(match_ad_id&&ad_id!=null)
-				{
-					String strday=formatDay.format(new Date(ts*1000));
-					refpid=FetchAdid2Pid.fetch().get(strday+"@"+String.valueOf(ad_id));
-				}
-			}
-			
-			
-			if(refpid==null||refpid.isEmpty()||refpid.length()<5||refpid.length()>500)
-			{
-	
 				this.lines_sb3++;
 				if(this.lines_sb3>100)
 				{
@@ -275,8 +263,7 @@ public class app_log_parse extends com.alimama.mdrillImport.DataParser{
 				
 				return null;
 			}
-			
-			return new DataIterParse(ts,clicklog,refpid,!match_ad_id);
+			return new DataIterParse(ts,clicklog,refpid,iswireless);
 		} catch (Throwable nfe) {
 			if(groupCreateerror<100)
 			{
@@ -346,8 +333,6 @@ public class app_log_parse extends com.alimama.mdrillImport.DataParser{
 	}
 	
 	
-
-    
     
     public static String getNameNodecode(String url,String keyname)
 	{
@@ -386,8 +371,7 @@ public class app_log_parse extends com.alimama.mdrillImport.DataParser{
 			    String key = decodeString(tem1[0]);
 				if(key.equals(keyname))
 				{
-					String value = (tem1.length < 2
-							? "" : decodeString(tem1[1]));
+					String value = (tem1.length < 2	? "" : decodeString(tem1[1]));
 					return value;
 				}
 			}

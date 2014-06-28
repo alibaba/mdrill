@@ -57,7 +57,7 @@ public class HigoJoinInvert {
 			LOG.info("##joinright##"+this.docset.size());
 			String fieldLeft=req.getParams().get(HigoJoinUtils.getLeftField(this.tableName));
 			String fieldRigth=req.getParams().get(HigoJoinUtils.getRightField(this.tableName));
-			this.ufsRight=new UnvertFields(fields, this.search.get());
+			this.ufsRight=new UnvertFields(this.docset,fields, this.search.get());
 	
 			this.join=HigoJoin.getJoin(this.leftreader,this.partion,this.schema, search.get(), fieldLeft, fieldRigth);
 

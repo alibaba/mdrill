@@ -23,9 +23,9 @@
 		MysqlService mysqlService = new MysqlService();
 		boolean shownTableTitles = false;
 	%>
-	<h1>最近10天模块访问情况(已排除开发)</h1>
+	<h1>最近31天模块访问情况(已排除开发)</h1>
     <% 
-    	List<String> days = mysqlService.getRecentDays("module_info","queryday",10);
+    	List<String> days = mysqlService.getRecentDays("module_info","queryday",31);
     	shownTableTitles = false;
     	for(String day : days) {	
     		boolean thedateHasData = false;

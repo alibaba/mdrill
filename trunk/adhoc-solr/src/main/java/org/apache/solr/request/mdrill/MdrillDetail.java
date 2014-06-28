@@ -23,6 +23,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DocSetCollector;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import org.apache.solr.request.SolrQueryRequest;
@@ -82,7 +83,7 @@ public class MdrillDetail {
 		MapFieldSelector selector;
 		String[] fieldsnostore;
 		UnvertFields ufs;
-		public FieldValueGet(String[] fields,SegmentReader reader,SolrIndexSearcher searcher) throws IOException
+		public FieldValueGet(DocSet baseAdvanceDocs,String[] fields,SegmentReader reader,SolrIndexSearcher searcher) throws IOException
 		{
 			this.fields=fields;
 			this.reader=reader;
@@ -107,7 +108,7 @@ public class MdrillDetail {
 				
 			}
 			this.selector=new MapFieldSelector(storedField); 
-			this.ufs=new UnvertFields(this.fieldsnostore, reader,searcher.getPartionKey(),searcher.getSchema(),false);;
+			this.ufs=new UnvertFields(baseAdvanceDocs,this.fieldsnostore, reader,searcher.getPartionKey(),searcher.getSchema(),false);;
 			
 		}
 		
@@ -233,9 +234,29 @@ public class MdrillDetail {
 			String crcliststr=params.get("mdrill.crc.key.get.crclist");
 			if(crcliststr!=null)
 			{
-				FieldValueGet fvget=new FieldValueGet(fields, reader, searcher);
+				
+
+				DocSetCollector collect=new DocSetCollector(10240, reader.maxDoc());
 
 				String[] crclist=crcliststr.split(",");
+				for(String s:crclist)
+				{
+					Long crc=Long.parseLong(s);
+					String v=cache.get(crc);
+					if(v!=null)
+					{
+						String cols[]=v.split(UniqConfig.GroupJoinString(),-1);
+						if(cols.length>=2)
+						{
+							int doc=Integer.parseInt(cols[0]);
+							collect.collect(doc);
+						}
+					}
+				}
+				
+				
+				FieldValueGet fvget=new FieldValueGet(collect.getDocSet(),fields, reader, searcher);
+
 				for(String s:crclist)
 				{
 					Long crc=Long.parseLong(s);

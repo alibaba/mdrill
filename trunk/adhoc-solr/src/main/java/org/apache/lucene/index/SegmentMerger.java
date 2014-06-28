@@ -596,6 +596,7 @@ final class SegmentMerger {
 
     final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(smis[0].term,smis[0].term.text);
     docConsumer.reset();
+    docConsumer.startTerm();
     int df = 0;
 
     try{

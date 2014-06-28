@@ -80,6 +80,8 @@ public abstract class Directory implements Closeable {
 
 		return rtn;
 	}
+	
+	
 	public synchronized String getCacheKey(String[] filelist)
     {
 		

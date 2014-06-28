@@ -93,6 +93,30 @@
 </dependency>
 
 
+  
+  
+  
+<dependency>
+    <groupId>com.taobao.tddl</groupId>
+    <artifactId>tddl-client</artifactId>
+    <version>5.0.8</version>
+ </dependency>
+
+ <dependency>
+    <groupId>com.taobao.tddl</groupId>
+    <artifactId>tddl-sequence</artifactId>
+    <version>5.0.8</version>
+  </dependency>
+  
+  <dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>3.0.7.RELEASE</version>
+
+			
+		</dependency>
+  
+
   </dependencies>
 
   <properties>

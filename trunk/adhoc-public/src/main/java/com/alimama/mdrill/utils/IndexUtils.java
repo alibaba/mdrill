@@ -116,6 +116,7 @@ public class IndexUtils {
     private static AtomicInteger tmpIndex=new AtomicInteger(0);
 	public static boolean copyToLocal(FileSystem fs, FileSystem lfs, Path src,
 			Path target, Path tmpparent,boolean checkzip) throws IOException {
+	
 		int index=tmpIndex.incrementAndGet();
 		if(index>=128)
 		{
@@ -128,6 +129,10 @@ public class IndexUtils {
 		
 		
 		try {
+			if(!fs.exists(src))
+			{
+				return false;
+			}
 			truncate(lfs, tmp);
 			boolean isziped=false;
 			if(checkzip&&!fs.getFileStatus(src).isDir())
@@ -150,7 +155,7 @@ public class IndexUtils {
 				LOG.info("higolog copyToLocal non exists");
 				return false;
 			}
-		} catch (IOException e) {
+		} catch (Throwable e) {
 			LOG.error("higolog copyToLocal error", e);
 			return false;
 		}

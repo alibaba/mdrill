@@ -5,9 +5,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
+
+
+
 
 
 import backtype.storm.utils.Utils;
@@ -21,6 +29,9 @@ import com.alipay.bluewhale.core.cluster.StormClusterState;
 
 
 public class GetShards {
+	
+	private static Timer  EXECUTE =new Timer();
+
 	private static Logger LOG = Logger.getLogger(GetShards.class);
 
 	public static class SolrInfoList extends RunnableCallback{
@@ -29,9 +40,11 @@ public class GetShards {
 			super();
 			this.tableName = tableName;
 		}
+		
+		TimerTask task=null;
+
 
 		List<SolrInfo> infolist=new ArrayList<SolrInfo>();
-		private long time=System.currentTimeMillis();
 		Object lock=new Object();
 		@Override
 		public <T> Object execute(T... args) {
@@ -39,15 +52,6 @@ public class GetShards {
 			return null;
 		}
 		
-		public void maybeRefresh()
-		{
-			long t2=System.currentTimeMillis();
-			if((t2-time)>=1000l*600)
-			{
-				this.run();
-				time=System.currentTimeMillis();
-			}
-		}
 		
 		public List<SolrInfo> getlist()
 		{
@@ -57,27 +61,48 @@ public class GetShards {
 				return rtn;
 			}
 		}
-		
 		public void run() {
-			synchronized (lock) {
-				try {
-					LOG.info("sync from zookeeper "+tableName);
-					StormClusterState zkCluster = getCluster();
-					List<Integer> list = zkCluster.higo_ids(tableName);
-					ArrayList<SolrInfo> newlist=new ArrayList<SolrInfo>();
-					for (Integer id : list) {
-						SolrInfo info = zkCluster.higo_info(tableName, id);
-						if (info != null )
-						{
-							newlist.add(info);
-						}
-					}
-					infolist.clear();
-					infolist.addAll(newlist);
-					zkCluster.higo_base(tableName, this);
+			ArrayList<SolrInfo> newlist=new ArrayList<SolrInfo>();
 
-				} catch (Exception e) {}
+			try {
+				long t1=System.currentTimeMillis();
+				LOG.info("sync from zookeeper "+tableName);
+				StormClusterState zkCluster = getCluster();
+				List<Integer> list = zkCluster.higo_ids(tableName);
+				for (Integer id : list) {
+					SolrInfo info = zkCluster.higo_info(tableName, id);
+					if (info != null )
+					{
+						newlist.add(info);
+					}
+				}
+				
+				zkCluster.higo_base(tableName, this);
+				long tl=System.currentTimeMillis()-t1;
+				LOG.info("getShards timetaken:"+tl);
+
+			} catch (Exception e) {
+				
+				return ;
 			}
+			synchronized (lock) {
+				infolist.clear();
+				infolist.addAll(newlist);
+				if(this.task==null)
+				{
+					this.task=new TimerTask() {
+						@Override
+						public void run() {
+							SolrInfoList.this.run();
+						}
+					};
+					EXECUTE.schedule(task, 60000l, 60000l);
+				}
+			}
+			
+			
+			
+			
 		}
 	};
 	
@@ -91,8 +116,8 @@ public class GetShards {
     		infolist=new SolrInfoList(tableName);
     		infolist.run();
     		infolistmap.putIfAbsent(tableName, infolist);
+			LOG.info("SolrInfoList init:"+tableName);
     	}
-    	infolist.maybeRefresh();
     	return infolist;
 	}
 	

@@ -19,6 +19,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.join.HigoJoinUtils;
 
+import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.OutputCollector;
 
 import com.alipay.bluewhale.core.cluster.SolrInfo;
@@ -43,7 +44,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
     private int taskIndex; 
     private String tablename;
     private Integer taskid;
-    private OutputCollector collector;
+    private SpoutOutputCollector collector;
     private boolean isMergeServer=false;
 	private AtomicBoolean neetRestart=new AtomicBoolean(false);
 	
@@ -68,7 +69,7 @@ public class SolrStartJetty implements StopCheck,SolrStartInterface{
     }
 	BoltParams params;
 
-    public SolrStartJetty(BoltParams params,OutputCollector collector,Configuration conf, String solrhome, String diskList, Integer portbase,int taskIndex, String tblName, Integer taskid,Integer partions) throws IOException {
+    public SolrStartJetty(BoltParams params,SpoutOutputCollector collector,Configuration conf, String solrhome, String diskList, Integer portbase,int taskIndex, String tblName, Integer taskid,Integer partions) throws IOException {
     	this.params=params;
     	this.collector=collector;
 		this.conf = conf;

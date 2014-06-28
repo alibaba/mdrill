@@ -1,45 +1,61 @@
 package com.alimama.mdrill.buffer;
 
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.Directory;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.request.uninverted.GrobalCache;
 
+import com.alimama.mdrill.utils.UniqConfig;
+
 
 public class BlockBufferMalloc {
-	public static LinkedBlockingQueue<blockData> free = new LinkedBlockingQueue<blockData>();
+	
+	private static ArrayList<blockData> freeByteBlocks = new ArrayList<blockData>();
 	public static AtomicLong mallocTimes = new AtomicLong(0l);
 	public static AtomicLong reusedTimes = new AtomicLong(0l);
-
-	public static blockData malloc(int asize) {
-			blockData rtn=free.poll();
-			if(rtn==null)
-			{
-				rtn=new blockData(new byte[BlockBufferInput.BLOCK_SIZE],asize);
+	public static Object lock=new Object();
+	
+	private static blockData getByteBlock(int asize) {
+		synchronized (lock) {
+			final int size = freeByteBlocks.size();
+			final blockData b;
+			if (0 == size) {
+				b = new blockData(new byte[BlockBufferInput.BLOCK_SIZE], asize);
 				mallocTimes.incrementAndGet();
-			}else{
+			} else {
+				b = freeByteBlocks.remove(size - 1);
 				reusedTimes.incrementAndGet();
 			}
-			rtn.setSize(asize);
-
-			return rtn;
+			return b;
+		}
 	}
 
+
+
+	private static void recycleByteBlocks(blockData data) {
+		synchronized (lock) {
+			int allowsize = UniqConfig.getBlockBufferSize() - freeByteBlocks.size();
+			if (allowsize > 0) {
+				freeByteBlocks.add(data);
+			}
+		}
+	}
+
+	
+	public static blockData malloc(int asize) {
+		blockData rtn = getByteBlock(asize);
+		rtn.setSize(asize);
+		return rtn;
+	}
 	public static void freeData(blockData d) {
-				if (d != null) {
-					boolean allowadd=d.allowFree.get()==0&&free.size() < 100;
-					if(allowadd)
-					{
-						d.updateLasttime();
-						free.add(d);
-					}
-				}
+		if (d != null) {
+			recycleByteBlocks(d);
+		}
 	}
+	
 	public static class block implements GrobalCache.ILruMemSizeKey{
 		private long index;
 		private String flushkey="";
@@ -80,10 +96,6 @@ public class BlockBufferMalloc {
 				return false;
 			return true;
 		}
-		
-		
-
-		
 		
 	}
 	

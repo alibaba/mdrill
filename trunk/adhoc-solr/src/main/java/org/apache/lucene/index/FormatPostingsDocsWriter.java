@@ -92,7 +92,9 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
 
   @Override
   FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException {
+	    parent.termsOut.collect(docID);
 
+	  
       final int delta = docID - lastDocID;
     assert docID < totalNumDocs: "docID=" + docID + " totalNumDocs=" + totalNumDocs;
     if (docID < 0 || (df > 0 && delta <= 0))
@@ -107,6 +109,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
         skipListWriter.setSkipData(lastDocID, storePayloads, posWriter.lastPayloadLength);
         skipListWriter.bufferSkip(df);
       }
+      
     lastDocID = docID;
     if (omitTermFreqAndPositions)
     	this.out.writeCompressblock(delta,1);
@@ -146,9 +149,16 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
                           utf8.length,
                           termInfo);
     }
+    
+    parent.termsOut.addTm(parent.currentTermobj,fieldInfo.number);;
 
     lastDocID = 0;
     df = 0;
+  }
+  
+  public void startTerm() throws IOException
+  {
+	  parent.termsOut.startTerm(parent.currentTermobj,fieldInfo.number);
   }
 
   public void close() throws IOException {

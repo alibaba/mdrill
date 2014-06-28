@@ -167,9 +167,12 @@ z-index: 1200;
     <p id="loading-one" style="color:#fff;position:absolute; top:50%; left:50%; margin:20px 0 0 -50px; padding:3px 10px;" onclick="javascript:turnoff('loading')">页面载入中..</p>  
 </div>  
 
-<div style="font-size:50px; border:double; width:210px; text-align:center; vertical-align:middle">全景监控</div>
- 	<h1><a style="color:#551890" href="./3_8_realtime.jsp">3.8生活节</a>/TANX外投流量指标/<a style="color:#551890" href="./tanx_table.jsp">TANX外投流量数据排行</a></h1>
- 	<h2>pv/<a style="color:#551890" href="./tanxclick.jsp">点击</a>/<a style="color:#551890" href="./tanxrate.jsp">点击率</a>/<a style="color:#551890" href="./tanxpvsum.jsp">pv累积</a>/<a style="color:#551890" href="./tanxclicksum.jsp">点击累积</a>/<a style="color:#551890" href="./tanxratesum.jsp">累积点击率</a>/<a style="color:#551890" href="./tanxdiff.jsp">波动</a></h2>
+
+<jsp:include    page="navi.jsp"    flush="true">   
+             <jsp:param    name="currpage"    value="tanxpv.jsp"    />   
+</jsp:include>
+
+<h2>pv/<a style="color:#551890" href="./tanxclick.jsp">点击</a>/<a style="color:#551890" href="./tanxrate.jsp">点击率</a>/<a style="color:#551890" href="./tanxpvsum.jsp">pv累积</a>/<a style="color:#551890" href="./tanxclicksum.jsp">点击累积</a>/<a style="color:#551890" href="./tanxratesum.jsp">累积点击率</a>/<a style="color:#551890" href="./tanxdiff.jsp">波动</a></h2>
  <table  border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td>日期：</td>

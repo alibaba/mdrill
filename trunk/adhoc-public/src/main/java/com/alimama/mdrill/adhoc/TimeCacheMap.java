@@ -33,15 +33,44 @@ public class TimeCacheMap<K, V> implements Serializable{
     Timer timer=null;
     
     
-    private ExpiredCallback _callback;
+    private ExpiredCallback<K, V> _callback;
     
     
     private int numBuckets;
 	private long lasttime=System.currentTimeMillis();
 	private long localMergerDelay=20*1000l;
+	
+	public static class CleanExecute<K, V>
+	{
+	    public void executeClean(TimeCacheMap<K, V> t){
+	    	t.clean();
+	    }
+	}
+	
+	public static class CleanExecuteWithLock<K, V> extends CleanExecute<K, V>
+	{
+		Object lock;
+	    public CleanExecuteWithLock(Object lock) {
+			this.lock = lock;
+		}
+		public void executeClean(TimeCacheMap<K, V> t){
+			synchronized (this.lock) {
+				super.executeClean(t);
+			}
+	    }
+	}
+	
+
+	
+	CleanExecute<K, V> _cleanlock=new CleanExecute<K, V>();
 
     
-    public TimeCacheMap(Timer timer,int expirationSecs, int numBuckets, ExpiredCallback<K, V> callback) {
+    public TimeCacheMap(Timer timer,int expirationSecs, int numBuckets, ExpiredCallback<K, V> callback,CleanExecute<K, V> cleanlock) {
+    	if(cleanlock!=null)
+    	{
+    		this._cleanlock=cleanlock;
+    	}
+    	
     	this.numBuckets=numBuckets;
         if(numBuckets<2) {
             throw new IllegalArgumentException("numBuckets must be >= 2");
@@ -119,9 +148,7 @@ public class TimeCacheMap<K, V> implements Serializable{
 	    	}
 	    	this.timerReset();
         }
-		 	
-        this.clean();
-	
+		this._cleanlock.executeClean(this);
     }
     
     private void clean()
@@ -227,12 +254,17 @@ public class TimeCacheMap<K, V> implements Serializable{
     }
 
     public TimeCacheMap(int expirationSecs, ExpiredCallback<K, V> callback) {
-        this(null,expirationSecs, DEFAULT_NUM_BUCKETS, callback);
+        this(null,expirationSecs, DEFAULT_NUM_BUCKETS, callback,null);
     }
     
     public TimeCacheMap( Timer timer,int expirationSecs, ExpiredCallback<K, V> callback) {
-        this(timer,expirationSecs, DEFAULT_NUM_BUCKETS, callback);
+        this(timer,expirationSecs, DEFAULT_NUM_BUCKETS, callback,null);
     }
+    
+    public TimeCacheMap( Timer timer,int expirationSecs, ExpiredCallback<K, V> callback,CleanExecute<K, V> cleanlock) {
+        this(timer,expirationSecs, DEFAULT_NUM_BUCKETS, callback,null);
+    }
+ 
     
 
     public TimeCacheMap(int expirationSecs) {
@@ -240,7 +272,7 @@ public class TimeCacheMap<K, V> implements Serializable{
     }
 
     public TimeCacheMap(int expirationSecs, int numBuckets) {
-        this(null,expirationSecs, numBuckets, null);
+        this(null,expirationSecs, numBuckets, null,null);
     }
 
 

@@ -40,6 +40,10 @@ public class MysqlInfo {
 			rtn.put("endtime", res.getString("endtime"));
 			rtn.put("resultkb", res.getString("resultkb"));
 			rtn.put("percent", res.getString("percent"));
+			rtn.put("params", res.getString("params"));
+
+			rtn.put("percent", res.getString("percent"));
+
 		    }
 		m_fpsql.close();
 		

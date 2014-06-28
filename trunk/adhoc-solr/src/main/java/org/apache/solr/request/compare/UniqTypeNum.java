@@ -162,23 +162,29 @@ public class UniqTypeNum {
 	 }
 	 
 	 public static int compareStrNum(String value1, String value2) {
-		 return compare(Double.parseDouble(filterUnNumber(value1)), Double.parseDouble(filterUnNumber(value2)));
+		 return compare(filterUnNumber(value1), filterUnNumber(value2));
 	 }
-	    public static String filterUnNumber(String str) {
-	        String regEx = "[^0-9]";
-	        Pattern p = Pattern.compile(regEx);
-	        Matcher m = p.matcher(str);
-	        String rtn= m.replaceAll("").trim();
-	        if(rtn.isEmpty())
-	        {
-	        	return "0";
-	        }
-	        return rtn;
+	 
+	private static Pattern p = Pattern.compile("[^0-9]");
 
-	    }
-public static void main(String[] args) {
+	public static double filterUnNumber(String str) {
+		if (str == null || str.isEmpty() || str.indexOf("null") >= 0|| str.indexOf("_") >= 0) {
+			return 0d;
+		}
 
-}
+		try {
+			return Double.parseDouble(str);
+		} catch (Throwable e) {
+			Matcher m = p.matcher(str);
+			String rtn = m.replaceAll("").trim();
+			if (rtn.isEmpty()) {
+				return 0d;
+			}
+			return Double.parseDouble(rtn);
+		}
+
+	}
+
 	
 	 public static int compareDecode(String value1, String value2) {
 			return compare(EncodeUtils.decode(value1),EncodeUtils.decode(value2));

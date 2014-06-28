@@ -19,8 +19,15 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.RAMDirectory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.esotericsoftware.minlog.Log;
 
 final class SegmentTermEnum extends TermEnum implements Cloneable {
+	  public static Logger LOG = LoggerFactory.getLogger(SegmentTermEnum.class);
+
   private IndexInput input;
   FieldInfos fieldInfos;
   long size;
@@ -39,7 +46,9 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   int indexInterval;
   int skipInterval;
   int maxSkipLevels;
+  public int DEFAULT_OLD_SKIP_INTERVAL=Integer.MAX_VALUE-99999;
   private int formatM1SkipInterval;
+  
 
   SegmentTermEnum(IndexInput i, FieldInfos fis, boolean isi,long outsize)
           throws CorruptIndexException, IOException {
@@ -47,9 +56,11 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     fieldInfos = fis;
     isIndex = isi;
     maxSkipLevels = 1; // use single-level skip lists for formats > -3 
-    
+    int formattp=0;
+
     int firstInt = input.readInt();
     if (firstInt >= 0) {
+    	formattp=1;
       // original-format file, without explicit format version number
       format = 0;
       size = firstInt;
@@ -60,8 +71,9 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
       // back-compatible settings
       indexInterval = 128;
-      skipInterval = Integer.MAX_VALUE; // switch off skipTo optimization
+      skipInterval = DEFAULT_OLD_SKIP_INTERVAL; // switch off skipTo optimization
     } else {
+    	formattp=2;
       // we have a format version number
       format = firstInt;
 
@@ -80,10 +92,12 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
           indexInterval = input.readInt();
           formatM1SkipInterval = input.readInt();
         }
+        formattp=3;
         // switch off skipTo optimization for file format prior to 1.4rc2 in order to avoid a bug in 
         // skipTo implementation of these versions
-        skipInterval = Integer.MAX_VALUE;
+        skipInterval = DEFAULT_OLD_SKIP_INTERVAL;
       } else {
+    	  formattp=4;
         indexInterval = input.readInt();
         skipInterval = input.readInt();
         if (format <= TermInfosWriter.FORMAT) {
@@ -91,8 +105,11 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
           maxSkipLevels = input.readInt();
         }
       }
+//      Log.info("indexInterval:"+indexInterval+",skipInterval:"+skipInterval+",formattp:"+formattp);
       assert indexInterval > 0: "indexInterval=" + indexInterval + " is negative; must be > 0";
       assert skipInterval > 0: "skipInterval=" + skipInterval + " is negative; must be > 0";
+      
+      
     }
     if (format > TermInfosWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
       termBuffer.setPreUTF8Strings();

@@ -9,11 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.solr.request.uninverted.NumberedTermEnum;
+import org.apache.solr.request.uninverted.RamTermNumValue;
+import org.apache.solr.request.uninverted.TermNumEnumerator;
 import org.apache.solr.request.uninverted.UnInvertedField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+
 
 
 import com.alimama.mdrill.adhoc.TimeCacheMap;
@@ -97,9 +100,9 @@ public class MdrillUtils {
 		  public double sum=0d;
 		  public long cnt=0l;
 		  public boolean issetup = false;
-		  public void update(Double key)
+		  public void update(double key)
 		  {
-			  if(key<=UnInvertedField.MINVALUE)
+			  if(RamTermNumValue.TERMNUM_NAN_VALUE_FORCMP>=key||Double.isNaN(key))
 			  {
 				  return ;
 			  }
@@ -120,7 +123,7 @@ public class MdrillUtils {
 	  
 	public static class UnvertFile{
 		  public UnInvertedField uif;
-			public NumberedTermEnum ti;
+			public TermNumEnumerator ti;
 			public FieldType filetype;
 	  }
 	
@@ -129,7 +132,7 @@ public class MdrillUtils {
 		public int length = 0;
 		public Integer[] listIndex;
 
-		public UnvertFields(String[] fields, SolrIndexSearcher searcher)
+		public UnvertFields(DocSet baseAdvanceDocs,String[] fields, SolrIndexSearcher searcher)
 				throws IOException {
 			if (fields == null) {
 				fields = new String[0];
@@ -144,7 +147,7 @@ public class MdrillUtils {
 				} else {
 					UnvertFile uf = new UnvertFile();
 
-					uf.uif = UnInvertedField.getUnInvertedField(fields[i],searcher);
+					uf.uif = UnInvertedField.getUnInvertedField(baseAdvanceDocs,fields[i],searcher);
 					uf.ti = uf.uif.getTi(searcher);
 					uf.filetype = searcher.getSchema().getFieldType(fields[i]);
 					cols[i] = uf;
@@ -157,7 +160,7 @@ public class MdrillUtils {
 			listIndex = index.toArray(listIndex);
 		}
 
-		public UnvertFields(String[] fields, SegmentReader reader,
+		public UnvertFields(DocSet baseAdvanceDocs,String[] fields, SegmentReader reader,
 				String partion, IndexSchema schema,boolean isreadDouble) throws IOException {
 			if (fields == null) {
 				fields = new String[0];
@@ -172,7 +175,7 @@ public class MdrillUtils {
 				} else {
 					UnvertFile uf = new UnvertFile();
 
-					uf.uif = UnInvertedField.getUnInvertedField(fields[i],
+					uf.uif = UnInvertedField.getUnInvertedField(baseAdvanceDocs,fields[i],
 							reader, partion, schema,isreadDouble);
 					uf.ti = uf.uif.getTi(reader);
 					uf.filetype = schema.getFieldType(fields[i]);

@@ -485,102 +485,22 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
   
   
-  public TermInfosReader.QuickInput getQuickTis()
+  public DocValuesReader getDocValues() throws CloneNotSupportedException
   {
-	  return this.core.getTermsReader().getQuickTis();
+	  return this.core.getTermsReader().getDocValues();
   }
   
-  public Long getQuickPos(String field)
+  public int getFieldNum(String field)
   {
-	  ensureOpen();
-	  StringBuffer buff=new StringBuffer();
-	  buff.append("##getpos##"+field);
-
-	  try{
 	  Integer fileNum=this.fieldInfos().fieldNumber(field);
-	  buff.append("#fileNum#"+String.valueOf(fileNum));
 	  if(fileNum!=null&&fileNum>=0&&core!=null&&core.getTermsReader()!=null)
-	  {
-		  ConcurrentHashMap<Integer, Long> filepos=this.getQuickTis().fieldPos;
-		  if(filepos!=null)
 		  {
-			  Long rtn= filepos.get(fileNum);
-			  buff.append("#pos#"+String.valueOf(rtn));
-			  log.info(buff.toString());
-			  return rtn;
+		  	return fileNum;
 		  }
-	  }
-	  buff.append("#pos#null");
-
-	  log.info(buff.toString());
-	  }catch(Throwable e)
-	  {
-		  log.error(buff.toString(),e);
-	  }
-
-	  return null;
+	  
+	  return -1;
   }
-  
-  public Long getQuickDoublePos(String field)
-  {
-	  ensureOpen();
-	  StringBuffer buff=new StringBuffer();
-	  buff.append("##getQuickDoublePos##"+field);
-
-	  try{
-	  Integer fileNum=this.fieldInfos().fieldNumber(field);
-	  buff.append("#fileNum#"+String.valueOf(fileNum));
-	  if(fileNum!=null&&fileNum>=0&&core!=null&&core.getTermsReader()!=null)
-	  {
-		  ConcurrentHashMap<Integer, Long> filepos=this.getQuickTis().fieldPosVal;
-		  if(filepos!=null)
-		  {
-			  Long rtn= filepos.get(fileNum);
-			  buff.append("#pos#"+String.valueOf(rtn));
-			  log.info(buff.toString());
-			  return rtn;
-		  }
-	  }
-	  buff.append("#pos#null");
-
-	  log.info(buff.toString());
-	  }catch(Throwable e)
-	  {
-		  log.error(buff.toString(),e);
-	  }
-
-	  return null;
-  }
-	public Integer getQuickCount(String field) {
-		ensureOpen();
-		StringBuffer buff = new StringBuffer();
-		buff.append("##getCount##" + field);
-
-		try {
-			Integer fileNum = this.fieldInfos().fieldNumber(field);
-			buff.append("#fileNum#" + String.valueOf(fileNum));
-
-			if (fileNum != null &&fileNum>=0&& core != null
-					&& core.getTermsReader() != null) {
-				ConcurrentHashMap<Integer, Integer> fileCount = this.getQuickTis().fieldCount;
-				if (fileCount != null) {
-					Integer rtn = fileCount.get(fileNum);
-					buff.append("#count#" + String.valueOf(rtn));
-					log.info(buff.toString());
-					return rtn;
-				}
-			}
-
-			buff.append("#count#null");
-			log.info(buff.toString());
-		} catch (Throwable e) {
-			log.error(buff.toString(), e);
-
-		}
-
-		return null;
-	}
-  
+    
   public InvertResult invertScan(IndexSchema schema, InvertParams params) throws Exception{
 	    ensureOpen();
 	  InvertResult rtn=new InvertResult();
@@ -774,7 +694,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   // For testing
   /** @lucene.internal */
-  int getPostingsSkipInterval() {
+  public int getPostingsSkipInterval() {
     return core.getTermsReader().getSkipInterval();
   }
 
@@ -1062,6 +982,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
 	  return buffer.toString();
   }
   
+  
+
   public String getStringCacheKey(){
 	  StringBuffer buffer=new StringBuffer();
 	  buffer.append(si.docCount).append("@");
@@ -1122,5 +1044,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
     // longer used (all SegmentReaders sharing it have been
     // closed).
   }
+
+
+@Override
+public int getMaxInterval() throws Exception {
+	return this.getPostingsSkipInterval();
+}
 
 }

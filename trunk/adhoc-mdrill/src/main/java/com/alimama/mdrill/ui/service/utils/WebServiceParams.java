@@ -429,7 +429,7 @@ public class WebServiceParams {
 	
 	
 	
-	public static String uploadInHdfsForHive(String[] listStrs,String key,GetPartions.Shards shard)
+	public static String uploadInHdfsForHive(String[] listStrs,String key)
 	{
 			Date now = new Date();
 			String upFile = "grep_"+now.getTime();
@@ -715,6 +715,10 @@ public static OperateType parseOperateType(int operate)
 		{
 			return "{!contains f="+key+"}"+value2;
 		}
+		case 80:
+		{
+			return "{!inhdfs f="+key+"}"+value2;
+		}
 		
 		case 9:
 		{
@@ -760,7 +764,7 @@ public static OperateType parseOperateType(int operate)
 	
 	
 	
-	private static String parseFqOperateHive(boolean isNumber,String part,int operate,String key,String value2,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
+	private static String parseFqOperateHive(boolean isNumber,String part,int operate,String key,String value2,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname)
 	{
 		
 	
@@ -959,7 +963,7 @@ public static OperateType parseOperateType(int operate)
 			boolean isNotIn=(operate==7 || operate==8);
 			String[] listStrs = value2.split(",");
 			if(listStrs.length > 10&&!isNotIn){
-				return uploadInHdfsForHive(listStrs, key, shard);
+				return uploadInHdfsForHive(listStrs, key);
 			}else{
 			StringBuffer sb = new StringBuffer();
 			sb.append("(");
@@ -1097,7 +1101,7 @@ public static OperateType parseOperateType(int operate)
 	}
 	
 	
-	public static ArrayList<String> fqListHive(boolean isNumber,String part,String queryStr,GetPartions.Shards shard,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname) throws JSONException
+	public static ArrayList<String> fqListHive(boolean isNumber,String part,String queryStr,boolean isPartionByPt,HashMap<String, String> filetypeMap,HashMap<String,String> colMap,HashMap<String,String> colMap2,String tblname) throws JSONException
 	{
 		ArrayList<String> fqList = new ArrayList<String>();
 		if(queryStr==null||queryStr.isEmpty()||queryStr.equals("*:*")){
@@ -1117,7 +1121,7 @@ public static OperateType parseOperateType(int operate)
 				{
 					filterType=obj.getString("filter");
 				}
-				ArrayList<String> sublist=fqListHive(isNumber,part,obj.getJSONArray("list").toString(), shard,isPartionByPt, filetypeMap,colMap,colMap2,tblname);
+				ArrayList<String> sublist=fqListHive(isNumber,part,obj.getJSONArray("list").toString(),isPartionByPt, filetypeMap,colMap,colMap2,tblname);
 				if(sublist.size()==0)
 				{
 					continue;
@@ -1170,7 +1174,7 @@ public static OperateType parseOperateType(int operate)
         				valueList = valueList.replaceAll("\'", "\\\'");
         			}
         			
-        			String fq=parseFqOperateHive(isNumber,part,operate, key, valueList,shard,isPartionByPt,filetypeMap,colMap,colMap2,tblname);
+        			String fq=parseFqOperateHive(isNumber,part,operate, key, valueList,isPartionByPt,filetypeMap,colMap,colMap2,tblname);
         			if(fq!=null)
         			{
         				fqList.add(fq);
@@ -1213,16 +1217,20 @@ public static OperateType parseOperateType(int operate)
 	}
 	
 	
-	public static QueryResponse fetchGroupCrcQr(SolrQuery query,CommonsHttpSolrServer server) throws SolrServerException, JSONException
+	public static QueryResponse fetchGroupCrcQr(SolrQuery query,CommonsHttpSolrServer server,JSONObject jsonObj,String key) throws SolrServerException, JSONException
 	{
 		String crcid=java.util.UUID.randomUUID().toString();
 
 		query.set("mdrill.crc.key.set", crcid);
 		QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+		jsonObj.put(key+"_qr", qr.getTimetaken(8).toString());
+
 		query.remove("mdrill.crc.key.set");
 		query.set("mdrill.crc.key.get", crcid);
 		query.set("mdrill.crc.key.get.crclist", WebServiceParams.getGroupByCrc(qr));
 		QueryResponse qrCrc = server.query(query, SolrRequest.METHOD.POST);
+		jsonObj.put(key+"_qrCrc", qrCrc.getTimetaken(4).toString());
+
 		query.remove("mdrill.crc.key.set");
 		query.remove("mdrill.crc.key.get");
 		query.remove("mdrill.crc.key.get.crclist");
@@ -1230,16 +1238,19 @@ public static OperateType parseOperateType(int operate)
 		return qr;
 	}
 	
-	public static QueryResponse fetchDetailCrcQr(SolrQuery query,CommonsHttpSolrServer server) throws SolrServerException, JSONException
+	public static QueryResponse fetchDetailCrcQr(SolrQuery query,CommonsHttpSolrServer server,JSONObject jsonObj,String key) throws SolrServerException, JSONException
 	{
 		String crcid=java.util.UUID.randomUUID().toString();
 
 		query.set("mdrill.crc.key.set", crcid);
 		QueryResponse qr = server.query(query, SolrRequest.METHOD.POST);
+		jsonObj.put(key+"_qr", qr.getTimetaken(8).toString());
 		query.remove("mdrill.crc.key.set");
 		query.set("mdrill.crc.key.get", crcid);
 		query.set("mdrill.crc.key.get.crclist", WebServiceParams.getDetailCrc(qr));
 		QueryResponse qrCrc = server.query(query, SolrRequest.METHOD.POST);
+		jsonObj.put(key+"_qrCrc", qrCrc.getTimetaken(4).toString());
+
 		query.remove("mdrill.crc.key.set");
 		query.remove("mdrill.crc.key.get");
 		query.remove("mdrill.crc.key.get.crclist");

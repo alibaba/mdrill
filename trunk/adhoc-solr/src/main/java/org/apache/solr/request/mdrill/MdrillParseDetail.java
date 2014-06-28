@@ -80,7 +80,7 @@ public class MdrillParseDetail {
 		{
 			this.parse=parse;
 			this.fields=fields;
-			sortufs=new UnvertFields(new String[]{parse.sort_fl}, reader,searcher.getPartionKey(),searcher.getSchema(),true);
+			sortufs=new UnvertFields(baseDocs,new String[]{parse.sort_fl}, reader,searcher.getPartionKey(),searcher.getSchema(),true);
 			this.joinInvert=new HigoJoinInvert[parse.joinList.length];
 
 			HigoJoinSort[] joinSort=new HigoJoinSort[this.parse.joinList.length];

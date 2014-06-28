@@ -39,7 +39,7 @@ public class IndexReducerMerge extends
 		{
 			TermInfosWriter.setSkipInterVal(16);
 		}
-
+		TermInfosWriter.setNotUseQuick(false);
 		String fieldStrs = conf.get("higo.index.fields");
 		String[] fieldslist = fieldStrs.split(",");
 		this.documentConverter = new DocumentConverter(fieldslist,"solrconfig.xml", "schema.xml");

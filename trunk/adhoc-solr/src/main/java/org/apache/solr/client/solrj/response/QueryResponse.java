@@ -94,8 +94,53 @@ private NamedList<Object> _debugInfo = null;
 
   
   Map<String,String> timetaken=new LinkedHashMap<String,String>();
-  public Map<String,String> getTimetaken() {
-	return timetaken;
+  public ArrayList<String> getTimetaken(int n) {
+	  Map<String,ArrayList<String>> rtn=new HashMap<String,ArrayList<String>>();
+	  for(Map.Entry<String,String> e:timetaken.entrySet())
+	  {
+		  String key=e.getKey();
+		  String val=e.getValue();
+		  String[] arr=key.split("@");
+		  
+		  ArrayList<String> list=rtn.get(arr[0]);
+		  if(list==null)
+		  {
+			  list=new ArrayList<String>();
+			  rtn.put(arr[0], list);
+		  }
+		  
+		  list.add(key+"@"+val);
+		  
+	  }
+	  
+	  ArrayList<String> rtntop=new ArrayList<String>();
+	  for(Map.Entry<String,ArrayList<String>> e:rtn.entrySet())
+	  {
+		  ArrayList<String> list=new ArrayList<String>(e.getValue());
+		  Collections.sort(list,new Comparator<String>() {
+				@Override
+				public int compare(String o1, String o2) {
+					String[] arr1=o1.split("@");
+					String[] arr2=o2.split("@");
+					int cmp1=0;
+					if(arr1.length>3&&arr2.length>3)
+					{
+						cmp1=arr2[3].compareTo(arr1[3]);
+					}
+					if(cmp1==0)
+					{
+						cmp1=o2.compareTo(o1);
+					}
+					return cmp1;
+				}
+			});
+		  
+		  rtntop.addAll(list.subList(0, Math.min(list.size(), n)));
+		 
+		  
+	  }
+	  
+	return rtntop;
 }
 
 @Override

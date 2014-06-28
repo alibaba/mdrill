@@ -124,7 +124,7 @@ $.post("./aside.json",requestparams,
 			var tablelist=data.data.navList['modules'];
     for(var i=0;i<tablelist.length;i++)
     {
-    	tableInfo+="<tr><td>"+tablelist[i]["moduleName"]+"</td><td><a href='http://quanjing.alimama.com:9999/tableshards.jsp?tablename="+tablelist[i]["moduleTableName"]+"' target='_blank'>"+tablelist[i]["moduleTableName"]+"</a></td><td>"+tablelist[i]["moduleId"]+"</td></tr>";
+    	tableInfo+="<tr><td>p"+i+"@"+tablelist[i]["moduleName"]+"</td><td><a href='http://quanjing.alimama.com:9999/tableshards.jsp?tablename="+tablelist[i]["moduleTableName"]+"' target='_blank'>"+tablelist[i]["moduleTableName"]+"</a> <a href='http://quanjing.alimama.com:9999/tableSchema.jsp?tablename="+tablelist[i]["moduleTableName"]+"' target='_blank'>查看表结构</a></td><td>"+tablelist[i]["moduleId"]+"</td></tr>";
     }
     
     $("#tableinfomsg").html(tableInfo);
@@ -184,7 +184,7 @@ $.post("./aside.json",requestparams,
 	String checkuser= String.valueOf(request.getParameter("checkuser"));
 	String checkpwd= String.valueOf(request.getParameter("checkpwd"));
 	
-	if(checkpwd.equals(getMD5(checkuser+"1qazxcvfr432wsde"))&&(checkuser.equals("yannian.mu")||checkuser.equals("xuner.zr")||checkuser.equals("zhangzhuang.sbb")||checkuser.equals("chengjian.cqf")||checkuser.equals("linyun.jly")||checkuser.equals("lingning")))
+	if(checkpwd.equals(getMD5(checkuser+"1qazxcvfr432wsde"))&&(checkuser.equals("yannian.mu")||checkuser.equals("xuner.zr")||checkuser.equals("zhangzhuang.sbb")||checkuser.equals("chengjian.cqf")||checkuser.equals("linyun.jly")||checkuser.equals("wenjing.wuwj")||checkuser.equals("lingning")))
 	{
 
 	String tp= String.valueOf(request.getParameter("type"));

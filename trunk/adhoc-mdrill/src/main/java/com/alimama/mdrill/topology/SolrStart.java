@@ -7,6 +7,7 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
+import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.OutputCollector;
 
 import com.alimama.mdrill.solr.realtime.ShardPartion;
@@ -21,7 +22,7 @@ public class SolrStart implements StopCheck, SolrStartInterface {
 	private BoltParams params;
 	
 	
-	public SolrStart(BoltParams params,OutputCollector collector, Configuration conf,
+	public SolrStart(BoltParams params,SpoutOutputCollector collector, Configuration conf,
 			String solrhomeBase, String[] tableNames, String diskList,
 			Integer portbase, int taskIndex, String topologyName,
 			Integer taskid, Integer partions) throws Exception {

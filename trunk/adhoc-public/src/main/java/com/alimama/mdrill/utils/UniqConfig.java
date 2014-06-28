@@ -92,7 +92,10 @@ public class UniqConfig {
 		return 48;
 	}
 	
-	
+	public static int getFacetThreads()
+	{
+		return 2;
+	}
 	public static int getUnivertedFieldThreads()
 	{
 		return 4;
@@ -119,7 +122,7 @@ public class UniqConfig {
 	
 	public static Integer getMaxMergerShard()
 	{
-		return 12;
+		return 32;
 	}
 	
 	public static Integer fqCacheSize()
@@ -156,6 +159,11 @@ public class UniqConfig {
 	public static Integer DistinctCountSize()
 	{
 		return 10000*100;
+	}
+	
+	public static int getBlockBufferSize()
+	{
+		return 100;
 	}
 	
 }

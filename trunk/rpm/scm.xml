@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<bases> 
+  <scm version="1.0"> 
+    <app> 
+      <corp>阿里妈妈事业部</corp>  
+      <deptment> 
+        <main>展示营销技术部</main>  
+        <sub>数据分析与开发</sub>  
+        <three>adhoc多维自助分析</three> 
+      </deptment>  
+      <line> 
+        <main>adhoc</main>  
+        <sub>数据</sub> 
+      </line>  
+      <name>t-ad-adhoc</name>  
+      <codetype>JAVA</codetype>  
+      <connection>http://svn.simba.taobao.com/svn/DW/data_bj/P4P/adhoc/higo/trunk</connection> 
+    </app>  
+    <app> 
+      <corp>阿里妈妈事业部</corp>  
+      <deptment> 
+        <main>展示营销技术部</main>  
+        <sub>数据分析与开发</sub> 
+      </deptment>  
+      <line> 
+        <main>adhoc</main>  
+        <sub>数据</sub> 
+      </line>  
+      <name>t-ad-adhoc</name>  
+      <connection>http://svn.simba.taobao.com/svn/DW/data_bj/P4P/adhoc/higo/trunk/</connection> 
+    </app>  
+    <app>
+      <corp>阿里妈妈事业部</corp>
+      <deptment>
+        <main>展示营销技术部</main>
+        <sub>数据分析与开发</sub>
+      </deptment>
+      <line>
+        <main>广告直通车</main>
+        <sub>p4p接入</sub>
+      </line>
+      <name>t-ad-adhoc</name>
+      <connection>http://svn.simba.taobao.com/svn/DW/data_bj/P4P/adhoc/higo/trunk/</connection>
+    </app>
+  </scm> 
+</bases>

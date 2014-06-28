@@ -138,9 +138,9 @@ public class MdrillParseGroupby {
 		public  fetchContaioner(MdrillParseGroupby parse,String[] fields, DocSet baseDocs,SegmentReader reader,SolrIndexSearcher searcher,SolrQueryRequest req) throws IOException, ParseException
 		{
 			this.parse=parse;
-			this.ufs=new UnvertFields(fields, reader,searcher.getPartionKey(),searcher.getSchema(),false);
-			this.crossufs=new UnvertFields(parse.crossFs, reader,searcher.getPartionKey(),searcher.getSchema(),true);
-			this.distufs=new UnvertFields(parse.distFS, reader,searcher.getPartionKey(),searcher.getSchema(),true);
+			this.ufs=new UnvertFields(baseDocs,fields, reader,searcher.getPartionKey(),searcher.getSchema(),false);
+			this.crossufs=new UnvertFields(baseDocs,parse.crossFs, reader,searcher.getPartionKey(),searcher.getSchema(),true);
+			this.distufs=new UnvertFields(baseDocs,parse.distFS, reader,searcher.getPartionKey(),searcher.getSchema(),true);
 			
 			
 			this.joinInvert=new HigoJoinInvert[parse.joinList.length];

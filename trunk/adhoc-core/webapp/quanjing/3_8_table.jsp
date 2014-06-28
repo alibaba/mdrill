@@ -1154,9 +1154,11 @@ z-index: 1200;
 </div>  
 
  
- <div style="font-size:50px; border:double; width:210px; text-align:center; vertical-align:middle">全景监控</div>
- 	<h1>3.8生活节/<a style="color:#551890" href="./tanxpv.jsp">TANX外投流量指标</a>/<a style="color:#551890" href="./tanx_table.jsp">TANX外投流量数据排行</a></h1>
- 	<h2><a style="color:#551890" href="././3_8_realtime.jsp">分时数据</a>/<a style="color:#551890" href="././3_8_realtime_sum.jsp">累计数据</a>/<a style="color:#551890" href="././3_8_realtime_sumday.jsp">活动期累计数据</a>/离线数据</h2>
+
+<jsp:include    page="navi.jsp"    flush="true">   
+             <jsp:param    name="currpage"    value="3_8_realtime"    />   
+</jsp:include>
+<h2><a style="color:#551890" href="././3_8_realtime.jsp">分时数据</a>/<a style="color:#551890" href="././3_8_realtime_sum.jsp">累计数据</a>/<a style="color:#551890" href="././3_8_realtime_sumday.jsp">活动期累计数据</a>/离线数据</h2>
  
  
  
@@ -1258,15 +1260,15 @@ function showresultable(resultlist)
 	 ,'来源','渠道','是否JS','一跳PV','一跳UV','一跳点击','一跳点击率','单日预估UV','当日预估UV达成率','当日承诺点击','当日承诺点击达成率'
 	 ,'二跳pv','二跳uv','二跳点击','二跳点击uv','二跳点击率','主客唤醒次数','主客唤醒UV','主客下载次数','主客下载UV'
 	 ,'直接GMV笔数','直接GMV金额','直接alipay笔数','直接alipay金额','引导无线点击','引导无线UV','引导PC拍下笔数','引导PC拍下金额'
-	 	 ,'引导无线拍下笔数','引导无线拍下金额','引导无线拍下笔数','引导无线拍下金额','引导无线支付笔数','引导无线支付金额'
+	 	 ,'引导PC支付笔数','引导PC支付金额','引导无线拍下笔数','引导无线拍下金额','引导无线支付笔数','引导无线支付金额'
 
 	 ], 
 	 colModel:[ 
 	  {name:'thedate',index:'thedate', width:80,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
 	  {name:'site_id',index:'site_id', width:100,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
 	  {name:'site_name',index:'site_name', width:100,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
-	  {name:'resource_id',index:'resource_id', width:200,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
-	  {name:'resource_name',index:'resource_name', width:80,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
+	  {name:'resource_id',index:'resource_id', width:250,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
+	  {name:'resource_name',index:'resource_name', width:250,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
 	  {name:'pidsize',index:'pidsize', width:80,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
 	  {name:'source',index:'source', width:100,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
 	  {name:'channel',index:'channel', width:100,searchoptions:{"clearSearch":false,sopt:['eq']}}, 
@@ -1375,10 +1377,10 @@ function fetch_pc_day(thedate,fn,failfn)
 						{
 							var item=listtmp[i];
 							
-							item["pc_gmv_amt"]=parseFloat(item["pc_gmv_amt"])/100;
-							item["pc_alipay_amt"]=parseFloat(item["pc_alipay_amt"])/100;
-							item["wireless_gmv_amt"]=parseFloat(item["wireless_gmv_amt"])/100;
-							item["wireless_alipay_amt"]=parseFloat(item["wireless_alipay_amt"])/100;
+							item["pc_gmv_amt"]=(parseFloat(item["pc_gmv_amt"])/100).toFixed(2);
+							item["pc_alipay_amt"]=(parseFloat(item["pc_alipay_amt"])/100).toFixed(2);
+							item["wireless_gmv_amt"]=(parseFloat(item["wireless_gmv_amt"])/100).toFixed(2);
+							item["wireless_alipay_amt"]=(parseFloat(item["wireless_alipay_amt"])/100).toFixed(2);
 							
 							item["source"]="all";
 							item["channel"]="-";
@@ -1407,9 +1409,20 @@ function parseFloatData(a)
 			return 0;
 		}
 		
+		if(a=="-")
+		{
+			return 0;
+		}
+		
 		try{
 			
-			return parseFloat(a);
+			var rtn= parseFloat(a);
+			
+			if(isNaN(rtn))
+			{
+				return 0;
+			}
+			return rtn.toFixed(2);
 		}catch(e){}
 		return 0;
 }
@@ -1446,7 +1459,9 @@ function groupBy(kvmap,item)
 			kvmap[sskey]["kv"][p]=item[p];
 		}else{
 			
-			kvmap[sskey]["ss"][p]=parseFloatData(kvmap[sskey]["ss"][p])+parseFloatData(item[p]);
+						var finalval=parseFloat(parseFloatData(kvmap[sskey]["ss"][p]))+parseFloat(parseFloatData(item[p]));
+
+			kvmap[sskey]["ss"][p]=parseFloat(finalval).toFixed(2);
 			
 		}
 		kvmap[sskey]["kv"]["source"]="all";
@@ -1525,9 +1540,9 @@ function fetch_wireless_day(thedate,fn,failfn)
 							
 							
 							newdata["gmv_direct_cnt"]=item["gmv_direct_cnt"];
-							newdata["gmv_direct_amt"]=item["gmv_direct_amt"];
+							newdata["gmv_direct_amt"]=parseFloatData(item["gmv_direct_amt"]);
 							newdata["alipay_direct_cnt"]=item["alipay_direct_cnt"];
-							newdata["alipay_direct_amt"]=item["alipay_direct_amt"];
+							newdata["alipay_direct_amt"]=parseFloatData(item["alipay_direct_amt"]);
 							newdata["lead_click"]="-";
 							newdata["lead_click_uv"]="-";
 							newdata["pc_gmv_cnt"]="-";
@@ -1572,7 +1587,7 @@ function fetch_wireless_day(thedate,fn,failfn)
 							
 							if(newdata["promise_aclick"]>0)
 							{
-								newdata["promise_aclick_rate"]=newdata["aclick"]/newdata["promise_aclick"];
+								newdata["promise_aclick_rate"]=parseFloat(newdata["aclick"]/newdata["promise_aclick"]).toFixed(2);
 							}
 							
 							returnresult.push(newdata);

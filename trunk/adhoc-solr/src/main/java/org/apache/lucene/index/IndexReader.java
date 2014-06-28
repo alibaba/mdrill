@@ -126,6 +126,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
 	public abstract InvertResult invertScan(IndexSchema schema,InvertParams params) throws Exception;
 	
 	
+	public abstract int getMaxInterval() throws Exception;
+
+	
   /**
    * A custom listener that's invoked when the IndexReader
    * is finished.

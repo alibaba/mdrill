@@ -1,16 +1,9 @@
 package com.alimama.mdrill.adhoc;
 
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-
-import com.alimama.mdrill.utils.HadoopBaseUtils;
 
 
 public class OfflineDownload {
@@ -30,6 +23,17 @@ public class OfflineDownload {
     
     private String mailto="";
     
+    private Runnable Processer=null;
+    
+
+	public Runnable getProcesser() {
+		return Processer;
+	}
+
+	public void setProcesser(Runnable processer) {
+		Processer = processer;
+	}
+
 
 	private String confdir=	System.getenv("HADOOP_CONF_DIR");
 
@@ -84,6 +88,7 @@ public class OfflineDownload {
     	this.hivexec.setStoreDir(this.storeDir);
     	this.hivexec.setHql(this.hql);
     	this.hivexec.setCallback(this.offline);
+    	this.hivexec.setProcesser(this.getProcesser());
     	this.hivexec.init();
     	EXECUTE.execute(this.hivexec);
     }

@@ -88,7 +88,7 @@ public class IndexReducer extends  Reducer<PairWriteable, DocumentMap, IntWritab
 			}
 		}
 
-		
+		TermInfosWriter.setNotUseQuick(true);
 		if(!isNotFdtMode)
 		{
 			TermInfosWriter.setSkipInterVal(16);

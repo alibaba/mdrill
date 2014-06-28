@@ -20,7 +20,12 @@ package org.apache.solr.request.mdrill;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
@@ -70,29 +75,51 @@ public class  FacetComponent extends SearchComponent
   }
 
 
+	public static ThreadPoolExecutor SUBMIT_POOL = new ThreadPoolExecutor(Math.max(UniqConfig.getFacetThreads() / 2, 1),UniqConfig.getFacetThreads(), 100L, TimeUnit.SECONDS,	new LinkedBlockingQueue<Runnable>());
+
   @Override
-  public void process(ResponseBuilder rb) throws IOException
+  public void process(ResponseBuilder rb1) throws IOException
   {
-    if (!rb.doFacets) {
+    if (!rb1.doFacets) {
       return ;
     }
+    
+    final ResponseBuilder rb=rb1;
+    
+	ExecutorCompletionService<String> submit=new ExecutorCompletionService<String>(SUBMIT_POOL);
+	Callable<String> task = new Callable<String>() {
+	      public String call() throws Exception {
 
-    SolrParams params = rb.req.getParams();
-    String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
 
-    try{
-	    if (null != facetFs) {
-	    	boolean isdetail = params.getBool(FacetParams.FACET_CROSS_DETAIL,false);
-	    	 Object res= this.getResult(isdetail,rb.req.getSearcher(), params,rb.req,facetFs,rb.getResults().docSet);
-	        rb.rsp.add( "mdrill_data", res);
-	    }else{
-	    	throw new Exception("null != facetFs");
-	    }
-    }catch(Throwable e)
-    {
-    	LOG.error("getFacetCounts",e);
-    	throw new SolrException(ErrorCode.SERVER_ERROR,e);
-    }
+	    	  SolrParams params = rb.req.getParams();
+	    	  String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
+
+	    	  try{
+	    		    if (null != facetFs) {
+	    		    	boolean isdetail = params.getBool(FacetParams.FACET_CROSS_DETAIL,false);
+	    		    	 Object res= FacetComponent.this.getResult(isdetail,rb.req.getSearcher(), params,rb.req,facetFs,rb.getResults().docSet);
+	    		        rb.rsp.add( "mdrill_data", res);
+	    		    }else{
+	    		    	throw new Exception("null != facetFs");
+	    		    }
+	    	  }catch(Throwable e)
+	    	  {
+	    	  	LOG.error("getFacetCounts",e);
+	    	  	throw new SolrException(ErrorCode.SERVER_ERROR,e);
+	    	  }
+	    	  
+	    	  return "";
+	   }
+	      
+
+	};
+	submit.submit(task);
+	try {
+		submit.take().get();
+	} catch (Throwable e) {
+		throw new IOException(e);
+	} 
+    
   }
   private Object getResult(boolean isdetail,SolrIndexSearcher searcher,SolrParams params,SolrQueryRequest req,String[] fields, DocSet base)throws Exception 
 	{

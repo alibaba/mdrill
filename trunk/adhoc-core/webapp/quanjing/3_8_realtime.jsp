@@ -158,8 +158,11 @@ z-index: 1200;
 </div>  
 
 
-<div style="font-size:50px; border:double; width:210px; text-align:center; vertical-align:middle">全景监控</div>
- 	<h1>3.8生活节/<a style="color:#551890" href="./tanxpv.jsp">TANX外投流量指标</a>/<a style="color:#551890" href="./tanx_table.jsp">TANX外投流量数据排行</a></h1>
+<jsp:include    page="navi.jsp"    flush="true">   
+             <jsp:param    name="currpage"    value="3_8_realtime"    />   
+</jsp:include>
+ 
+ 
  	<h2>分时数据/<a style="color:#551890" href="././3_8_realtime_sum.jsp">累计数据</a>/<a style="color:#551890" href="././3_8_realtime_sumday.jsp">活动期累计数据</a>/<a style="color:#551890" href="././3_8_table.jsp">离线数据</a></h2>
  
 
@@ -310,9 +313,9 @@ if(g_issumByDay)
 }
 
 var today=new Date();
-jQuery("#thedateStart").val(parseDay(new Date(today.getTime()-1000*3600*24*0)));
+jQuery("#thedateStart").val("20140308");
 
-jQuery("#thedateEnd").val(parseDay(new Date(today.getTime()-1000*3600*24*1)));
+jQuery("#thedateEnd").val("20140307");
 
 var choiceContainer = $("#choices");
 var datasets={};

@@ -90,6 +90,68 @@ public abstract class DataInput implements Cloneable {
   }
   
   
+
+	 private static int BYTE_BITS=8; 
+	 private static int INT_BITS=32; 
+
+	  
+
+	  
+	  
+	  public int readbits(int start,int useBits) throws IOException
+	  {
+		  int result=0;
+		  int sstart=start;
+		  int readbitsleft=useBits;
+		  while(readbitsleft>0)
+		  {
+			  int bytedata=this.readByte() & 0xFF;
+			  int slen=BYTE_BITS-sstart;
+			  if(slen>=readbitsleft)
+			  {
+				  slen=readbitsleft;
+			  }
+			  
+			  int cutbits=this.cutByteBits(bytedata, sstart, slen);
+			  result=(result<<slen)|cutbits;
+			  sstart=0;
+			  readbitsleft-=slen;
+		  }
+		  
+		  return result;
+	  }
+	  
+	  
+	  public int cutByteBits(int i,int start,int len)
+	  {
+		  int intstart=24+start;
+		  int cutRight=INT_BITS-intstart-len;
+		  int copybits= (i<<intstart)>>>intstart;
+		  return copybits>>>cutRight;
+	  }
+  
+  
+  public int readInt(int bytelen) throws IOException {
+
+	  if(bytelen>3)
+	    {
+		  return ((readByte() & 0xFF) << 24) | ((readByte() & 0xFF) << 16)
+	         | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
+	    }
+	    if(bytelen>2)
+	    {
+	    	return ((readByte() & 0xFF) << 16)
+	         | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
+	    }
+	    if(bytelen>1)
+	    {
+	    	return ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
+	    }
+	    return  (readByte() & 0xFF) ;
+ 
+	  }
+  
+  
   
   
   public IndexInput readZipStream() throws IOException

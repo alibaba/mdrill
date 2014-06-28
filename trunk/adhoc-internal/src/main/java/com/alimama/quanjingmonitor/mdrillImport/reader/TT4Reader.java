@@ -52,58 +52,71 @@ public class TT4Reader extends RawDataReader {
 		LOG.info("Opening TT connection logname=" + logname + ", accesskey="
 				+ accesskey + ", subid=" + subid);
 
-		try {
-			Date curTime;
-			SimpleDateFormat formatDate = new SimpleDateFormat("yyyyMMddHHmmss");
-			Object startTime = config.get(confPrefix + "-start-time");
+		for(int i=0;i<50;i++)
+		{
+			try {
+				Date curTime;
+				SimpleDateFormat formatDate = new SimpleDateFormat("yyyyMMddHHmmss");
+				Object startTime = config.get(confPrefix + "-start-time");
 
-			if (startTime == null) {
-				curTime = new Date(System.currentTimeMillis());
-			} else {
-				Object validate = config.get(confPrefix + "-validate-time");
-				Long ts=System.currentTimeMillis();
-				if(validate!=null)
+				if (startTime == null) {
+					curTime = new Date(System.currentTimeMillis());
+				} else {
+					Object validate = config.get(confPrefix + "-validate-time");
+					Long ts=System.currentTimeMillis();
+					if(validate!=null)
+					{
+						try {
+							ts = Long.parseLong(String.valueOf(validate));
+						} catch (Throwable e) {
+							ts=System.currentTimeMillis();
+							LOG.error("parseLong:"+String.valueOf(validate), e);
+						}
+					}
+					Long now=System.currentTimeMillis();
+					if(ts<=(now+1000l*300)&&ts>=now-1000l*300)
+					{
+						curTime= formatDate.parse(String.valueOf(startTime));
+						LOG.info("formatDate.parse "+curTime+","+formatDate.format(curTime)+","+String.valueOf(validate));
+
+					}else{
+						curTime = new Date(System.currentTimeMillis());
+						LOG.info("formatDate.curr "+curTime+","+formatDate.format(curTime)+","+String.valueOf(validate));
+					}
+
+				}
+				_log = new TTLogImpl(logname, subid, accesskey);
+				if (_inStreamInput != null) {
+					_inStreamInput.close();
+					_inStreamInput=null;
+				}
+
+				TTQueueCluster qc = new TTQueueClusterImpl(_log.getName(),
+						_log.getSubid(), _log.getFilter(), _log.getAccesskey());
+				int partitionCount = qc.getQueues().length;
+				int[][] inputIndicesList = this.groupIntegers(partitionCount,
+						readerCount);
+				int[] inputIndices = inputIndicesList[readerIndex];
+
+				LOG.info("TimeTunnel init prepare partitionCount:" + partitionCount
+						+ ", readerCount:" + readerCount + ", readerIndex:"
+						+ readerIndex + "," + String.valueOf(inputIndices));
+				_inStreamInput = new TTLogSimpleInput(_log, curTime, inputIndices);
+				
+				break;
+			} catch (Throwable e) {
+				LOG.error("TimeTunnel open fail "+i, e);
+				if(i<30)
 				{
 					try {
-						ts = Long.parseLong(String.valueOf(validate));
-					} catch (Throwable e) {
-						ts=System.currentTimeMillis();
-						LOG.error("parseLong:"+String.valueOf(validate), e);
+						Thread.sleep(10000);
+					} catch (InterruptedException e1) {
 					}
+					continue;
 				}
-				Long now=System.currentTimeMillis();
-				if(ts<=(now+1000l*300)&&ts>=now-1000l*300)
-				{
-					curTime= formatDate.parse(String.valueOf(startTime));
-					LOG.info("formatDate.parse "+curTime+","+formatDate.format(curTime)+","+String.valueOf(validate));
-
-				}else{
-					curTime = new Date(System.currentTimeMillis());
-					LOG.info("formatDate.curr "+curTime+","+formatDate.format(curTime)+","+String.valueOf(validate));
-				}
-
+				throw new IOException("parse timestamp failed...., ts="
+						+ this._reseekTimestamp, e);
 			}
-			_log = new TTLogImpl(logname, subid, accesskey);
-			if (_inStreamInput != null) {
-				_inStreamInput.close();
-			}
-
-			TTQueueCluster qc = new TTQueueClusterImpl(_log.getName(),
-					_log.getSubid(), _log.getFilter(), _log.getAccesskey());
-			int partitionCount = qc.getQueues().length;
-			int[][] inputIndicesList = this.groupIntegers(partitionCount,
-					readerCount);
-			int[] inputIndices = inputIndicesList[readerIndex];
-
-			LOG.info("TimeTunnel init prepare partitionCount:" + partitionCount
-					+ ", readerCount:" + readerCount + ", readerIndex:"
-					+ readerIndex + "," + String.valueOf(inputIndices));
-			_inStreamInput = new TTLogSimpleInput(_log, curTime, inputIndices);
-		} catch (Throwable e) {
-			LOG.error("TimeTunnel open fail ", e);
-
-			throw new IOException("parse timestamp failed...., ts="
-					+ this._reseekTimestamp, e);
 		}
 		LOG.info("TimeTunnel query client opened");
 

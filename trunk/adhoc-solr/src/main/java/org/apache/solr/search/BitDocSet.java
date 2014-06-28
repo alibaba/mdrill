@@ -123,7 +123,13 @@ public class BitDocSet extends DocSetBase {
     bits.set(doc);
     size=-1;  // invalidate size
   }
-
+  
+  public void clear(int doc) {
+	    bits.clear(doc);
+	    size=-1;  // invalidate size
+  }
+  
+ 
   @Override
   public void addUnique(int doc) {
     bits.set(doc);

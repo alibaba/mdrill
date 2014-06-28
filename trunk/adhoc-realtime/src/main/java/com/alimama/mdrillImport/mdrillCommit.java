@@ -140,6 +140,8 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 
 		}
 	}
+	
+	long lastPrintTime=System.currentTimeMillis();
 
 	@Override
 	public synchronized void commit() {
@@ -155,7 +157,15 @@ public class mdrillCommit implements TimeCacheMap.ExpiredCallback<BoltStatKey,Bo
 	    	for(int i=0;i<100;i++)
 	    	{
 	    		try {
-					LOG.info(this.confPrefix+" mdrill request:"+i+"@"+buffer.size()+","+this.toDebugString());
+					LOG.info(this.confPrefix+"@"+this.parse.getTableName()+" mdrill request:"+i+"@"+buffer.size()+","+this.toDebugString());
+					long now=System.currentTimeMillis();
+					if(now-lastPrintTime>1000l*30)
+					{
+						lastPrintTime=now;
+						LOG.info(this.confPrefix+"@"+this.parse.getTableName()+",doc:"+String.valueOf(buffer.get(0)));
+
+					}
+					
 					MdrillService.insertLocal(this.parse.getTableName(), buffer,null);
 					break ;
 				} catch (Throwable e) {

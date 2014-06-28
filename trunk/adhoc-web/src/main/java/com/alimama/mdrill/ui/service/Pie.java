@@ -58,6 +58,33 @@ public class Pie {
 		return jsonObj.toString();
 	}
 	
+	
+	public static String parseGroupList(String projectName, String queryStr,	String fl, String groupby,String dimvalue) throws JSONException, SQLException
+	{
+		JSONObject jsonObj = new JSONObject();
+		ArrayList<String> StatFields=new ArrayList<String>();
+		ArrayList<String> StatFieldsDisplay=new ArrayList<String>();
+		HashMap<String,ArrayList<String>> namelist=AdhocWebServiceParams.parseFieldToNames(fl, groupby, dimvalue, null);
+		ArrayList<String> namelistread=namelist.get("namelist");
+		ArrayList<String> showFields = namelist.get("field");
+		for(int i=0;i<showFields.size()&&i<namelistread.size();i++){
+			String showfield=showFields.get(i);
+			String showfieldDisplay=namelistread.get(i);
+			StateField showfielda=WebServiceParams.parseStat(showfield);
+			if(!showfielda.isstat)
+			{
+				StatFields.add(showfield);
+				StatFieldsDisplay.add(showfieldDisplay);
+
+			}
+		}
+		jsonObj.put("group", StatFields);
+		jsonObj.put("groupShow", StatFieldsDisplay);
+
+		jsonObj.put("project", projectName);
+		return jsonObj.toString();
+	}
+	
 	public static String parseStat(String projectName, String queryStr,	String fl, String groupby,String dimvalue) throws JSONException, SQLException
 	{
 		JSONObject jsonObj = new JSONObject();

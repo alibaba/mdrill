@@ -152,4 +152,6 @@ public class DocSlice extends DocSetBase implements DocList {
     HashDocSet h = new HashDocSet(docs,offset,len);
     return h.intersectionSize(other);  
   }
+
+
 }

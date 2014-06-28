@@ -48,7 +48,23 @@ public class Topology {
 			String tttime=args[5];
 			for(String prefix:prefixlist)
 			{
-				conf.put(prefix+"-start-time", tttime);
+				if(!tttime.equals("0"))
+				{
+					conf.put(prefix+"-start-time", tttime);
+				}
+			}
+		}
+		
+		if(args.length>=7)
+		{
+			String[] prefix_timeist=args[6].split(";");
+			for(String prefix_time:prefix_timeist)
+			{
+				String[] prefix_time_col=prefix_time.split(":");
+				if(prefix_time_col.length>1)
+				{
+					conf.put(prefix_time_col[0]+"-start-time", prefix_time_col[1]);
+				}
 			}
 		}
 		

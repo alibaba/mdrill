@@ -60,8 +60,8 @@ public class RealTimeDirectoryData {
 			RealTimeDirectoryStatus rstatus,RealTimeDirectory mainthr) {
 		this.params = params;
 		this.status = rstatus;
-		this.RamDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getSlowTimer(),UniqConfig.RealTimeLocalFlush(), mainthr);
-		this.bufferDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getQuickTimer(),UniqConfig.RealTimeBufferFlush(), mainthr);
+		this.RamDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getSlowTimer(),UniqConfig.RealTimeLocalFlush(), mainthr,mainthr.getCleanLock());
+		this.bufferDirector=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getQuickTimer(),UniqConfig.RealTimeBufferFlush(), mainthr,mainthr.getCleanLock());
 		this.ToDel=new TimeCacheMap<Integer, DirectoryInfo>(RealTimeDirectorUtils.getSlowTimer(),UniqConfig.RealTimeDelete(), mainthr);
 	}
 	
@@ -189,7 +189,7 @@ public class RealTimeDirectoryData {
 	
 	public void mergerBuffer(DirectoryInfo expire)
 			throws CorruptIndexException, IOException {
-		LOG.info("####mergerBuffer####");
+		LOG.info("####mergerBuffer start####");
 		DirectoryInfo m1 = expire;
 		if (m1 == null) {
 			m1 = this.bufferDirector.remove(RAM_KEY);
@@ -225,6 +225,8 @@ public class RealTimeDirectoryData {
 
 		} finally {
 			this.status.needPurger.set(true);
+			LOG.info("####mergerBuffer finish####");
+
 		}
 
 	}
@@ -302,7 +304,7 @@ public class RealTimeDirectoryData {
 
 	public void mergerRam(DirectoryInfo expire) throws CorruptIndexException, IOException
 	{
-		LOG.info("####mergerRam####");
+		LOG.info("####mergerRam start####");
 		DirectoryInfo m1 = expire;
 		if (m1 == null) {
 			m1 = RamDirector.remove(RAM_KEY);
@@ -492,6 +494,7 @@ public class RealTimeDirectoryData {
 					writer.addIndexesNoOptimize(tomr.d);
 				}
 			}
+			
 			writer.optimize();
 			writer.close();
 			
@@ -518,6 +521,7 @@ public class RealTimeDirectoryData {
 	public void flushDocList(ArrayList<SolrInputDocument> flush)
 			throws CorruptIndexException, LockObtainFailedException,
 			IOException {
+		LOG.info("flushDocList start");
 		DirectoryInfo buffer = bufferDirector.get(RAM_KEY);
 		if (buffer == null) {
 			buffer = new DirectoryInfo();
@@ -550,7 +554,7 @@ public class RealTimeDirectoryData {
 		writer.addDocuments(doclist);
 		writer.close();
 		buffer.UpTxid(txid);
-
+		LOG.info("flushDocList end");
 		this.maybeMerger();
 	}
 
@@ -579,9 +583,7 @@ public class RealTimeDirectoryData {
 					info.d = d;
 					info.tp = DirectoryInfo.DirTpe.file;
 					this.diskDirector.put(s1, info);
-					SolrCore.log
-							.info(">>>>> add links "
-									+ s1);
+					SolrCore.log.info(">>>>> add links "+ s1);
 				}
 			}
 			br.close();

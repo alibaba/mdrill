@@ -29,8 +29,11 @@ public class AplusTT4Reader extends TT4Reader {
 		
 		List<byte[]> messages = MessageParser.parseProtoBufsFromBytes(data);
 		List<Object> list = new ArrayList<Object>(1);
-		for (byte[] d:messages) {
-			list.add(d);
+		if(messages!=null)
+		{
+			for (byte[] d:messages) {
+				list.add(d);
+			}
 		}
 
 		return list;

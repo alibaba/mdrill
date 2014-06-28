@@ -61,7 +61,7 @@ public class Descriptor {
 		    tlCount+=1;
 		    if(tl2>100||tlCount%1000==0)
 		    {
-		    	logger.info("readInternal "+this.file.getName()+" timetaken="+tl+"@"+tl2+",tlSum="+tlSum+",tlCount="+tlCount+",len="+len);
+//		    	logger.info("readInternal "+this.file.getName()+" timetaken="+tl+"@"+tl2+",tlSum="+tlSum+",tlCount="+tlCount+",len="+len);
 		    	if(tlSum>10000000)
 			    {
 			    	tlCount=0;

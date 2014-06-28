@@ -719,6 +719,17 @@ class DirectoryReader extends IndexReader implements Cloneable {
     normsCache.put(field, bytes);      // update cache
     return bytes;
   }
+  
+  @Override
+  public int getMaxInterval() throws Exception {
+    ensureOpen();
+    int maxIntervel = 0;          // sum freqs in segments
+    for (int i = 0; i < subReaders.length; i++)
+    {
+      maxIntervel =Math.max(maxIntervel, subReaders[i].getMaxInterval()) ;
+    }
+    return maxIntervel;
+  }
 
   @Override
   public synchronized void norms(String field, byte[] result, int offset)

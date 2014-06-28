@@ -67,6 +67,100 @@ public abstract class DataOutput {
     writeByte((byte)(i >>  8));
     writeByte((byte) i);
   }
+  
+  
+  private byte bytebuffer=0;
+  private int bytepos=0;
+  private static int BYTE_BITS=8; 
+  private static int INT_BITS=32; 
+  
+  
+
+  public void writeBits(int i,int bitslen) throws IOException
+  {
+	  int bytesLeave=bitslen;
+	  int start=INT_BITS-bitslen;
+	  while(bytesLeave>0)
+	  {
+		  int len=BYTE_BITS-this.bytepos;
+		  if(len>=bytesLeave)
+		  {
+			  len=bytesLeave;
+		  }
+		  
+		  int byteresult=this.copybitsToBytebuffer(i, start, len);
+		  int bitsleave=BYTE_BITS-this.bytepos-len;
+		  this.bytebuffer|=(byteresult<<bitsleave);
+
+		  bytesLeave-=len;
+		  start+=len;
+		  this.bytepos+=len;
+		  if(this.bytepos>=BYTE_BITS)
+		  {
+			  this.flushBits();
+		  }  
+	  }
+  }
+  
+
+
+  
+  public void startBits()
+  {
+	  this.bytepos=0;
+	  this.bytebuffer=0;
+  }
+  
+
+  
+  private int copybitsToBytebuffer(int i,int start,int len)
+  {
+	  int cutLeft=start;
+	  int cutRight=INT_BITS-cutLeft-len;
+	  int copybits=(i<<cutLeft)>>>cutLeft;
+	  return (copybits>>cutRight);
+  }
+  
+  
+  public void flushBits() throws IOException
+  {
+	  if(this.bytepos>0)
+	  {
+		  this.writeByte(this.bytebuffer);
+		  this.bytebuffer=0;
+	  }
+	  this.bytepos=0;
+  }
+  
+
+
+  
+  
+  public void writeInt(int i,int bytelen) throws IOException {
+	  if(bytelen>3)
+	    {
+		  writeByte((byte)(i >> 24));
+	    	writeByte((byte)(i >> 16));
+	    	writeByte((byte)(i >>  8));
+
+	    	writeByte((byte) i);
+	    	return ;
+	    }
+	    if(bytelen>2)
+	    {
+	    	writeByte((byte)(i >> 16));
+	    	writeByte((byte)(i >>  8));
+	    	writeByte((byte) i);
+	    	return ;
+	    }
+	    if(bytelen>1)
+	    {
+	    	writeByte((byte)(i >>  8));
+	    	writeByte((byte) i);
+	    	return ;
+	    }
+    	writeByte((byte) i);
+	  }
 
   /** Writes an int in a variable-length format.  Writes between one and
    * five bytes.  Smaller values take fewer bytes.  Negative numbers are not

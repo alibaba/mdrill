@@ -315,7 +315,7 @@ body, button, input, select, textarea {
 	{
 		
 		  var days=10;
-			var tableDays={"rpt_p4padhoc_cust":100,"rpt_b2bad_hoc_memb_sum_d":100};
+			var tableDays={"rpt_p4padhoc_cust":366,"rpt_b2bad_hoc_memb_sum_d":366,"r_rpt_tanx_amif_adhoc_adzone":366,"r_rpt_tanx_amif_zx_adzone":366,"r_rpt_tanx_amif_zxbd_adzone":366};
 			if(tableDays[table]>0)
 			{
 				days=tableDays[table];

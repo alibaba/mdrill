@@ -346,7 +346,7 @@ public class AdhocWebServiceParams {
 			p.hdfsPath=obj.getString("path")+"/part-00000";
 			if(shard!=null)
 			{
-				p.fq=WebServiceParams.fqListHive(false,"dt",obj.getString("fq"), shard,false,null,null,null,null);
+				p.fq=WebServiceParams.fqListHive(false,"dt",obj.getString("fq"),false,null,null,null,null);
 			}
 			p.fl=obj.getString("fl").split(",");
 			p.leftkey=obj.getString("leftkey");

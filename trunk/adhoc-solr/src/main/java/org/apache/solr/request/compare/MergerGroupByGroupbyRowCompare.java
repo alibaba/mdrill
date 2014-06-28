@@ -323,7 +323,7 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 		public ArrayList<Object> getCompareValue(ColumnKey o1)
 		{
 			ArrayList<Object> list=index.getCompareValue(o1);
-			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
+			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString(),-1);
 			
 			list.add(1, values1[fl_num]);
 			
@@ -336,8 +336,8 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 			{
 				cmp= UniqTypeNum.compareDecode((String)o1.getKey().getSort().get(1),(String) o2.getKey().getSort().get(1));
 			}else{
-				String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
-				String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
+				String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString(),-1);
+				String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString(),-1);
 				cmp= UniqTypeNum.compareDecode(values1[fl_num],values2[fl_num]);
 			}
 			if(cmp==0)
@@ -356,7 +356,7 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 		{
 			ArrayList<Object> list=index.getCompareValue(o1);
 			String[] values1 =o1.getKey().split(UniqConfig.GroupJoinString());
-			list.add(1, Double.parseDouble(UniqTypeNum.filterUnNumber(values1[fl_num])));
+			list.add(1, UniqTypeNum.filterUnNumber(values1[fl_num]));
 			return list;
 		}
 		@Override
@@ -368,8 +368,8 @@ public class MergerGroupByGroupbyRowCompare implements Comparator<GroupbyRow>,Se
 			{
 				cmp= UniqTypeNum.compare((Double)o1.getKey().getSort().get(1), (Double)o2.getKey().getSort().get(1));
 			}else{
-				String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString());
-				String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString());
+				String[] values1 =o1.getKey().getKey().split(UniqConfig.GroupJoinString(),-1);
+				String[] values2 = o2.getKey().getKey().split(UniqConfig.GroupJoinString(),-1);
 				cmp= UniqTypeNum.compareDecodeNum(values1[fl_num],values2[fl_num]);
 				if(cmp==0)
 				{

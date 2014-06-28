@@ -232,7 +232,7 @@ class SimpleStats {
 
         if (sf.multiValued() || ft.multiValuedFieldCache() || prefix!=null) {
           //use UnInvertedField for multivalued fields
-          UnInvertedField uif = UnInvertedField.getUnInvertedField(f, searcher);
+          UnInvertedField uif = UnInvertedField.getUnInvertedField(docs,f, searcher);
           stv = uif.getStats(searcher, docs, facets).getStatsValues();
         } else {
           stv = getFieldCacheStats(f, facets);

@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.core.SolrResourceLoader.PartionKey;
 import org.apache.solr.request.uninverted.GrobalCache;
 import org.slf4j.Logger;
@@ -54,6 +55,11 @@ public class BlockBufferInput extends BufferedIndexInput {
 		}
 		
 		if(dir instanceof org.apache.lucene.store.MMapDirectory)
+		{
+			return input;
+		}
+		
+		if(dir instanceof RAMDirectory)
 		{
 			return input;
 		}

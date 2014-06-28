@@ -256,6 +256,16 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
     return numDocs;
   }
+  @Override
+  public int getMaxInterval() throws Exception {
+    ensureOpen();
+    int maxIntervel = 0;          // sum freqs in segments
+    for (int i = 0; i < subReaders.length; i++)
+    {
+      maxIntervel =Math.max(maxIntervel, subReaders[i].getMaxInterval()) ;
+    }
+    return maxIntervel;
+  }
 
   @Override
   public int maxDoc() {

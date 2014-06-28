@@ -287,6 +287,16 @@ public class ParallelReader extends IndexReader {
     }
     hasDeletions = true;
   }
+  
+  @Override
+  public int getMaxInterval() throws Exception {
+    int maxIntervel = 0;          // sum freqs in segments
+    for (final IndexReader reader : readers)
+    {
+      maxIntervel =Math.max(maxIntervel, reader.getMaxInterval()) ;
+    }
+    return maxIntervel;
+  }
 
   // undeleteAll in all readers
   @Override

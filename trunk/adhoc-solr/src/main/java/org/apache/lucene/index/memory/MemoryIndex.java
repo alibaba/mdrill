@@ -1229,6 +1229,11 @@ public class MemoryIndex implements Serializable {
 		// TODO Auto-generated method stub
 		return this.getCoreCacheKey().toString();
 	}
+
+	@Override
+	public int getMaxInterval() throws Exception {
+		return 0;
+	}
   }
 
   

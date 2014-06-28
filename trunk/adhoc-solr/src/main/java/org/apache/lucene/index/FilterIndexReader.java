@@ -340,5 +340,10 @@ public class FilterIndexReader extends IndexReader {
     super.removeReaderFinishedListener(listener);
     in.removeReaderFinishedListener(listener);
   }
+
+	@Override
+	public int getMaxInterval() throws Exception {
+		return in.getMaxInterval();
+	}
 }
 

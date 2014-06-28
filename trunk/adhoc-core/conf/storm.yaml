@@ -246,12 +246,131 @@
      - "reduce_aplus_text:9;adhoc1.kgb.cm6:6803;6806"
      - "reduce_aplus_text:10;tiansuan2.kgb.cm4:6803;6806"
      - "reduce_aplus_text:11;tiansuan1.kgb.cm4:6803;6806"
+     - "map_user_rd_goldeye:0;adhoc5.kgb.cm6:6803;6806"
+     - "map_user_rd_goldeye:1;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:0~1;adhocbak.kgb.cm6:6801,6803;6804,6806"
+     - "reduce_user_rd_goldeye:2;adhoc8.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:3;adhoc7.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:4;adhoc6.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:5;adhoc5.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:6;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:7;adhoc3.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:8;adhoc2.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:9;adhoc1.kgb.cm6:6803;6806"
+     - "reduce_user_rd_goldeye:10;tiansuan2.kgb.cm4:6803;6806"
+     - "reduce_user_rd_goldeye:11;tiansuan1.kgb.cm4:6803;6806"
+     - "map_p4p_click_goldeye:0;adhoc5.kgb.cm6:6803;6806"
+     - "map_p4p_click_goldeye:1;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:0~1;adhocbak.kgb.cm6:6801,6803;6804,6806"
+     - "reduce_p4p_click_goldeye:2;adhoc8.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:3;adhoc7.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:4;adhoc6.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:5;adhoc5.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:6;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:7;adhoc3.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:8;adhoc2.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:9;adhoc1.kgb.cm6:6803;6806"
+     - "reduce_p4p_click_goldeye:10;tiansuan2.kgb.cm4:6803;6806"
+     - "reduce_p4p_click_goldeye:11;tiansuan1.kgb.cm4:6803;6806"
+     - "map_p4p_wt_itempv_goldeye:0~2;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:3~5;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:6~8;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:9~11;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:12~14;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:15~17;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:18~20;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:21~23;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:24~26;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:27~29;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:30~31;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:32~34;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:35~37;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:38~40;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:41~43;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:44~46;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:47~49;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:50~52;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:53~55;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:56~58;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:59~61;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_p4p_wt_itempv_goldeye:62~63;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "reduce_p4p_wt_itempv_goldeye:0~1;adhocbak.kgb.cm6:6801~6802;6804~6805"
+     - "reduce_p4p_wt_itempv_goldeye:2;adhoc8.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:3;adhoc7.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:4;adhoc6.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:5;adhoc5.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:6;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:7;adhoc3.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:8;adhoc2.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:9;adhoc1.kgb.cm6:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:10;tiansuan2.kgb.cm4:6803;6806"
+     - "reduce_p4p_wt_itempv_goldeye:11;tiansuan1.kgb.cm4:6803;6806"
+     - "map_p4p_pv2_goldeye:0~2;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:3~5;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:6~8;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:9~11;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:12~14;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:15~17;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:18~20;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:21~23;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:24~26;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:27~29;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:30~31;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:32~34;adhocbak.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:35~37;adhoc8.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:38~40;adhoc7.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:41~43;adhoc6.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:44~46;adhoc5.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:47~49;adhoc4.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:50~52;adhoc3.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:53~55;adhoc2.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:56~58;adhoc1.kgb.cm6:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:59~61;tiansuan2.kgb.cm4:6801~6803;6804~6806"
+     - "map_p4p_pv2_goldeye:62~63;tiansuan1.kgb.cm4:6801~6803;6804~6806"
+     - "reduce_p4p_pv2_goldeye:0~1;adhocbak.kgb.cm6:6801~6802;6804~6805"
+     - "reduce_p4p_pv2_goldeye:2;adhoc8.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:3;adhoc7.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:4;adhoc6.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:5;adhoc5.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:6;adhoc4.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:7;adhoc3.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:8;adhoc2.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:9;adhoc1.kgb.cm6:6803;6806"
+     - "reduce_p4p_pv2_goldeye:10;tiansuan2.kgb.cm4:6803;6806"
+     - "reduce_p4p_pv2_goldeye:11;tiansuan1.kgb.cm4:6803;6806"
+     
+     
   
  #----mdrill个别表的分区设定，这里为rpt_seller_all_m表----
  
+ 
+ higo.mode.r_rpt_tanx_pid_env_level: "@nothedate@hivepart:pt@" 
+ higo.partion.type.r_rpt_tanx_pid_env_level: "day"
+ 
+ higo.mode.fact_adpmp_tanx_adzone_overlap_7d: "@nothedate@hivepart:dt@" 
+ higo.partion.type.fact_adpmp_tanx_adzone_overlap_7d: "day"
+ 
+ 
+
+ higo.mode.fact_adpmp_tanx_adzone_taobao_overlap_7d: "@nothedate@hivepart:dt@" 
+ higo.partion.type.fact_adpmp_tanx_adzone_taobao_overlap_7d: "day"
+ 
+
+ higo.mode.rpt_adpmp_site_overlap_7d: "@nothedate@hivepart:dt@" 
+ higo.partion.type.rpt_adpmp_site_overlap_7d: "day"
+ 
+ 
+ 
+ 
  higo.mode.fact_wirelesspv_clickcosteffect1_lbs_adhoc_d: "@nothedate@" 
+ 
+ 
+ higo.mode.fact_p4ppvclick_qrycatpid_d: "@nonzipout@" 
  higo.partion.type.fact_p4ppvclick_qrycatpid_d: "day"
+ higo.index.parallel.fact_p4ppvclick_qrycatpid_d: 20
+ 
  higo.partion.type.rpt_seller_all_m: "month"
+ higo.mode.r_rpt_cps_luna_item: "@nonzipout@" 
  higo.partion.type.r_rpt_cps_luna_item: "default"
  higo.partion.type.fact_wirelesspv_clickcosteffect1_lbs_adhoc_d: "day"
  higo.partion.type.r_rpt_cps_adhoc_seller: "default"
@@ -264,6 +383,7 @@
  higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_2: "@nonzipout@nothedate@" 
  higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: "day"
  higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: "@nonzipout@nothedate@" 
+ higo.index.parallel.fact_wirelesspv_clickcosteffect1_app_adhoc_d_3: 10
  higo.partion.type.fact_wirelesspv_clickcosteffect1_app_adhoc_d_4: "day"
  higo.mode.fact_wirelesspv_clickcosteffect1_app_adhoc_d_4: "@nonzipout@nothedate@"
  
@@ -282,8 +402,8 @@
  higo.partion.type.s_ods_log_p4pclick: "day"
  higo.mode.s_ods_log_p4pclick: "@fdt@nonzipout@nothedate@" 
  
- higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:15@blocksize:1073741824@iosortmb:256@igDataChange@" 
- higo.index.parallel.ods_allpv_ad_d: 40
+ higo.mode.ods_allpv_ad_d: "@hdfs@fdt@sigment:4@blocksize:1073741824@iosortmb:256@igDataChange@" 
+ higo.index.parallel.ods_allpv_ad_d: 10
  
  #-------------为个别表单独指定并行-----------------
  higo.index.parallel.r_rpt_cps_luna_item: 10
@@ -307,9 +427,9 @@
  tanx_pv-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_pv"
  tanx_pv-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
  tanx_pv-commitbatch: 200
- tanx_pv-commitbuffer: 2000
- tanx_pv-spoutbuffer: 3000
- tanx_pv-boltbuffer: 500
+ tanx_pv-commitbuffer: 800
+ tanx_pv-spoutbuffer: 1000
+ tanx_pv-boltbuffer: 200
  tanx_pv-boltIntervel: 1000
  tanx_pv-spoutIntervel: 1000
  tanx_pv-threads: 32
@@ -331,9 +451,9 @@
  app_log_parse-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.app_log_parse"
  app_log_parse-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
  app_log_parse-commitbatch: 200
- app_log_parse-commitbuffer: 2000
- app_log_parse-spoutbuffer: 3000
- app_log_parse-boltbuffer: 500
+ app_log_parse-commitbuffer: 800
+ app_log_parse-spoutbuffer: 1000
+ app_log_parse-boltbuffer: 200
  app_log_parse-boltIntervel: 5
  app_log_parse-spoutIntervel: 10
  app_log_parse-threads: 32
@@ -349,9 +469,9 @@
  aplus_wireless-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.aplus_wireless"
  aplus_wireless-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.AplusTT4Reader"
  aplus_wireless-commitbatch: 200
- aplus_wireless-commitbuffer: 2000
- aplus_wireless-spoutbuffer: 3000
- aplus_wireless-boltbuffer: 500
+ aplus_wireless-commitbuffer: 800
+ aplus_wireless-spoutbuffer: 1000
+ aplus_wireless-boltbuffer: 200
  aplus_wireless-boltIntervel: 5
  aplus_wireless-spoutIntervel: 10
  aplus_wireless-threads: 32
@@ -367,9 +487,9 @@
  aplus_text-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.aplus_text"
  aplus_text-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
  aplus_text-commitbatch: 200
- aplus_text-commitbuffer: 2000
- aplus_text-spoutbuffer: 3000
- aplus_text-boltbuffer: 500
+ aplus_text-commitbuffer: 800
+ aplus_text-spoutbuffer: 1000
+ aplus_text-boltbuffer: 200
  aplus_text-boltIntervel: 5
  aplus_text-spoutIntervel: 10
  aplus_text-threads: 32
@@ -386,9 +506,9 @@
  munion_r_taobao_com_click_data-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.munion_r_taobao_com_click_data"
  munion_r_taobao_com_click_data-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
  munion_r_taobao_com_click_data-commitbatch: 200
- munion_r_taobao_com_click_data-commitbuffer: 2000
+ munion_r_taobao_com_click_data-commitbuffer: 800
  munion_r_taobao_com_click_data-spoutbuffer: 500
- munion_r_taobao_com_click_data-boltbuffer: 500
+ munion_r_taobao_com_click_data-boltbuffer: 200
  munion_r_taobao_com_click_data-boltIntervel: 5
  munion_r_taobao_com_click_data-spoutIntervel: 50
  munion_r_taobao_com_click_data-threads: 2
@@ -409,9 +529,9 @@
  tanx_click_zhitou-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_click_zhitou"
  tanx_click_zhitou-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
  tanx_click_zhitou-commitbatch: 200
- tanx_click_zhitou-commitbuffer: 2000
+ tanx_click_zhitou-commitbuffer: 800
  tanx_click_zhitou-spoutbuffer: 500
- tanx_click_zhitou-boltbuffer: 500
+ tanx_click_zhitou-boltbuffer: 200
  tanx_click_zhitou-boltIntervel: 10
  tanx_click_zhitou-spoutIntervel: 100
  tanx_click_zhitou-threads: 2
@@ -427,9 +547,9 @@
  tanx_click_rt-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_click_rt"
  tanx_click_rt-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
  tanx_click_rt-commitbatch: 200
- tanx_click_rt-commitbuffer: 2000
+ tanx_click_rt-commitbuffer: 800
  tanx_click_rt-spoutbuffer: 500
- tanx_click_rt-boltbuffer: 500
+ tanx_click_rt-boltbuffer: 200
  tanx_click_rt-boltIntervel: 10
  tanx_click_rt-spoutIntervel: 100
  tanx_click_rt-threads: 2
@@ -445,9 +565,9 @@
  tanx_user_rt-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.tanx_user_rt"
  tanx_user_rt-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
  tanx_user_rt-commitbatch: 200
- tanx_user_rt-commitbuffer: 2000
+ tanx_user_rt-commitbuffer: 800
  tanx_user_rt-spoutbuffer: 500
- tanx_user_rt-boltbuffer: 500
+ tanx_user_rt-boltbuffer: 200
  tanx_user_rt-boltIntervel: 10
  tanx_user_rt-spoutIntervel: 100
  tanx_user_rt-mode: "merger"
@@ -458,6 +578,190 @@
  tanx_user_rt-timeoutCommit: 60
  
  
+ 
+ ##############416活动#################
+ 
+ 
+ higo.mode.rpt_416_online: "@realtime@cleanPartionDays:15@"
+ higo.partion.type.rpt_416_online: "day"
+ 
+ aplus_text_416-log: "aplus_text"
+ aplus_text_416-subid: "0411182338DRXXIOEZ"
+ aplus_text_416-accesskey: "50830b56-23a9-4639-a40c-17560b35a22c"
+ aplus_text_416-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.for416tmp.aplus_text"
+ aplus_text_416-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ aplus_text_416-commitbatch: 200
+ aplus_text_416-commitbuffer: 800
+ aplus_text_416-spoutbuffer: 1000
+ aplus_text_416-boltbuffer: 200
+ aplus_text_416-boltIntervel: 5
+ aplus_text_416-spoutIntervel: 10
+ aplus_text_416-threads: 32
+ aplus_text_416-threads_reduce: 12
+ aplus_text_416-mode: "merger"
+ aplus_text_416-timeoutSpout: 60
+ aplus_text_416-timeoutBolt: 30
+ aplus_text_416-timeoutCommit: 100
+ 
+ 
+ aplus_hjlj_416-log: "aplus_hjlj"
+ aplus_hjlj_416-subid: "0415113504JJAA4O3U"
+ aplus_hjlj_416-accesskey: "879fb9de-978e-40f4-972e-2b074a2ff81f"
+ aplus_hjlj_416-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.for416tmp.aplus_hjlj"
+ aplus_hjlj_416-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.AplusTT4Reader"
+ aplus_hjlj_416-commitbatch: 200
+ aplus_hjlj_416-commitbuffer: 800
+ aplus_hjlj_416-spoutbuffer: 1000
+ aplus_hjlj_416-boltbuffer: 200
+ aplus_hjlj_416-boltIntervel: 5
+ aplus_hjlj_416-spoutIntervel: 10
+ aplus_hjlj_416-threads: 64
+ aplus_hjlj_416-threads_reduce: 12
+ aplus_hjlj_416-mode: "merger"
+ aplus_hjlj_416-timeoutSpout: 60
+ aplus_hjlj_416-timeoutBolt: 30
+ aplus_hjlj_416-timeoutCommit: 100
+ 
+ 
+ 
+ aplus_wireless_416-log: "aplus_wireless"
+ aplus_wireless_416-subid: "0411182444V6USV7NS"
+ aplus_wireless_416-accesskey: "df90cc8c-1247-4368-8470-827c52458c76"
+ aplus_wireless_416-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.for416tmp.aplus_wireless"
+ aplus_wireless_416-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.AplusTT4Reader"
+ aplus_wireless_416-commitbatch: 200
+ aplus_wireless_416-commitbuffer: 800
+ aplus_wireless_416-spoutbuffer: 1000
+ aplus_wireless_416-boltbuffer: 200
+ aplus_wireless_416-boltIntervel: 5
+ aplus_wireless_416-spoutIntervel: 10
+ aplus_wireless_416-threads: 32
+ aplus_wireless_416-threads_reduce: 12
+ aplus_wireless_416-mode: "merger"
+ aplus_wireless_416-timeoutSpout: 60
+ aplus_wireless_416-timeoutBolt: 30
+ aplus_wireless_416-timeoutCommit: 100
+ 
+ 
+ 
+ app_log_parse_416-log: "app_log_parse"
+ app_log_parse_416-subid: "04111825303724F7XI"
+ app_log_parse_416-accesskey: "522dd5b7-bccf-4132-9d63-1a18c6e38a1e"
+ app_log_parse_416-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.for416tmp.app_log_parse"
+ app_log_parse_416-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ app_log_parse_416-commitbatch: 200
+ app_log_parse_416-commitbuffer: 800
+ app_log_parse_416-spoutbuffer: 1000
+ app_log_parse_416-boltbuffer: 200
+ app_log_parse_416-boltIntervel: 5
+ app_log_parse_416-spoutIntervel: 10
+ app_log_parse_416-threads: 32
+ app_log_parse_416-threads_reduce: 12
+ app_log_parse_416-mode: "merger"
+ app_log_parse_416-timeoutSpout: 60
+ app_log_parse_416-timeoutBolt: 30
+ app_log_parse_416-timeoutCommit: 60
+ 
+ 
+  
+ munion_r_taobao_com_click_data_416-log: "munion_r_taobao_com_click_data"
+ munion_r_taobao_com_click_data_416-subid: "0411182619R41MR21I"
+ munion_r_taobao_com_click_data_416-accesskey: "2bf3b80c-dcc5-4b2c-80e2-5e06fdc2a89f"
+ munion_r_taobao_com_click_data_416-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.for416tmp.munion_r_taobao_com_click_data"
+ munion_r_taobao_com_click_data_416-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ munion_r_taobao_com_click_data_416-commitbatch: 200
+ munion_r_taobao_com_click_data_416-commitbuffer: 800
+ munion_r_taobao_com_click_data_416-spoutbuffer: 500
+ munion_r_taobao_com_click_data_416-boltbuffer: 200
+ munion_r_taobao_com_click_data_416-boltIntervel: 5
+ munion_r_taobao_com_click_data_416-spoutIntervel: 50
+ munion_r_taobao_com_click_data_416-threads: 2
+ munion_r_taobao_com_click_data_416-threads_reduce: 12
+ munion_r_taobao_com_click_data_416-mode: "merger"
+ munion_r_taobao_com_click_data_416-timeoutSpout: 30
+ munion_r_taobao_com_click_data_416-timeoutBolt: 20
+ munion_r_taobao_com_click_data_416-timeoutCommit: 60
+ 
+ 
+ user_rd_goldeye-log: "user_rd"
+ user_rd_goldeye-subid: "04111827071EXQ25IL"
+ user_rd_goldeye-accesskey: "ae8eb9c7-c666-4945-aeb5-f8ca3e58f6d4"
+ user_rd_goldeye-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.goldeye.user_rd"
+ user_rd_goldeye-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ user_rd_goldeye-commitbatch: 200
+ user_rd_goldeye-commitbuffer: 800
+ user_rd_goldeye-spoutbuffer: 200
+ user_rd_goldeye-boltbuffer: 100
+ user_rd_goldeye-boltIntervel: 5
+ user_rd_goldeye-spoutIntervel: 50
+ user_rd_goldeye-mode: "merger"
+ user_rd_goldeye-threads: 2
+ user_rd_goldeye-threads_reduce: 12
+ user_rd_goldeye-timeoutSpout: 30
+ user_rd_goldeye-timeoutBolt: 20
+ user_rd_goldeye-timeoutCommit: 60
+ 
+ 
+ p4p_click_goldeye-log: "KGB_click"
+ p4p_click_goldeye-subid: "0506142411S8QBEBWR"
+ p4p_click_goldeye-accesskey: "d5c23612-30fa-4665-b25f-e3ef10ab4a66"
+ p4p_click_goldeye-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.goldeye.p4p_click"
+ p4p_click_goldeye-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ p4p_click_goldeye-commitbatch: 200
+ p4p_click_goldeye-commitbuffer: 800
+ p4p_click_goldeye-spoutbuffer: 200
+ p4p_click_goldeye-boltbuffer: 100
+ p4p_click_goldeye-boltIntervel: 5
+ p4p_click_goldeye-spoutIntervel: 50
+ p4p_click_goldeye-mode: "merger"
+ p4p_click_goldeye-threads: 2
+ p4p_click_goldeye-threads_reduce: 12
+ p4p_click_goldeye-timeoutSpout: 30
+ p4p_click_goldeye-timeoutBolt: 20
+ p4p_click_goldeye-timeoutCommit: 60
+ 
+ 
+ p4p_wt_itempv_goldeye-log: "p4p_wt_itempv"
+ p4p_wt_itempv_goldeye-subid: "0505093240LMCCFCU7"
+ p4p_wt_itempv_goldeye-accesskey: "9b6be87b-bfcb-4a44-a593-6a26e012d408"
+ p4p_wt_itempv_goldeye-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.goldeye.p4p_wt_itempv"
+ p4p_wt_itempv_goldeye-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ p4p_wt_itempv_goldeye-commitbatch: 200
+ p4p_wt_itempv_goldeye-commitbuffer: 800
+ p4p_wt_itempv_goldeye-spoutbuffer: 1000
+ p4p_wt_itempv_goldeye-boltbuffer: 200
+ p4p_wt_itempv_goldeye-boltIntervel: 5
+ p4p_wt_itempv_goldeye-spoutIntervel: 10
+ p4p_wt_itempv_goldeye-threads: 64
+ p4p_wt_itempv_goldeye-threads_reduce: 12
+ p4p_wt_itempv_goldeye-mode: "merger"
+ p4p_wt_itempv_goldeye-timeoutSpout: 60
+ p4p_wt_itempv_goldeye-timeoutBolt: 30
+ p4p_wt_itempv_goldeye-timeoutCommit: 60
+ 
+ p4p_pv2_goldeye-log: "p4p_pv2"
+ p4p_pv2_goldeye-subid: "0513105953KOS43I2F"
+ p4p_pv2_goldeye-accesskey: "98c560f7-a942-4488-aa27-4d9eb9438857"
+ p4p_pv2_goldeye-parse: "com.alimama.quanjingmonitor.mdrillImport.parse.goldeye.p4p_pv2"
+ p4p_pv2_goldeye-reader: "com.alimama.quanjingmonitor.mdrillImport.reader.TT4Reader"
+ p4p_pv2_goldeye-commitbatch: 200
+ p4p_pv2_goldeye-commitbuffer: 800
+ p4p_pv2_goldeye-spoutbuffer: 1000
+ p4p_pv2_goldeye-boltbuffer: 200
+ p4p_pv2_goldeye-boltIntervel: 5
+ p4p_pv2_goldeye-spoutIntervel: 10
+ p4p_pv2_goldeye-threads: 64
+ p4p_pv2_goldeye-threads_reduce: 12
+ p4p_pv2_goldeye-mode: "merger"
+ p4p_pv2_goldeye-timeoutSpout: 60
+ p4p_pv2_goldeye-timeoutBolt: 30
+ p4p_pv2_goldeye-timeoutCommit: 60
+ 
+ 
+ ######################黄金眼一跳#####################
+ higo.mode.rpt_quanjing_p4p_k2_realtime: "@realtime@cleanPartionDays:15@"
+ higo.partion.type.rpt_quanjing_p4p_k2_realtime: "day"
+ higo.partion.type.rpt_quanjing_p4p_k2: "day"
  
  
   

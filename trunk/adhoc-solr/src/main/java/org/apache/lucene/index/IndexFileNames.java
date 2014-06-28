@@ -67,9 +67,10 @@ public final class IndexFileNames {
   public static final String TERMS_INDEX_EXTENSION_SIZE = "yntii";
   
   public static final String TERMS_INDEX_EXTENSION_QUICK = "quicktii";
-  public static final String TERMS_EXTENSION_QUICK = "quicktis";
-  public static final String TERMS_EXTENSION_QUICK_TXT = "quicktistxt";
-  public static final String TERMS_EXTENSION_QUICK_VAL = "quicktisval";
+  public static final String TERMS_EXTENSION_QUICK_OLD = "quicktis";
+  public static final String TERMS_EXTENSION_QUICK = "doctotm";
+  public static final String TERMS_EXTENSION_QUICK_TXT = "tmtorealval";
+  public static final String TERMS_EXTENSION_QUICK_VAL = "tmtonumval";
 
 
   /** Extension of stored fields index file */
@@ -131,6 +132,7 @@ public final class IndexFileNames {
     TERMS_INDEX_EXTENSION_QUICK,
     TERMS_INDEX_EXTENSION_SIZE,
     TERMS_EXTENSION,
+    TERMS_EXTENSION_QUICK_OLD,
     TERMS_EXTENSION_QUICK,
     TERMS_EXTENSION_QUICK_TXT,
     TERMS_EXTENSION_QUICK_VAL,
@@ -157,6 +159,8 @@ public final class IndexFileNames {
     TERMS_INDEX_EXTENSION_QUICK,
     TERMS_INDEX_EXTENSION_SIZE,
     TERMS_EXTENSION,
+    TERMS_INDEX_EXTENSION_QUICK,
+    TERMS_EXTENSION_QUICK_OLD,
     TERMS_EXTENSION_QUICK,
     TERMS_EXTENSION_QUICK_TXT,
     TERMS_EXTENSION_QUICK_VAL,
@@ -182,6 +186,7 @@ public final class IndexFileNames {
     FREQ_EXTENSION,
     PROX_EXTENSION,
     TERMS_EXTENSION,
+    TERMS_EXTENSION_QUICK_OLD,
     TERMS_EXTENSION_QUICK,
     TERMS_EXTENSION_QUICK_TXT,
     TERMS_EXTENSION_QUICK_VAL,

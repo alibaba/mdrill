@@ -33,7 +33,7 @@ public class DocSetCollector extends Collector {
   OpenBitSet bits;
   final int maxDoc;
   final int smallSetSize;
-  int base;
+  int base=0;
 
   // in case there aren't that many hits, we may not want a very sparse
   // bit array.  Optimistically collect the first few docs in an array

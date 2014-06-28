@@ -297,8 +297,8 @@ public class MdrillMain {
 		}
 
 		conf.setNumWorkers(shards + msCount);
-		conf.setNumAckers(1);
-		conf.setMaxSpoutPending(100);
+		conf.setNumAckers(0);
+//		conf.setMaxSpoutPending(100);
 		
 		List<String> assignment=(List<String>) stormconf.get(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_DEFAULT+"."+topologyName);
 		String assignmentports=String.valueOf(stormconf.get(MdrillDefaultTaskAssignment.MDRILL_ASSIGNMENT_PORTS+"."+topologyName));
@@ -329,12 +329,11 @@ public class MdrillMain {
 		paramsMs.replicationindex=0;
 		paramsMs.binlog=realtimebinlog;
 		
-		ShardsBolt ms = new ShardsBolt(paramsMs, hadoopConfDir, hdfsSolrDir,
+		MdrillSeriviceSpout ms = new MdrillSeriviceSpout(paramsMs, hadoopConfDir, hdfsSolrDir,
 				tableName, localWorkDirList, portbase + shards*replication + 100, 0,
 				partions, topologyName);
 
 		TopologyBuilder builder = new TopologyBuilder();
-		builder.setSpout("heartbeat", new HeartBeatSpout(), 1);
 		for(int i=0;i<replication;i++)
 		{
 			BoltParams paramsShard=new BoltParams();
@@ -344,12 +343,12 @@ public class MdrillMain {
 			paramsShard.binlog=realtimebinlog;
 
 
-			ShardsBolt solr = new ShardsBolt(paramsShard, hadoopConfDir, hdfsSolrDir,
+			MdrillSeriviceSpout solr = new MdrillSeriviceSpout(paramsShard, hadoopConfDir, hdfsSolrDir,
 					tableName, localWorkDirList, portbase+shards*i, shards, partions,
 					topologyName);
-			builder.setBolt("shard@"+i, solr, shards).allGrouping("heartbeat");
+			builder.setSpout("shard@"+i, solr, shards);
 		}
-		builder.setBolt("merge", ms, msCount).allGrouping("heartbeat");
+		builder.setSpout("merge", ms, msCount);
 		StormSubmitter.submitTopology(topologyName, conf,builder.createTopology());
 		System.out.println("start complete ");
 		System.exit(0);

@@ -23,7 +23,7 @@ public class GrobalCache {
 	  }
 	  
 		public static class StringKey implements GrobalCache.ILruMemSizeKey{
-			String str;
+			private String str;
 
 			@Override
 			public String toString() {

@@ -25,6 +25,7 @@ import org.apache.solr.core.SolrResourceLoader.PartionKey;
 
 
 import com.alimama.mdrill.adhoc.TimeCacheMap;
+import com.alimama.mdrill.adhoc.TimeCacheMap.CleanExecute;
 import com.alimama.mdrill.editlog.AddOp;
 import com.alimama.mdrill.editlog.FSEditLog;
 import com.alimama.mdrill.editlog.defined.StorageDirectory;
@@ -108,6 +109,10 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 		params.Partion = partion;
 	}
 	
+	public CleanExecute<Integer, DirectoryInfo> getCleanLock()
+	{
+		return new TimeCacheMap.CleanExecuteWithLock<Integer, DirectoryInfo>(rlock.lock);
+	}
 	
 	public void setCore(SolrCore core) {
 		params.core = core;
@@ -125,8 +130,8 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 		}
 		synchronized (rlock.searchLock) {
 			readList=copyDir;
+			SolrResourceLoader.SetCacheFlushKey(params.Partion,System.currentTimeMillis());
 		}
-		SolrResourceLoader.SetCacheFlushKey(params.Partion,System.currentTimeMillis());
 	}
 	
 	
@@ -166,10 +171,8 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 	public void expire(Integer key, DirectoryInfo val) {
 		if (val.tp.equals(DirectoryInfo.DirTpe.buffer)) {
 			try {
-				synchronized (rlock.lock) {
-					this.data.mergerBuffer(val);
-					this.data.maybeMerger();
-				}
+				this.data.mergerBuffer(val);
+				this.data.maybeMerger();
 			} catch (Throwable e) {
 				LOG.error("####expire buffer error ####", e);
 			}
@@ -178,10 +181,8 @@ public class RealTimeDirectory implements MdrillDirectory,TimeCacheMap.ExpiredCa
 
 		if (val.tp.equals(DirectoryInfo.DirTpe.ram)) {
 			try {
-				synchronized (rlock.lock) {
-					this.data.mergerRam(val);
-					this.data.maybeMerger();
-				}
+				this.data.mergerRam(val);
+				this.data.maybeMerger();
 			} catch (Throwable e) {
 				LOG.error("####expire ram error ####", e);
 			}

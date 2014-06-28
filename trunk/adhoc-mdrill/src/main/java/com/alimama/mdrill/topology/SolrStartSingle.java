@@ -11,15 +11,15 @@ import com.alimama.mdrill.utils.HadoopUtil;
 import com.alimama.mdrill.utils.IndexUtils;
 
 /**
- * ./bluewhale jar ../lib/adhoc-solr-0.18-beta.jar  com.alimama.mdrill.topology.SolrStartSingle
  * 
- * 
+./bluewhale jar ../lib/adhoc-solr-0.18-beta.jar  com.alimama.mdrill.topology.SolrStartSingle
+
 curl -A "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)" \
--d "shards=127.0.0.1%3A1210%2Fsolr%2Frpt_p4padhoc_cust%40201309%4059%2C&maxshards=8&mergeservers=127.0.0.1%3A1210%2Fsolr%2Frpt_p4padhoc_cust%2C&start=0&rows=0&fq=thedate%3A%5B20130901+TO+20130919%5D&q=*%3A*&facet=true&facet.sort=index&facet.cross.isdetail=true&facet.cross=true&facet.cross.join=%40&facet.cross.offset=0&facet.cross.limit=20&facet.field=thedate&facet.cross.sort.desc=true&facet.cross.sort.fl=higoempty_count_l&facet.cross.sort.cp=string" \
-http://127.0.0.1:1210/solr/rpt_p4padhoc_cust/select/
+-d "shards=127.0.0.1%3A1210%2Fsolr%2Fr_rpt_cps_luna_item%402014062%4059%2C&maxshards=8&mergeservers=127.0.0.1%3A1210%2Fsolr%2Fr_rpt_cps_luna_item%2C&start=0&rows=0&fq=thedate%3A%5B20140615+TO+20140615%5D&q=*%3A*&facet=true&facet.sort=index&facet.cross.isdetail=true&facet.cross=true&facet.cross.join=%40&facet.cross.offset=0&facet.cross.limit=20&facet.field=thedate&facet.cross.sort.desc=true&facet.cross.sort.fl=higoempty_count_l&facet.cross.sort.cp=string&wt=json" \
+http://127.0.0.1:1210/solr/r_rpt_cps_luna_item/select/
 
 
-http://10.246.42.76:1210/solr/rpt_p4padhoc_cust/select/?shards=10.246.42.76%3A1210%2Fsolr%2Frpt_p4padhoc_cust%40201309%4059%2C&maxshards=8&mergeservers=10.246.42.76%3A1210%2Fsolr%2Frpt_p4padhoc_cust%2C&start=0&rows=0&fq=thedate%3A%5B20130901+TO+20130919%5D&q=*%3A*&facet=true&facet.sort=index&facet.cross=true&facet.cross.join=%40&facet.cross.offset=0&facet.cross.limit=20&facet.field=thedate&facet.c&facet.cross.sort.desc=true&facet.cross.sort.fl=higoempty_count_l&facet.cross.sort.cp=string
+http://172.24.195.154:1210/solr/r_rpt_cps_luna_item/select/?shards=127.0.0.1%3A1210%2Fsolr%2Fr_rpt_cps_luna_item%402014063%4059%2C&maxshards=8&mergeservers=127.0.0.1%3A1210%2Fsolr%2Fr_rpt_cps_luna_item%2C&start=0&rows=0&fq=thedate%3A%5B20140621+TO+20140629%5D&q=*%3A*&facet=true&facet.sort=index&facet.cross.isdetail=false&facet.cross=true&facet.cross.join=%40&facet.cross.offset=0&facet.cross.limit=20&facet.field=thedate&facet.cross.sort.desc=true&facet.cross.sort.fl=higoempty_count_l&facet.cross.sort.cp=string&facet.cross.fl=higoempty_count_l
 
 http://10.246.42.76:1210/solr/rpt_p4padhoc_cust/select/?shards=10.246.42.76%3A1210%2Fsolr%2Frpt_p4padhoc_cust%40201309%4059%2C10.246.42.76%3A1210%2Fsolr%2Frpt_p4padhoc_cust%40201308%4059%2C&maxshards=8&mergeservers=10.246.42.76%3A1210%2Fsolr%2Frpt_p4padhoc_cust%2C&start=0&rows=0&fq=thedate%3A%5B20130701+TO+20130919%5D&q=*%3A*&facet=true&facet.sort=index&facet.cross=true&facet.cross.join=%40&facet.cross.offset=0&facet.cross.limit=20&facet.field=thedate&facet.c&facet.cross.sort.desc=true&facet.cross.sort.fl=higoempty_count_l&facet.cross.sort.cp=string
 

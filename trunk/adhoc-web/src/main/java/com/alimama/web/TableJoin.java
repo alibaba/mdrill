@@ -511,7 +511,7 @@ public class TableJoin {
 		Integer totalstage=Integer.parseInt(stage);
 		if(pat==null)
 		{
-			pat= Pattern.compile(".*Stage.*[^\\d]*(\\d+)[^\\d]map[^\\d]*(\\d+)[^\\d].*reduce[^\\d]*(\\d+)[^\\d].*");
+			pat= Pattern.compile(".*Stage[^\\d]*(\\d+)[^\\d]map[^\\d]*(\\d+)[^\\d].*reduce[^\\d]*(\\d+)[^\\d].*");
 		}
 		
 		if(!percent.startsWith("Stage"))
@@ -632,11 +632,35 @@ public class TableJoin {
 			",percent as percent" +
 			",resultkb as resultkb" +
 			",'' as memo" +
-			" from adhoc_download where username='"+username.replaceAll("'", "")+"' and status<>'DEL'  ";
+			" from adhoc_download where username='"+username.replaceAll("'", "")+"' and status<>'DEL' and  storedir not like '%abtest%'  ";
+			
+			
+			String strsqlAbtest="select '8' as source " +
+			",jobname as tableShowName" +
+			",uuid as tableName" +
+			",cols as colsShowName" +
+			",'empty' as colsName" +
+			",'empty' as colsType" +
+			",'default' as splitString" +
+			",storedir as txtStorePath" +
+			",'empty' as indexStorePath" +
+			",extval as extval" +
+			",isfinish as isfinish" +
+			",'INDEX' as status" +
+			",username as username" +
+			",starttime as createtime" +
+			",endtime as lastuptime" +
+			",'' as joins" +
+			",stage as stage" +
+			",percent as percent" +
+			",resultkb as resultkb" +
+			",'' as memo" +
+			" from adhoc_download where username='"+username.replaceAll("'", "")+"' and status<>'DEL' and  storedir like '%abtest%' ";
+			
 			bufferSql.append("select source,tableShowName,tableName,colsShowName" +
 					",colsName,colsType,splitString,txtStorePath,indexStorePath,extval,status,username," +
 					"createtime,lastuptime,joins,stage,percent,resultkb,memo");
-			bufferSql.append(" from ("+strsqlJoin+"  union "+strsqlDownload+" union "+strsqlJoin2+") tmp order by tmp.createtime desc limit "+start+","+rows+" ");
+			bufferSql.append(" from ("+strsqlJoin+"  union "+strsqlDownload+" union "+strsqlJoin2+" union "+strsqlAbtest+") tmp order by tmp.createtime desc limit "+start+","+rows+" ");
 		}
 		if(type==1)//for join
 		{
@@ -675,7 +699,7 @@ public class TableJoin {
 			item.put("percent", res.getString("percent"));
 			item.put("resultkb", parseInt(res.getString("resultkb"))>0?res.getString("resultkb"):"<1");
 			item.put("memo", String.valueOf(res.getString("memo")));
-			boolean isoversize=parseInt(res.getString("resultkb"))>512000;
+			boolean isoversize= (!res.getString("source").equals("8"))&&parseInt(res.getString("resultkb"))>512000;
 
 			boolean issuccess=res.getString("status").equals("INDEX")&&res.getString("extval").equals("0");
 			boolean iserror=res.getString("status").equals("FAIL")||!res.getString("extval").equals("0");

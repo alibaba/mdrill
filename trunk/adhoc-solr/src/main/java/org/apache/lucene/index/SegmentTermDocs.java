@@ -201,18 +201,22 @@ public class SegmentTermDocs implements TermDocs {
 		}
 	}
   
-  public void seekDocs(long pos,int docFreq,IndexOptions indexOptions, boolean currentFieldStoresPayloads) throws IOException
+  public void seekDocs(long pos,int docFreq,IndexOptions indexOptions, boolean currentFieldStoresPayloads,int skipOffset,long proxPointer) throws IOException
   {
 	    count = 0;
 	    this.indexOptions =indexOptions;
 	    this.currentFieldStoresPayloads = currentFieldStoresPayloads;
 	    df = docFreq;
 	    doc = 0;
-	    freqStream.seek(pos);
-	    haveSkipped = false;
+	    freqBasePointer = pos;
+	      proxBasePointer = proxPointer;
+	      skipPointer = freqBasePointer + skipOffset;
+	    freqStream.seek(freqBasePointer);
 	    this.compress=new ReadCompress(this.freqStream);
 	  	this.compress.setCompressMode(isfrqCompress);
 	    this.compress.resetCompressblock();
+	    haveSkipped = false;
+
   }
 
   public void close() throws IOException {

@@ -105,7 +105,7 @@ public class FetchAdid2Pid {
 	private static void sleep()
 	{
 		try {
-			Thread.sleep(10000);
+			Thread.sleep(30000);
 		} catch (InterruptedException e) {
 		}
 	}

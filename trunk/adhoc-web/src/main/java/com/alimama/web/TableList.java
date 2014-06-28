@@ -1,20 +1,14 @@
 package com.alimama.web;
 
-import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
-import backtype.storm.utils.Utils;
 
-import com.alimama.mdrill.json.JSONArray;
-import com.alimama.mdrill.json.JSONException;
-import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetShards;
 import com.alipay.bluewhale.core.cluster.ShardsState;
 import com.alipay.bluewhale.core.cluster.SolrInfo;
@@ -33,8 +27,60 @@ public class TableList {
 		return list.toArray(rtn);
 	}
 	
+	public static String[] getTableShards(String tableName) throws Exception
+	{
+		if(!tableName.equals("total"))
+		{
+			return getTableShards_table(tableName);
+		}
+		
+		String[] tablelist=getTablelist();
+		long total=0;
+		List<String> listrtntotal=new ArrayList<String>();
+		for(String s:tablelist)
+		{
+			try{
+			long num=getRecordCount(s);
+			listrtntotal.add(s+"\t"+num+"<br>\r\n");
+			total+=num;
+			}catch (Throwable e) {
+			}
+		}
+		
+		listrtntotal.add("total\t"+total+"<br>\r\n");
+
+		return listrtntotal.toArray(new String[listrtntotal.size()]);
+		
+	}
 	
-	public static String[] getTableShards(String tableName)throws Exception
+	public static long getRecordCount(String tableName) throws Exception
+	{
+
+		StormClusterState zkCluster = GetShards.getCluster();
+		List<Integer> list=zkCluster.higo_ids(tableName);
+		Long recordCount=0l;
+		for(Integer id:list)
+		{
+		    SolrInfo info=zkCluster.higo_info(tableName, id);
+		    if(info!=null)
+		    {
+		    	if(info.stat==ShardsState.SERVICE)
+		    	{
+		    		for(Entry<String, ShardCount> e:info.recorecount.entrySet())
+		    		{
+		    			recordCount+=e.getValue().cnt;
+		    		}
+		    		
+		    	}
+		    }
+		}
+		
+		return recordCount;
+	
+	}
+	
+	
+	public static String[] getTableShards_table(String tableName)throws Exception
 	{
 		StormClusterState zkCluster = GetShards.getCluster();
 		List<Integer> list=zkCluster.higo_ids(tableName);

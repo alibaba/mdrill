@@ -111,6 +111,14 @@ public class HiveExecute implements Runnable {
 	public void setStoreDir(String store) {
 		this.storedir=store;
 	}
+	
+    private Runnable Processer=null;
+    
+
+
+	public void setProcesser(Runnable processer) {
+		Processer = processer;
+	}
 
 	public void run() {
 		
@@ -147,6 +155,11 @@ public class HiveExecute implements Runnable {
 	            errorThread.join();
 	            inputThread.join();
 	           int  exitValue = process.exitValue();
+	           
+	           if(Processer!=null)
+	           {
+	        	   Processer.run();
+	           }
 	           this.callback.setExitValue(exitValue);
 	        } catch (Exception e) {
 	            callback.setFailed(stringify_error(e));

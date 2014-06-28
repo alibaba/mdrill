@@ -849,13 +849,13 @@ public static void setSearchCacheSize(int cacheSize) {
 	
 	private static Cache<PartionKey,RealTimeDirectory> forWriteDir =(new SimpleMapCache<PartionKey, RealTimeDirectory>(
 			new LinkedHashMap<PartionKey, RealTimeDirectory>(
-					(int) Math.ceil(8 / 0.75f) + 1,
+					(int) Math.ceil(32 / 0.75f) + 1,
 					0.75f, true) {
 				private static final long serialVersionUID = 1L;
 
 				@Override
 				protected boolean removeEldestEntry(Map.Entry<PartionKey, RealTimeDirectory> eldest) {
-					boolean rtn= size() > 8;
+					boolean rtn= size() > 32;
 					if(rtn)
 					{
 						eldest.getValue().syncHdfs();

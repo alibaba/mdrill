@@ -181,7 +181,10 @@ public class Worker {
 		// 执行创建虚拟端口对象，worker接收发送过来的tuple,然后根据task_id，分发给本地的相关task(通过zeromo的本地模式)
 		WorkerVirtualPort virtual_port = new WorkerVirtualPort(conf,
 				supervisorId, topologyId, port, mqContext, taskids);
-		Shutdownable virtual_port_shutdown = virtual_port.launch();
+		Shutdownable 	 virtual_port_shutdown = virtual_port.launch();
+
+		
+		
 
 		TopologyContext systemTopology = systemContext.make(null);
 

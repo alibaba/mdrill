@@ -128,7 +128,7 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 			}
 			
 			String[] log =line.split("\001",-1);
-			if(log==null||log.length<54)
+			if(log==null||log.length<46)
 			{
 				return null;
 			}
@@ -222,7 +222,6 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 				return null;
 			}
 			
-			
 			DataIterParse rtn= new DataIterParse(ts,log,ad_id,url_ad_id);
 			if(!rtn.isvalidate())
 			{
@@ -255,7 +254,6 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 	public static class DataIterParse implements DataIter{
 		private long ts;
 		private String ad_id;
-		private String Url="";
 		private String logkey="";
 		
 		private boolean ispv2=false;
@@ -275,21 +273,32 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 			String ad_id_cut=adid.substring(0, Math.min(10,adid.length()));
 			return  map.get(strday+"@"+String.valueOf(ad_id_cut));
 		}
+		
+		int index=0;
 		public DataIterParse(long ts,String[] pvlog,String ad_id,String url_ad_id) {
 			this.ts=ts;
 			this.ad_id=ad_id;
 			this.url_ad_id=url_ad_id;
-			this.Url=decodeString(pvlog[3]);
+			String Url=decodeString(pvlog[3]);
+			String pre=decodeString(pvlog[13]);
+
 			this.logkey=pvlog[45];
 			String strday=formatDay.format(new Date(ts*1000));
 
 			this.pid=this.fetch(this.ad_id, strday);
 			this.pid_Url=this.fetch(this.url_ad_id, strday);
 			
+			String jlogid=getName(Url, "jlogid");
+			String jlogid_pre=getName(pre, "jlogid");
+			
+			boolean isMathchUrl=Url.indexOf("38.tmall.com")>=0&&jlogid!=null&&!jlogid.isEmpty();
+			boolean isMathchPre=pre.indexOf("38.tmall.com")>=0&&jlogid_pre!=null&&!jlogid_pre.isEmpty();
 
-			this.ispv2=this.pid!=null&&(!this.logkey.equals("/"))&&this.url_ad_id.length()>10&&this.ad_id.startsWith("10");
-			this.isclick_2=this.pid!=null&&(!this.logkey.equals("/"))&&this.ad_id.startsWith("10");
-			this.isclick_1=this.pid_Url!=null&&this.logkey.equals("/")&&this.url_ad_id.length()>10&&this.Url.indexOf("ju.mmstat.com")>=0;//from url
+			
+			
+			this.ispv2=this.pid!=null&&(!this.logkey.equals("/"))&&this.ad_id.startsWith("10")&&isMathchUrl;
+			this.isclick_2=this.pid!=null&&(!this.logkey.equals("/"))&&this.ad_id.startsWith("10")&&isMathchPre;
+			this.isclick_1=this.pid_Url!=null&&this.logkey.equals("/")&&this.url_ad_id.length()>10&&Url.indexOf("ju.mmstat.com")>=0;//from url
 			
 		}
 		
@@ -301,17 +310,13 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 
 		@Override
 		public boolean next() {
+			index++;
 			if(this.ispv2||this.isclick_2)
 			{
 				this.ispv2=false;
 				this.isclick_2=false;
-
-				if(this.isclick_1)
-				{
-					return true;
-				}
+				return this.isclick_1;
 			}
-			
 			
 			return false;
 		}
@@ -323,7 +328,7 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 			 if(this.ispv2||this.isclick_2)
 			 {
 				 return  new Number[]{
-							this.ispv2?1:0
+						this.ispv2?1:0
 						,0
 						,this.isclick_2?1:0
 						,0
@@ -372,7 +377,7 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 							"pc",
 							this.pid
 							, ""
-							,DebugVersion.version// String.valueOf(actname)
+							,DebugVersion.version+","+index// String.valueOf(actname)
 					}	;
 			 }
 
@@ -385,7 +390,7 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 						"pc",
 						this.pid_Url
 						, ""
-						,DebugVersion.version// String.valueOf(actname)
+						,DebugVersion.version+","+index// String.valueOf(actname)
 				}	;
 		 
 			
@@ -434,6 +439,10 @@ galaxy.semantic.source.parser.classpath=com.alibaba.galaxy.semantic.source.compo
 	    
 	    public static String getName(String url,String keyname)
 		{
+	    	if(url==null)
+	    	{
+	    		return null;
+	    	}
 	    	try{
 				String[] tem = decodeString(url).split("\\?", 2);
 				String params=tem[0];
