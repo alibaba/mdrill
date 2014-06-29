@@ -82,7 +82,7 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
  2014.02.18 version 0.20.8.3-alpha bugfix&&重写调度&&优化 <a href="https://github.com/alibaba/mdrill/wiki/0.20.8">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/862RiROZx" target="_blank">点击这里下载</a>)<br>
  2014.03.05 version 0.20.9-beta bugfix <a href="https://github.com/alibaba/mdrill/wiki/0.20.9">see detail</a>  (<b>推荐版本</b>。 <a href="http://yunpan.taobao.com/share/link/862RqRFhx" target="_blank">点击这里下载</a> 。依赖的zeromq从<a href="http://yunpan.alibaba.com/share/link/463RLR7lN" target="_blank">这里下载</a>) <br>
  2014.03.28 version 0.21.1-alpha update模式的开发  (开发中的版本，请不要使用。<a href="http://yunpan.taobao.com/share/link/863R1R43x" target="_blank">点击这里获取源码</a> ) <br>
- 2014.06.29 version 0.22.1-beta 大幅度提高查询速度  (推荐版本，之前的索引需要重建。<a href="http://yunpan.taobao.com/share/link/J64R7RKiW" target="_blank">点击这里获取源码,自行编译</a> ) <br>
+ 2014.06.29 version 0.22.1-beta <a href="https://github.com/alibaba/mdrill/blob/master/doc/Mdrill%E9%A1%B9%E7%9B%AE%E5%9C%A8lucene%E7%9A%84%E6%94%B9%E8%BF%9B%E4%B8%8A%E7%9A%8410%E7%82%B9%E5%BF%83%E5%BE%97.docx?raw=true">大幅度提高查询速度</a>  (推荐版本，之前的索引需要重建。<a href="http://yunpan.taobao.com/share/link/J64R7RKiW" target="_blank">点击这里获取源码,自行编译</a> ) <br>
 
  
 
