@@ -75,7 +75,7 @@ public class  FacetComponent extends SearchComponent
   }
 
 
-	public static ThreadPoolExecutor SUBMIT_POOL = new ThreadPoolExecutor(Math.max(UniqConfig.getFacetThreads() / 2, 1),UniqConfig.getFacetThreads(), 100L, TimeUnit.SECONDS,	new LinkedBlockingQueue<Runnable>());
+	public static ThreadPoolExecutor SUBMIT_POOL = new ThreadPoolExecutor(Math.max(UniqConfig.getFacetThreads()/2, 1),UniqConfig.getFacetThreads(), 100L, TimeUnit.SECONDS,	new LinkedBlockingQueue<Runnable>());
 
   @Override
   public void process(ResponseBuilder rb1) throws IOException
@@ -86,11 +86,13 @@ public class  FacetComponent extends SearchComponent
     
     final ResponseBuilder rb=rb1;
     
+    final long t1=System.currentTimeMillis();
+    
 	ExecutorCompletionService<String> submit=new ExecutorCompletionService<String>(SUBMIT_POOL);
 	Callable<String> task = new Callable<String>() {
 	      public String call() throws Exception {
 
-
+	    	  long t2=System.currentTimeMillis();
 	    	  SolrParams params = rb.req.getParams();
 	    	  String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
 
@@ -107,6 +109,10 @@ public class  FacetComponent extends SearchComponent
 	    	  	LOG.error("getFacetCounts",e);
 	    	  	throw new SolrException(ErrorCode.SERVER_ERROR,e);
 	    	  }
+	    	  
+	    	  long t3=System.currentTimeMillis();
+	    	  
+	    	  LOG.info("####task####"+(t3-t2)+","+(t2-t1));
 	    	  
 	    	  return "";
 	   }
