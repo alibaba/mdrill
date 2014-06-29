@@ -80,7 +80,7 @@ public class RamDocValueFill {
 					for (int i = 0; i < list.getSize(); i++) {
 						if (list.get(i) <= RamTermNumValue.EMPTY_FOR_MARK_FORCMP) {
 							long val = docValues.readTmValue(i);
-							if(RamTermNumValue.TERMNUM_NAN_VALUE_FORCMP<=val)
+							if(RamTermNumValue.TERMNUM_NAN_VALUE_FORCMP>=val)
 							{
 								list.set(i, (double)RamTermNumValue.TERMNUM_NAN_VALUE);
 
