@@ -43,7 +43,7 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 <li><a href="http://yunpan.alibaba.com/share/link/563RLR7lM" target="_blank">mdrill介绍PPT</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署(由延年早期提供)</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL_SINGLE.txt" target="_blank">单机版安装部署（由范宜坚(@yehaozi)提供）</a></li>
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/LeDrill_install.pdf" target="_blank">基于kafka的实时模式部署（由研究院移动互联网研究室移动互联网服务项目组提供）</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/LeDrill_install.pdf" target="_blank">基于kafka的实时模式部署（由联想研究院提供）</a></li>
 
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
 <li><a href="https://github.com/alibaba/mdrill/wiki/plan" target="_blank">版本开发计划</a></li>
