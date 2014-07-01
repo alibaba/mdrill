@@ -43,7 +43,7 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 <li><a href="http://yunpan.alibaba.com/share/link/563RLR7lM" target="_blank">mdrill介绍PPT</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署(由延年早期提供)</a></li>
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL_SINGLE.txt" target="_blank">单机版安装部署（由范宜坚(@yehaozi)提供）</a></li>
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/LeDrill_install.pdf" target="_blank">基于kafka的实时模式部署（由联想研究院提供）</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/ledrill.doc.zip" target="_blank">基于kafka的实时模式部署（由联想研究院提供）</a></li>
 
 <li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
 <li><a href="https://github.com/alibaba/mdrill/wiki/plan" target="_blank">版本开发计划</a></li>
@@ -57,7 +57,7 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 <h1>mdrill contributors</h1>
 <ul>
 <li><a href="https://github.com/muyannian">母延年(子落)</a>、<a href="http://user.qzone.qq.com/2253209">秦剑(含光)</a>、<a href="https://github.com/bwzheng2010">郑博文(士远)</a>、陈鹏(伯时)、木晗、逸客、张壮、凌凝</li>
-<li>谷磊(联想)、刘宏凯(联想)、孙磊(联想)、范宜坚(@yehaozi)</li>
+<li><a href="http://www.cnblogs.com/jasonkoo/">谷磊</a>(Lenovo，QQ506413250,gulei.buaa@gmail.com)、刘宏凯(Lenovo,QQ23276998 liuhkai@gmail.com)、孙磊(Lenovo,QQ29130962 leismile.sun@gmail.com)、范宜坚(@yehaozi)</li>
 </ul>
 
 <h1>jstorm Core contributors <a href="https://github.com/alibaba/jstorm" target="_blank">点击进入</a></h1>
