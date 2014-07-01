@@ -13,6 +13,66 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
 <b>6.全文检索模式：</b>强大的条件设置，任意组合，无论难易秒级预览，每天160亿的数据随意筛选。<br>
 
 
+
+<h1> 发行日志</h1>
+ 2013.07.24 version 0.18-beta  初始化版本  <br>
+ 2013.08.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
+ 2013.08.17 version 0.18.2-beta speed up <a href="https://github.com/alibaba/mdrill/wiki/018_2">see detail</a>  (<a href="http://yunpan.cn/QXn4tRAzx8NIL" target="_blank">下载</a>) <br>
+ 2013.09.01 version 0.19-alpha HA by replication <a href="https://github.com/alibaba/mdrill/wiki/019_alpha">see detail</a>  (此版本需要一定时间的测试与调整，慎用) <br>
+ 2013.09.26 version 0.19.1-beta Bug Fix <a href="https://github.com/alibaba/mdrill/wiki/019_beta_1">see detail</a>  (<a href="http://yunpan.cn/QGprqdtDD7r2x" target="_blank">下载</a>) <br>
+ 2013.09.29 version 0.19.2-beta Bug Fix (<a href="http://yunpan.cn/QGC7TX2tupBcn" target="_blank">下载</a>) <br>
+ 2013.10.09 version 0.19.3-beta speed up (此版本有严重BUG,请勿使用,<a href="http://yunpan.cn/QbreqTZbusDtu" target="_blank">下载</a>) <br>
+ 2013.10.13 version 0.19.4-beta mergerServer优化&&bugfix (推荐版本,<a href="http://yunpan.cn/Qbk4ebcjuUyjL" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
+ 2013.11.19 version 0.20.1-alpha 使用hdfs进行检索&&实时append <a href="https://github.com/alibaba/mdrill/wiki/020_1">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUypgcZpmvwwv" target="_blank">源码下载</a>) <br>
+ 2013.12.03 version 0.20.2-alpha 全文检索模式优化 <a href="https://github.com/alibaba/mdrill/wiki/020_2">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUeabpfm9bHwG" target="_blank">源码下载</a>) <br>
+ 2013.12.05 version 0.20.3-alpha bugfix (alpha版本，慎用。 <a href="http://yunpan.cn/QU9u6YIRUyVin" target="_blank">源码下载</a>) <br>
+ 2014.01.02 version 0.20.4-alpha 通过editlog来保证实时数据的可靠性 <a href="https://github.com/alibaba/mdrill/wiki/0_20_4_alpha" >see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QDTNyLH6NjyeA" target="_blank">源码下载</a>) <br>
+ 2014.01.14 version 0.20.5-alpha bug fix (<a href="http://yunpan.cn/QzP6H2vfgW5k8" target="_blank">下载</a>) <br>
+ 2014.01.26 version 0.20.6-alpha bug fix (<a href="http://yunpan.taobao.com/share/link/N62RcRYGa" target="_blank">下载</a>) <br>
+ 2014.02.08 version 0.20.7-alpha cache改进 <a href="https://github.com/alibaba/mdrill/wiki/0.20.7">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/662RdRlqL" target="_blank">点击这里下载</a> 。) <br>
+ 2014.02.18 version 0.20.8.3-alpha bugfix&&重写调度&&优化 <a href="https://github.com/alibaba/mdrill/wiki/0.20.8">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/862RiROZx" target="_blank">点击这里下载</a>)<br>
+ 2014.03.05 version 0.20.9-beta bugfix <a href="https://github.com/alibaba/mdrill/wiki/0.20.9">see detail</a>  ( <a href="http://yunpan.taobao.com/share/link/862RqRFhx" target="_blank">点击这里下载</a> ) <br>
+ 2014.03.28 version 0.21.1-alpha update模式的开发  (开发中的版本，请不要使用。<a href="http://yunpan.taobao.com/share/link/863R1R43x" target="_blank">点击这里获取源码</a> ) <br>
+ 2014.06.29 version 0.22.1-beta <a href="https://github.com/alibaba/mdrill/blob/master/doc/Mdrill%E9%A1%B9%E7%9B%AE%E5%9C%A8lucene%E7%9A%84%E6%94%B9%E8%BF%9B%E4%B8%8A%E7%9A%8410%E7%82%B9%E5%BF%83%E5%BE%97.docx?raw=true">大幅度提高查询速度</a>  (推荐版本，之前的索引需要重建。<a href="http://yunpan.taobao.com/share/link/J64R7RKiW" target="_blank">点击这里获取源码,自行编译</a>  依赖的zeromq从<a href="http://yunpan.alibaba.com/share/link/463RLR7lN" target="_blank">这里下载</a>) <br>
+
+ 
+
+<h1>资源列表</h1>
+<ul>
+<li><a href="https://github.com/alibaba/mdrill/wiki/info" target="_blank">mdrill介绍</a></li>
+<li><a href="http://yunpan.alibaba.com/share/link/563RLR7lM" target="_blank">mdrill介绍PPT</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署(由延年早期提供)</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL_SINGLE.txt" target="_blank">单机版安装部署（由范宜坚(@yehaozi)提供）</a></li>
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/LeDrill_install.pdf" target="_blank">基于kafka的实时模式部署（由研究院移动互联网研究室移动互联网服务项目组提供）</a></li>
+
+<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
+<li><a href="https://github.com/alibaba/mdrill/wiki/plan" target="_blank">版本开发计划</a></li>
+<li><a href="https://github.com/alibaba/mdrill/wiki/adhoc" target="_blank">阿里妈妈-AdHoc-基于mdrill的大数据自助分析平台</a></li>
+
+
+
+<li><a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">LICENSE</a></li>
+</ul>
+
+<h1>mdrill Core contributors</h1>
+<ul>
+<li><a href="https://github.com/muyannian">母延年(子落)</a>、<a href="http://user.qzone.qq.com/2253209">秦剑(含光)</a>、<a href="https://github.com/bwzheng2010">郑博文(士远)</a>、陈鹏(伯时)、木晗、逸客、张壮、凌凝</li>
+</ul>
+<h1>mdrill Doc contributors</h1>
+<ul>
+<li>谷磊(联想)、刘宏凯(联想)、孙磊(联想)、范宜坚(@yehaozi)</li>
+</ul>
+
+<h1>jstorm Core contributors <a href="https://github.com/alibaba/jstorm" target="_blank">点击进入</a></h1>
+<ul>
+<li><a href="https://github.com/longdafeng">封仲淹(纪君祥)</a>、<a href="https://github.com/tumen">李鑫(丙吉)</a>、<a href="https://github.com/muyannian">母延年(子落)</a>、<a href="https://github.com/zhouxinxust">周鑫(陈均)</a></li>
+
+
+
+</ul>
+
+
+
 <h1>mdrill数据量的增长</h1>
 <table border="1" cellspacing="0" cellpadding="0">
   <tr>
@@ -62,64 +122,6 @@ mdrill是由阿里妈妈开源的一套数据的软件，针对TB级数据量，能够仅用10台机器，达到秒
     <td width="248" valign="top"><p>11台机器，硬盘使用率60%</p></td>
   </tr>
 </table>
-
-<h1> 发行日志</h1>
- 2013.07.24 version 0.18-beta  初始化版本  <br>
- 2013.08.07 version 0.18.1-beta bug fix <a href="https://github.com/alibaba/mdrill/wiki/018_1">see detail</a>  <br>
- 2013.08.17 version 0.18.2-beta speed up <a href="https://github.com/alibaba/mdrill/wiki/018_2">see detail</a>  (<a href="http://yunpan.cn/QXn4tRAzx8NIL" target="_blank">下载</a>) <br>
- 2013.09.01 version 0.19-alpha HA by replication <a href="https://github.com/alibaba/mdrill/wiki/019_alpha">see detail</a>  (此版本需要一定时间的测试与调整，慎用) <br>
- 2013.09.26 version 0.19.1-beta Bug Fix <a href="https://github.com/alibaba/mdrill/wiki/019_beta_1">see detail</a>  (<a href="http://yunpan.cn/QGprqdtDD7r2x" target="_blank">下载</a>) <br>
- 2013.09.29 version 0.19.2-beta Bug Fix (<a href="http://yunpan.cn/QGC7TX2tupBcn" target="_blank">下载</a>) <br>
- 2013.10.09 version 0.19.3-beta speed up (此版本有严重BUG,请勿使用,<a href="http://yunpan.cn/QbreqTZbusDtu" target="_blank">下载</a>) <br>
- 2013.10.13 version 0.19.4-beta mergerServer优化&&bugfix (推荐版本,<a href="http://yunpan.cn/Qbk4ebcjuUyjL" target="_blank">下载</a>,依赖的zeromq从<a href="http://yunpan.cn/QGp3QIMaBbnpy" target="_blank">这里下载</a>) <br>
- 2013.11.19 version 0.20.1-alpha 使用hdfs进行检索&&实时append <a href="https://github.com/alibaba/mdrill/wiki/020_1">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUypgcZpmvwwv" target="_blank">源码下载</a>) <br>
- 2013.12.03 version 0.20.2-alpha 全文检索模式优化 <a href="https://github.com/alibaba/mdrill/wiki/020_2">see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QUeabpfm9bHwG" target="_blank">源码下载</a>) <br>
- 2013.12.05 version 0.20.3-alpha bugfix (alpha版本，慎用。 <a href="http://yunpan.cn/QU9u6YIRUyVin" target="_blank">源码下载</a>) <br>
- 2014.01.02 version 0.20.4-alpha 通过editlog来保证实时数据的可靠性 <a href="https://github.com/alibaba/mdrill/wiki/0_20_4_alpha" >see detail</a>(alpha版本，慎用。 <a href="http://yunpan.cn/QDTNyLH6NjyeA" target="_blank">源码下载</a>) <br>
- 2014.01.14 version 0.20.5-alpha bug fix (<a href="http://yunpan.cn/QzP6H2vfgW5k8" target="_blank">下载</a>) <br>
- 2014.01.26 version 0.20.6-alpha bug fix (<a href="http://yunpan.taobao.com/share/link/N62RcRYGa" target="_blank">下载</a>) <br>
- 2014.02.08 version 0.20.7-alpha cache改进 <a href="https://github.com/alibaba/mdrill/wiki/0.20.7">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/662RdRlqL" target="_blank">点击这里下载</a> 。) <br>
- 2014.02.18 version 0.20.8.3-alpha bugfix&&重写调度&&优化 <a href="https://github.com/alibaba/mdrill/wiki/0.20.8">see detail</a>  (<a href="http://yunpan.taobao.com/share/link/862RiROZx" target="_blank">点击这里下载</a>)<br>
- 2014.03.05 version 0.20.9-beta bugfix <a href="https://github.com/alibaba/mdrill/wiki/0.20.9">see detail</a>  ( <a href="http://yunpan.taobao.com/share/link/862RqRFhx" target="_blank">点击这里下载</a> ) <br>
- 2014.03.28 version 0.21.1-alpha update模式的开发  (开发中的版本，请不要使用。<a href="http://yunpan.taobao.com/share/link/863R1R43x" target="_blank">点击这里获取源码</a> ) <br>
- 2014.06.29 version 0.22.1-beta <a href="https://github.com/alibaba/mdrill/blob/master/doc/Mdrill%E9%A1%B9%E7%9B%AE%E5%9C%A8lucene%E7%9A%84%E6%94%B9%E8%BF%9B%E4%B8%8A%E7%9A%8410%E7%82%B9%E5%BF%83%E5%BE%97.docx?raw=true">大幅度提高查询速度</a>  (推荐版本，之前的索引需要重建。<a href="http://yunpan.taobao.com/share/link/J64R7RKiW" target="_blank">点击这里获取源码,自行编译</a>  依赖的zeromq从<a href="http://yunpan.alibaba.com/share/link/463RLR7lN" target="_blank">这里下载</a>) <br>
-
- 
-
-<h1>资源列表</h1>
-<ul>
-<li><a href="https://github.com/alibaba/mdrill/wiki/info" target="_blank">mdrill介绍</a></li>
-<li><a href="http://yunpan.alibaba.com/share/link/563RLR7lM" target="_blank">mdrill介绍PPT</a></li>
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL.docx?raw=true" target="_blank">安装部署(由延年早起提供)</a></li>
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/INSTALL_SINGLE.txt" target="_blank">单机版安装部署（由范宜坚(@yehaozi)提供）</a></li>
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/LeDrill_install.pdf" target="_blank">基于kafka的实时模式部署（由研究院移动互联网研究室移动互联网服务项目组提供）</a></li>
-
-<li><a href="https://github.com/alibaba/mdrill/blob/master/doc/MSql.docx?raw=true" target="_blank">sql使用手册</a></li>
-<li><a href="https://github.com/alibaba/mdrill/wiki/plan" target="_blank">版本开发计划</a></li>
-<li><a href="https://github.com/alibaba/mdrill/wiki/adhoc" target="_blank">阿里妈妈-AdHoc-基于mdrill的大数据自助分析平台</a></li>
-
-
-
-<li><a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">LICENSE</a></li>
-</ul>
-
-<h1>mdrill Core contributors</h1>
-<ul>
-<li><a href="https://github.com/muyannian">母延年(子落)</a>、<a href="http://user.qzone.qq.com/2253209">秦剑(含光)</a>、<a href="https://github.com/bwzheng2010">郑博文(士远)</a>、陈鹏(伯时)、木晗、逸客、张壮、凌凝</li>
-</ul>
-<h1>mdrill Doc contributors</h1>
-<ul>
-<li>谷磊(联想)、刘宏凯(联想)、孙磊(联想)、范宜坚(@yehaozi)</li>
-</ul>
-
-<h1>jstorm Core contributors <a href="https://github.com/alibaba/jstorm" target="_blank">点击进入</a></h1>
-<ul>
-<li><a href="https://github.com/longdafeng">封仲淹(纪君祥)</a>、<a href="https://github.com/tumen">李鑫(丙吉)</a>、<a href="https://github.com/muyannian">母延年(子落)</a>、<a href="https://github.com/zhouxinxust">周鑫(陈均)</a></li>
-
-
-
-</ul>
-
 
 <h1>其他</h1>
 <ul>
