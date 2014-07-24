@@ -8,9 +8,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
@@ -18,16 +15,24 @@ import org.apache.log4j.Logger;
 
 
 
+
 import backtype.storm.utils.Utils;
 
+import com.alimama.mdrill.partion.GetPartions.TablePartion;
 import com.alipay.bluewhale.core.callback.RunnableCallback;
 import com.alipay.bluewhale.core.cluster.Cluster;
 import com.alipay.bluewhale.core.cluster.ClusterState;
 import com.alipay.bluewhale.core.cluster.ShardsState;
 import com.alipay.bluewhale.core.cluster.SolrInfo;
 import com.alipay.bluewhale.core.cluster.StormClusterState;
+import com.alipay.bluewhale.core.utils.StormUtils;
 
 
+/**
+ * 用户获取某个表的所有shards以及mergers
+ * @author yannian.mu
+ *
+ */
 public class GetShards {
 	
 	private static Timer  EXECUTE =new Timer();
@@ -36,15 +41,15 @@ public class GetShards {
 
 	public static class SolrInfoList extends RunnableCallback{
 		private String tableName;
+		TimerTask task=null;
+
+		List<SolrInfo> infolist=new ArrayList<SolrInfo>();
 		public SolrInfoList(String tableName) {
-			super();
 			this.tableName = tableName;
 		}
 		
-		TimerTask task=null;
 
 
-		List<SolrInfo> infolist=new ArrayList<SolrInfo>();
 		Object lock=new Object();
 		@Override
 		public <T> Object execute(T... args) {
@@ -61,6 +66,8 @@ public class GetShards {
 				return rtn;
 			}
 		}
+		
+		
 		public void run() {
 			ArrayList<SolrInfo> newlist=new ArrayList<SolrInfo>();
 
@@ -68,7 +75,7 @@ public class GetShards {
 				long t1=System.currentTimeMillis();
 				LOG.info("sync from zookeeper "+tableName);
 				StormClusterState zkCluster = getCluster();
-				List<Integer> list = zkCluster.higo_ids(tableName);
+				List<Integer> list = zkCluster.higo_base(tableName,this);
 				for (Integer id : list) {
 					SolrInfo info = zkCluster.higo_info(tableName, id);
 					if (info != null )
@@ -77,11 +84,18 @@ public class GetShards {
 					}
 				}
 				
-				zkCluster.higo_base(tableName, this);
 				long tl=System.currentTimeMillis()-t1;
 				LOG.info("getShards timetaken:"+tl);
 
-			} catch (Exception e) {
+			} catch (Throwable e) {
+				synchronized (lock) {
+					if(this.task!=null)
+					{
+						this.task.cancel();
+						this.task=null;
+					}
+				}
+
 				
 				return ;
 			}
@@ -96,11 +110,9 @@ public class GetShards {
 							SolrInfoList.this.run();
 						}
 					};
-					EXECUTE.schedule(task, 60000l, 60000l);
+					EXECUTE.schedule(task, 300000l, 300000l);
 				}
 			}
-			
-			
 			
 			
 		}
@@ -145,7 +157,70 @@ public class GetShards {
 		}
 	}
 	
-    public static ShardsList[] get(String tableName,boolean isMs) throws Exception
+	public static void purge(String tableName)
+	{
+    	SolrInfoList infolist=getSolrInfoList(tableName);
+    	infolist.run();
+	}
+	
+	public static ShardsList[] getCores(Map stormconf,TablePartion part) throws Exception
+	{
+		ShardsList[] cores = GetShards.get(part.name, false);
+		
+		for(int i=0;i<10;i++)
+		{
+			if(cores.length!=StormUtils.parseInt(stormconf.get("higo.shards.count")))
+			{
+				if(i>5)
+				{
+					throw new Exception("core.size="+cores.length);
+				}
+				GetShards.purge(part.name);
+				cores = GetShards.get(part.name, false);
+				LOG.info("core.size="+cores.length);
+				
+				Thread.sleep(1000);
+			}else{
+				break;
+			}
+		}
+		LOG.info("request core.size="+cores.length);
+		
+		return cores;
+	}
+	
+	public static ShardsList[] getCoresNonCheck(TablePartion part) throws Exception
+	{
+
+		ShardsList[] cores = GetShards.get(part.name, false);
+		for(int i=0;i<10;i++)
+		{
+			if(cores==null||cores.length<=0)
+			{
+				if(i>5)
+				{
+					throw new Exception("core.size<=0");
+				}
+				GetShards.purge(part.name);
+				cores = GetShards.get(part.name, false);
+				LOG.info("core.size="+cores.length);
+				Thread.sleep(1000);
+			}else{
+				break;
+			}
+		}
+		
+		return cores;
+	
+	}
+
+	
+	public static ShardsList[] getMergers(String tableName) throws Exception
+	{
+		return GetShards.get(tableName, true);
+	}
+	
+    private static ShardsList[] get(String tableName,boolean isMs) throws Exception
  {
     	SolrInfoList infolist=getSolrInfoList(tableName);
     	
@@ -187,32 +262,8 @@ public class GetShards {
 
 	}
     
-    
-//    public static String printSolr(String tablename) throws Exception {
-//
-//	String urlMain = "";
-//	String urlShards = "";
-//
-//	Random rdm = new Random();
-//	String[] cores = GetShards.get(tablename,false,100000);
-//	if (cores != null && cores.length > 0) {
-//	    int count = 0;
-//	    int r = rdm.nextInt(cores.length);
-//	    for (String c : cores) {
-//		if (count == r)
-//		{
-//		    urlMain = "http://" + c + "/solr";
-//		}
-//	
-//		urlShards += c + "/solr,";
-//		count++;
-//	    }
-//	}
-//
-//	return urlMain+"/select/?q=*:*&start=0&rows=1&indent=on&shards="+urlShards;
-//
-//    }
-    public static StormClusterState higozkCluster;
+
+    private static StormClusterState higozkCluster;
     public static StormClusterState getCluster() throws Exception
     {
 	if(higozkCluster==null)

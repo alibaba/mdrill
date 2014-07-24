@@ -74,7 +74,7 @@ public interface FacetParams {
   public static final String FACET_CROSS_DETAIL = FACET + ".cross.isdetail";
   public static final String FACET_CROSS_JOIN = FACET + ".cross.join";
 //  public static final String FACET_CROSS_DISTINCT = FACET + ".cross.distinct";
-  public static final String IS_SUB_SHARDS="merger.shards.issub";
+//  public static final String IS_SUB_SHARDS="merger.shards.issub";
   public static final String MERGER_MAX_SHARDS = "maxshards";
   public static final String MERGER_SERVERS = "mergeservers";
   

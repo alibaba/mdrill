@@ -134,9 +134,7 @@ public class HiveExecute implements Runnable {
 		   Process process = null;
 	        try {
 	            process = Runtime.getRuntime().exec(cmd, env,new File(hiveBin).getParentFile());
-	        } catch (RuntimeException e) {
-	        	this.callback.addException(stringify_error(e));
-	        } catch (IOException e) {
+	        } catch (Throwable e) {
 	        	this.callback.addException(stringify_error(e));
 	        }
 
@@ -161,10 +159,10 @@ public class HiveExecute implements Runnable {
 	        	   Processer.run();
 	           }
 	           this.callback.setExitValue(exitValue);
-	        } catch (Exception e) {
+	        } catch (Throwable e) {
+		         this.callback.setExitValue(9);
 	            callback.setFailed(stringify_error(e));
 	        }finally{
-	        	
 	        	
 	        	this.callback.finish();
 	        }

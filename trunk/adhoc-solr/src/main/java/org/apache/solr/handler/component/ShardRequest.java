@@ -51,8 +51,8 @@ public class ShardRequest {
   /** list of responses... filled out by framework */
   public List<ShardResponse> responses = new ArrayList<ShardResponse>();
 
-  /** actual shards to send the request to, filled out by framework */
-  public String[] actualShards;
+//  /** actual shards to send the request to, filled out by framework */
+//  public String[] actualShards;
 
   // TODO: one could store a list of numbers to correlate where returned docs
   // go in the top-level response rather than looking up by id...

@@ -21,10 +21,9 @@ public class MergerServerThreads {
 	public static ExecutorService[] EXECUTE = new ExecutorService[UniqConfig.getMergerRequestMaxDepth()];
 	static {
 		for (int i = 0; i < EXECUTE.length; i++) {
-			EXECUTE[i] = new ThreadPoolExecutor(Math.max(UniqConfig.getMergerRequestThreads()/2, 1), UniqConfig.getMergerRequestThreads(),
+			EXECUTE[i] = new ThreadPoolExecutor(UniqConfig.getMergerRequestThreadsMin(i), UniqConfig.getMergerRequestThreadsMax(i),
                     300L, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<Runnable>());
-			log.info("set ####### " + i);
 		}
 	}
 	 
@@ -49,8 +48,40 @@ public class MergerServerThreads {
 		  {
 				 return new ExecutorCompletionService<ShardResponse>(EXECUTE[i]);
 		  }
+		  
+		  
 		return new ExecutorCompletionService<ShardResponse>(commExecutor);
 
 	  }
 	  
 }
+
+//
+//public class MergerServerThreads {
+//	
+//	
+//	/**
+//	 * 
+//	 * 
+//	  new ThreadPoolExecutor(
+//	          2,
+//	          Integer.MAX_VALUE,
+//	          300, TimeUnit.SECONDS, // terminate idle threads after 5 sec
+//	          new LinkedBlockingQueue<Runnable>()  // directly hand off tasks
+//	  );
+//	 
+//	 
+//	 * 
+//	 */
+//	
+//	 static Executor commExecutor =new ThreadPoolExecutor(5, 60,
+//             300L, TimeUnit.SECONDS,
+//             new LinkedBlockingQueue<Runnable>());
+//	
+//	  
+//	  public static CompletionService<ShardResponse> create(int i)
+//	  {
+//		return new ExecutorCompletionService<ShardResponse>(commExecutor);
+//	  }
+//	  
+//}

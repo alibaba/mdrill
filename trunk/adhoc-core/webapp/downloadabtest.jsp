@@ -6,6 +6,8 @@
 
 	<%	
 	String uuid = request.getParameter("uuid");
+		String isall = request.getParameter("isall");
+String matchallstre="y";
 
 	String did=AdhocOfflineService.readHiveResultID(uuid);
 
@@ -16,7 +18,7 @@
 	out.clear();
   out = pageContext.pushBody();
 	OutputStreamWriter outStream = new OutputStreamWriter(response.getOutputStream(),"gbk"); 
-	AdhocOfflineService.readAbtestResult(uuid,outStream,"",true);
+	AdhocOfflineService.readAbtestResult(uuid,outStream,"",!matchallstre.equals(isall));
 	outStream.flush();
   outStream.close();
 

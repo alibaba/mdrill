@@ -77,23 +77,17 @@ public class RamDocValueFill {
 			if (isReadDouble) {
 				if (inv.fieldDataType == FieldDatatype.d_double) {
 					BlockArray<Double> list = inv.getTmValueDouble();
-					for (int i = 0; i < list.getSize(); i++) {
+					for (int i = 0; i <=docValues.maxtm; i++) {
 						if (list.get(i) <= RamTermNumValue.EMPTY_FOR_MARK_FORCMP) {
-							long val = docValues.readTmValue(i);
-							if(RamTermNumValue.TERMNUM_NAN_VALUE_FORCMP>=val)
-							{
-								list.set(i, (double)RamTermNumValue.TERMNUM_NAN_VALUE);
-
-							}else{
-								list.set(i, Double.longBitsToDouble(val));
-							}
+							double val = Double.longBitsToDouble(docValues.readTmValue(i,true));
+							list.set(i, val);
 						}
 					}
 				} else {
 					BlockArray<Long> list = inv.getTmValueLong();
-					for (int i = 0; i < list.getSize(); i++) {
+					for (int i = 0; i <=docValues.maxtm; i++) {
 						if (list.get(i) <= RamTermNumValue.EMPTY_FOR_MARK_FORCMP) {
-							long val = docValues.readTmValue(i);
+							long val = docValues.readTmValue(i,false);
 							list.set(i, val);
 						}
 					}

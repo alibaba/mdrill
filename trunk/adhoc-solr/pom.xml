@@ -70,13 +70,15 @@
    </dependency>
 
    
-   <!--dependency>
+   <dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase</artifactId>
 			<version>0.94-adh3u3.1-cdh4</version>
-	</dependency>
+
+			<scope>provided</scope>
+   </dependency>
 		
-		<dependency>
+		<!-- dependency>
     <groupId>org.apache.hadoop.thirdparty.guava</groupId>
     <artifactId>guava</artifactId>
     <version>r09-jarjar</version>

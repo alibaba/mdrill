@@ -18,7 +18,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import com.alimama.mdrill.distinct.DistinctCount.DistinctCountAutoAjuest;
 import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.UniqConfig;
 

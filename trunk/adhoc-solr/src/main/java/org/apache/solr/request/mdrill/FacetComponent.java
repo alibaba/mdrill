@@ -130,7 +130,6 @@ public class  FacetComponent extends SearchComponent
   private Object getResult(boolean isdetail,SolrIndexSearcher searcher,SolrParams params,SolrQueryRequest req,String[] fields, DocSet base)throws Exception 
 	{
 	  String crcget=params.get("mdrill.crc.key.get",null);
-
 	  if(crcget!=null&&(params.getBool("fetchfdt", false)||isdetail))
 	  {
 		  SolrIndexReader reader=searcher.getReader();
@@ -402,7 +401,7 @@ public class  FacetComponent extends SearchComponent
 	    private String key; 
 		public int offset;
 		public int limit;
-		public boolean isFinalResult = true;
+//		public boolean isFinalResult = true;
 		public String sort_fl = null;
 		public String sort_type = null;
 		public boolean isdesc = true;
@@ -418,12 +417,12 @@ public class  FacetComponent extends SearchComponent
 
 			this.offset = params.getInt(FacetParams.FACET_CROSS_OFFSET, 0);
 			this.limit = params.getInt(FacetParams.FACET_CROSS_LIMIT, 100);
-			boolean issub = params.getBool(FacetParams.IS_SUB_SHARDS, false);
-			if (issub) {
-				isFinalResult = false;
-			} else {
-				isFinalResult = true;
-			}
+//			boolean issub = params.getBool(FacetParams.IS_SUB_SHARDS, false);
+//			if (issub) {
+//				isFinalResult = false;
+//			} else {
+//				isFinalResult = true;
+//			}
 
 			this.isdetail = params.getBool(FacetParams.FACET_CROSS_DETAIL,false);
 			if (this.isdetail) {

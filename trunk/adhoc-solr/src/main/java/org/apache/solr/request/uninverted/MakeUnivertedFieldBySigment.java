@@ -16,31 +16,40 @@ public class MakeUnivertedFieldBySigment{
 	static boolean isforbiden=false;
 	public static boolean  makeInit(UnInvertedField uni,BitDocSet baseAdvanceDocs,String field, SegmentReader reader,IndexSchema schema,boolean isreadDouble) throws IOException, CloneNotSupportedException
 	{
+		long t1=System.currentTimeMillis();
+
 		int fieldNumber=reader.getFieldNum(field);
 		if(isforbiden||!reader.isSupportQuick()||fieldNumber<0)
 		{
 			return false;
 		}
 		
+		
 		uni.init( field, reader, schema);
+		long t2=System.currentTimeMillis();
+
 		uni.baseAdvanceDocs=UnInvertedField.ajustBase(4,baseAdvanceDocs, reader);
+		long t3=System.currentTimeMillis();
 
 		if(uni.checkEmpty())
 		{
 			return true;
 		}
 		
-		log.info("makeInit start" + uni.field + " ,this.baseAdvanceDocs="+(uni.baseAdvanceDocs==null?0:uni.baseAdvanceDocs.size()));
+		log.info("makeInit start:" + uni.field + " ,this.baseAdvanceDocs="+(uni.baseAdvanceDocs==null?0:uni.baseAdvanceDocs.size()));
 		int maxDoc = reader.maxDoc();
 		uni.startRamDocValue(maxDoc, reader, isreadDouble);
-		
+		long t4=System.currentTimeMillis();
+
 		DocValuesReader docvalues=reader.getDocValues();
 		int maxtm=RamDocValueFill.Fill(uni,reader.maxDoc(), true, uni.ti, docvalues, fieldNumber, isreadDouble, uni.baseAdvanceDocs);
-				
+		long t5=System.currentTimeMillis();
+	
 		uni.endRamDocValue(isreadDouble,maxtm);
 		uni.tnr = uni.ramDocValue.getDocReader();
 		uni.baseAdvanceDocs=null;
-
+		long t6=System.currentTimeMillis();
+		log.info("####makeInit end####:" +uni.field+","+(t6-t5)+"@"+(t5-t4)+"@"+(t4-t3)+"@"+(t3-t2)+"@"+(t2-t1));
 		return true;	
 	}
 	

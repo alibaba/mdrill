@@ -71,33 +71,18 @@ public class RamDocValue {
 		if (checkValue< Byte.MAX_VALUE) {
 			this.indexDatatype = UnInvertedFieldUtils.CompressType.d_byte;
 			this.indexbyte = BlockBufferPool.BYTE_POOL.calloc(size,BlockBufferPool.BYTE_CREATE, (byte) nullTerm);
-			for (int i = 0; i < size; i++) {
-				int t = this.index.get(i);
-				if (t >= 0) {
-					this.indexbyte.set(i, (byte) t);
-				}
-			}
+			this.indexbyte.fillByInt(this.index, -1);
 			BlockBufferPool.INT_POOL.recycleByteBlocks(this.index);
 			this.index = null;
 		} else if (checkValue < Short.MAX_VALUE) {
 			this.indexDatatype = UnInvertedFieldUtils.CompressType.d_short;
 			this.indexshort = BlockBufferPool.SHORT_POOL.calloc(size,BlockBufferPool.SHORT_CREATE, (short) nullTerm);
-			for (int i = 0; i < size; i++) {
-				int t = this.index.get(i);
-				if (t >= 0) {
-					this.indexshort.set(i, (short) t);
-				}
-			}
+			this.indexshort.fillByInt(this.index, -1);
 			BlockBufferPool.INT_POOL.recycleByteBlocks(this.index);
 			this.index = null;
 		} else {
 			this.indexDatatype = UnInvertedFieldUtils.CompressType.d_int;
-			for (int i = 0; i < size; i++) {
-				int t = this.index.get(i);
-				if (t < 0) {
-					this.index.set(i, nullTerm);
-				}
-			}
+			this.index.replace(-1, nullTerm);
 		}
 		
 	}

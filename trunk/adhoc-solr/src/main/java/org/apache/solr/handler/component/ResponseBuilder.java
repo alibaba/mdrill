@@ -115,22 +115,21 @@ public class ResponseBuilder
 	  none,multy,singlehosts,shards
   }
   //The address of the Shard
-  public String[] shards;
-  public RequestLockType lockType=RequestLockType.none;//0,none,1,multy,2,singlehosts,3,shards
-  public boolean issubshard=false;
-  public String[] subShards;
+  
+  public static class ScheduleInfo{
+	  public boolean hasSubShards=false;
+	  public String[] shards;
+	  public String[] subShards;
+	  public String[] partions;
+  }
+  
+//  public RequestLockType lockType=RequestLockType.none;//0,none,1,multy,2,singlehosts,3,shards
+
   public int shards_rows = -1;
   public int shards_start = -1;
   public List<ShardRequest> outgoing;  // requests to be sent
   public List<ShardRequest> finished;  // requests that have received responses from all shards
 
-
-  public int getShardNum(String shard) {
-    for (int i=0; i<shards.length; i++) {
-      if (shards[i]==shard || shards[i].equals(shard)) return i;
-    }
-    return -1;
-  }
 
   public void addRequest(SearchComponent me, ShardRequest sreq) {
 //    outgoing.add(sreq);
@@ -149,7 +148,7 @@ public class ResponseBuilder
   /* private... components that don't own these shouldn't use them */
   SolrDocumentList _responseDocs;
   StatsInfo _statsInfo;
-  TermsComponent.TermsHelper _termsHelper;
+//  TermsComponent.TermsHelper _termsHelper;
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<String>>> mergedSearchGroups = new HashMap<String, Collection<SearchGroup<String>>>();

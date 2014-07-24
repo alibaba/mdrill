@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public abstract class MdrillMetaDataResultSet<M> extends MdrillBaseResultSet{
+public abstract  class MdrillMetaDataResultSet<M> extends MdrillBaseResultSet{
 	  protected final List<M> data;
 
 	  @SuppressWarnings("unchecked")
@@ -29,8 +29,21 @@ public abstract class MdrillMetaDataResultSet<M> extends MdrillBaseResultSet{
 	    }
 	  }
 
-	  @Override
+	  
 	  public void close() throws SQLException {
 	  }
+
+	
+	public <T> T getObject(int arg0, Class<T> arg1) throws SQLException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
+	public <T> T getObject(String arg0, Class<T> arg1) throws SQLException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 }

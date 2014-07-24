@@ -3,10 +3,17 @@ package com.alimama.mdrill.utils;
 public class UniqConfig {
 	
 	static Runtime myRun = Runtime.getRuntime();	
-	static long maxfieldvaluemem=(long) ((Math.max(myRun.maxMemory(), myRun.totalMemory()))*0.35);
+	static long maxfieldvaluemem=(long) ((Math.max(myRun.maxMemory(), myRun.totalMemory()))*0.3);
+	static long maxfieldvaluemem_fq=(long) ((Math.max(myRun.maxMemory(), myRun.totalMemory()))*0.05);
+
 	public static long getFieldValueMemSize()
 	{
 		return maxfieldvaluemem;
+	}
+	
+	public static long getFieldValueMemSizefq()
+	{
+		return maxfieldvaluemem_fq;
 	}
 	
 	public static int RealTimeBufferFlush()
@@ -87,23 +94,42 @@ public class UniqConfig {
 	{
 		return 2;
 	}
-	public static int getMergerRequestThreads()
-	{
-		return 48;
-	}
-	
+
 	public static int getFacetThreads()
 	{
-		return 6;
+		return 8;
 	}
 	public static int getUnivertedFieldThreads()
 	{
-		return 4;
-	}
-	public static int getMergerRequestMaxDepth()
-	{
 		return 6;
 	}
+	
+	static int[]  threadCountMax={256,128,64,64,64,64,64,64,64,64,64,64,64,64};
+	static int[]  threadCountMin={16,8,4,2,1};
+
+	public static int getMergerRequestMaxDepth()
+	{
+		return threadCountMax.length;
+	}
+	
+	public static int getMergerRequestThreadsMax(int depth)
+	{
+		if(depth<threadCountMax.length)
+		{
+			return threadCountMax[depth];
+		}
+		return 2;
+	}
+	
+	public static int getMergerRequestThreadsMin(int depth)
+	{
+		if(depth<threadCountMin.length)
+		{
+			return threadCountMin[depth];
+		}
+		return 0;
+	}
+	
 	
 	public static int getTermCacheSizeIndex()
 	{
@@ -164,6 +190,11 @@ public class UniqConfig {
 	public static int getBlockBufferSize()
 	{
 		return 100;
+	}
+	
+	public static int getBlockBufferPoolSize()
+	{
+		return 1024;
 	}
 	
 }

@@ -17,8 +17,8 @@ public class SmallBufferedInput extends BufferedIndexInput {
 
 	public SmallBufferedInput(IndexInput input, int buffersize) {
 		super("SmallBufferedInput", buffersize);
-		log.info("SmallBufferedInput:" + input.getClass().getName() + ","
-				+ buffersize);
+//		log.info("SmallBufferedInput:" + input.getClass().getName() + ","
+//				+ buffersize);
 		this.in = input;
 		this.isOpen = true;
 	}

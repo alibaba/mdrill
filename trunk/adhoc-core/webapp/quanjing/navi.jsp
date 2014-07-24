@@ -10,18 +10,14 @@
 
 	String[] namelist={
 		"p4p监控"
-		,"416宇宙扎堆节"
 		,"流量分析"
-		,"3.8生活节"
 		,"TANX外投流量指标"
 		,"TANX外投流量数据排行"
 	};
 	
 		String[] hrefList={
 		"./goldeye_realtime.jsp"
-		,"./416_realtime.jsp"
 		,"./siteoverlap.jsp"
-		,"./3_8_realtime.jsp"
 		,"./tanxpv.jsp"
 		,"./tanx_table.jsp"
 	};

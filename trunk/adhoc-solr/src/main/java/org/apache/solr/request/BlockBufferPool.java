@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.request.uninverted.RamTermNumValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +18,7 @@ public class BlockBufferPool<T> {
 	public static BlockBufferPool<Long> LONG_POOL=new BlockBufferPool<Long>();
 	public static BlockBufferPool<Double> DOUBLE_POOL=new BlockBufferPool<Double>();
 	
-	private final static int intervalBits = 16; 
+	private final static int intervalBits = 12; 
 	private final static int intervalMask = 0xffffffff >>> (32 - intervalBits);
 	public final static int interval = 1 << intervalBits;// 1024*256
 	
@@ -33,7 +34,7 @@ public class BlockBufferPool<T> {
 	
 	public void recycleByteBlocks(BlockArray<T> data,int start) {
 		synchronized (BlockBufferPool.this) {
-			int allowsize = UniqConfig.getBlockBufferSize() - this.freeByteBlocks.size();
+			int allowsize = UniqConfig.getBlockBufferPoolSize() - this.freeByteBlocks.size();
 			final int size = data.data.length;
 			for (int i = start; i < size; i++) {
 				if (i < allowsize) {
@@ -51,7 +52,7 @@ public class BlockBufferPool<T> {
         final int size = freeByteBlocks.size();
         final  BlockInterface<T> b;
 			if (0 == size) {
-				b = c.create(interval);
+				b = c.create();
 				mallocTimes.incrementAndGet();
 			} else {
 				b = freeByteBlocks.remove(size - 1);
@@ -98,16 +99,11 @@ public class BlockBufferPool<T> {
 	}
 	
 	
-	public void copy(BlockArray<T> newd, BlockArray<T> old) {
-		for (int i = 0; i < newd.data.length && i < old.data.length; i++) {
-			newd.data[i].copyFrom(old.data[i]);
-		}
-	}
 
 	public static CreateArr<Byte> BYTE_CREATE = new CreateArr<Byte>() {
 		@Override
-		public BlockInterface<Byte> create(int size) {
-			return new BlockByte(size);
+		public BlockInterface<Byte> create() {
+			return new BlockByte();
 		}
 
 		@Override
@@ -119,8 +115,8 @@ public class BlockBufferPool<T> {
 	public static CreateArr<Integer> INT_CREATE = new CreateArr<Integer>() {
 
 		@Override
-		public BlockInterface<Integer> create(int size) {
-			return new BlockInteger(size);
+		public BlockInterface<Integer> create() {
+			return new BlockInteger();
 		}
 
 		@Override
@@ -133,8 +129,8 @@ public class BlockBufferPool<T> {
 	public static CreateArr<Short> SHORT_CREATE = new CreateArr<Short>() {
 
 		@Override
-		public BlockInterface<Short> create(int size) {
-			return new BlockShort(size);
+		public BlockInterface<Short> create() {
+			return new BlockShort();
 		}
 
 		@Override
@@ -147,8 +143,8 @@ public class BlockBufferPool<T> {
 	public static CreateArr<Long> LONG_CREATE = new CreateArr<Long>() {
 
 		@Override
-		public BlockInterface<Long> create(int size) {
-			return new BlockLong(size);
+		public BlockInterface<Long> create() {
+			return new BlockLong();
 
 		}
 
@@ -162,8 +158,8 @@ public class BlockBufferPool<T> {
 
 	public static CreateArr<Double> DOUBLE_CREATE = new CreateArr<Double>() {
 		@Override
-		public BlockInterface<Double> create(int size) {
-			return new BlockDouble(size);
+		public BlockInterface<Double> create() {
+			return new BlockDouble();
 		}
 
 		@Override
@@ -174,162 +170,628 @@ public class BlockBufferPool<T> {
 	};
 
 	public static interface CreateArr<T> {
-		public BlockInterface<T> create(int size);
+		public BlockInterface<T> create();
 
 		public BlockInterface<T>[] createBlocks(int size);
 	}
 
+	private static class QuickArrayFillInt
+	{
+		private static int[] data_1=make(-1);
+
+		private static int[] make(int def)
+		{
+			int[] data=new int[BlockBufferPool.interval];
+			Arrays.fill(data, def);	
+			return data;
+		}
+		
+		public static void fill(int[] data,int v)
+		{
+			if(v==-1)
+			{
+				System.arraycopy(data_1, 0, data, 0,data_1.length);
+			}else{
+				Arrays.fill(data, v);	
+			}
+		}
+	}
+	
+	
+	private static class QuickArrayFillShort
+	{
+		private static short cmp=(short)-1;
+
+		private static short[] data_1=make(cmp);
+
+		private static short[] make(short def)
+		{
+			short[] data=new short[BlockBufferPool.interval];
+			Arrays.fill(data, def);	
+			return data;
+		}
+		
+		public static void fill(short[] data,short v)
+		{
+			if(v==cmp)
+			{
+				System.arraycopy(data_1, 0, data, 0,data_1.length);
+			}else{
+				Arrays.fill(data, v);	
+			}
+		}
+	}
+	
+	
+	private static class QuickArrayFillByte
+	{
+		private static byte cmp=(byte)-1;
+
+		private static byte[] data_1=make((byte)-1);
+
+		private static byte[] make(byte def)
+		{
+			byte[] data=new byte[BlockBufferPool.interval];
+			Arrays.fill(data, def);	
+			return data;
+		}
+		
+		public static void fill(byte[] data,byte v)
+		{
+			if(v==cmp)
+			{
+				System.arraycopy(data_1, 0, data, 0,data_1.length);
+			}else{
+				Arrays.fill(data, v);	
+			}
+		}
+	}
+	
+	private static class QuickArrayFillLong
+	{
+
+		private static long[] data_1=make(-1l);
+		private static long[] data_2=make(RamTermNumValue.TERMNUM_NAN_VALUE);
+
+
+		private static long[] make(long def)
+		{
+			long[] data=new long[BlockBufferPool.interval];
+			Arrays.fill(data, def);	
+			return data;
+		}
+		
+		public static void fill(long[] data,long v)
+		{
+			if(v==-1l)
+			{
+				System.arraycopy(data_1, 0, data, 0,data_1.length);
+			}else if(v==RamTermNumValue.TERMNUM_NAN_VALUE)
+			{
+				System.arraycopy(data_2, 0, data, 0,data_2.length);
+			}else{
+				Arrays.fill(data, v);	
+			}
+		}
+	
+	}
+	
+	private static class QuickArrayFillDouble
+	{
+
+		private static double[] data_1=make(-1d);
+		private static double dbl=(double)RamTermNumValue.TERMNUM_NAN_VALUE;
+		private static double[] data_2=make(dbl);
+
+
+		private static double[] make(double def)
+		{
+			double[] data=new double[BlockBufferPool.interval];
+			Arrays.fill(data, def);	
+			return data;
+		}
+		
+		public static void fill(double[] data,double v)
+		{
+			if(v==-1l)
+			{
+				System.arraycopy(data_1, 0, data, 0,data_1.length);
+			}else if(v==dbl)
+			{
+				System.arraycopy(data_2, 0, data, 0,data_2.length);
+			}else{
+				Arrays.fill(data, v);	
+			}
+		}
+	
+	}
 	
 	
 	public static class BlockInteger implements BlockInterface<Integer>
 	{
-		int[] data;
-		public BlockInteger(int size)
-		{
-			data=new int[size];
-		}
-
+		private boolean hasInit=false;
+		private int def=0;
+		private int[] data=null;
+		
 		@Override
 		public Integer get(int i) {
-			return data[i];
+			if(hasInit)
+			{
+				return data[i];
+			}
+			return def;
 		}
 
 		@Override
 		public void set(int i, Integer v) {
+			this.maybeinit();
 			data[i]=v;
 		}
 
 		@Override
 		public void allset(Integer v) {
-			Arrays.fill(data, v);	
+			this.def=v;
+			hasInit=false;
+		}
+		
+		private void maybeinit()
+		{
+			if(hasInit)
+			{
+				return ;
+			}
+			if(this.data==null)
+			{
+				data=new int[BlockBufferPool.interval];
+			}
+			
+			QuickArrayFillInt.fill(data, def);	
+			hasInit=true;
 		}
 
 		@Override
-		public void copyFrom(BlockInterface<Integer> v) {
-			BlockInteger old=(BlockInteger)v;
-			System.arraycopy(old.data, 0, this.data, 0,old.data.length);
+		public void replace(Integer a, Integer b) {
+			if(this.hasInit)
+			{
+				for(int i=0;i<this.data.length;i++)
+				{
+					if(this.data[i]==a)
+					{
+						this.data[i]=b;
+					}
+				}
+			}else if(this.def==a){
+				this.allset(b);
+			}
+					
 		}
+		
+		@Override
+		public void fillByInt(BlockInteger d,int skip){
+			if(d.hasInit)
+			{
+				if(this.hasInit)
+				{
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=d.data[i];
+						}
+					}
+				}else{
+					data=new int[BlockBufferPool.interval];
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=d.data[i];
+						}else{
+							data[i]=this.def;
+						}
+					}
+					hasInit=true;
+				}
+			}else if(d.def!=skip){
+				this.allset(d.def);
+			}
+		}
+
 	}
 	
 	public static class BlockShort implements BlockInterface<Short>
 	{
-		short[] data;
-		public BlockShort(int size)
-		{
-			data=new short[size];
-		}
+		private boolean hasInit=false;
+		private short def=0;
+		
+		short[] data=null;
 
 		@Override
 		public Short get(int i) {
-			return data[i];
+			if(hasInit)
+			{
+				return data[i];
+			}
+			return def;
+		}
+		
+		@Override
+		public void fillByInt(BlockInteger d,int skip){
+
+			if(d.hasInit)
+			{
+				if(this.hasInit)
+				{
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(short)d.data[i];
+						}
+					}
+				}else{
+					data=new short[BlockBufferPool.interval];
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(short)d.data[i];
+						}else{
+							data[i]=this.def;
+						}
+					}
+					hasInit=true;
+				}
+			}else if(d.def!=skip){
+				this.allset((short)d.def);
+			}
+		
+		
 		}
 
 		@Override
 		public void set(int i, Short v) {
+			this.maybeinit();
 			data[i]=v;
 		}
 
 		@Override
 		public void allset(Short v) {
-			Arrays.fill(data, v);
+			this.def=v;
+			hasInit=false;
 		
 		}
 		
+		private void maybeinit()
+		{
+			if(hasInit)
+			{
+				return ;
+			}
+			if(this.data==null)
+			{
+				data=new short[BlockBufferPool.interval];
+			}
+			
+			QuickArrayFillShort.fill(data, def);	
+			hasInit=true;
+		}
+
 		@Override
-		public void copyFrom(BlockInterface<Short> v) {
-			BlockShort old=(BlockShort)v;
-			System.arraycopy(old.data, 0, this.data, 0,old.data.length);
+		public void replace(Short a, Short b) {
+
+			if(this.hasInit)
+			{
+				for(int i=0;i<this.data.length;i++)
+				{
+					if(this.data[i]==a)
+					{
+						this.data[i]=b;
+					}
+				}
+			}else if(this.def==a){
+				this.allset(b);
+			}
+					
+		
+			
 		}
+		
+	
 	}
 	
 	public static class BlockLong implements BlockInterface<Long>
 	{
-		long[] data;
-		public BlockLong(int size)
-		{
-			data=new long[size];
-		}
+		private boolean hasInit=false;
+		private long def=0;
+		
+		long[] data=null;
+
 
 		@Override
 		public Long get(int i) {
-			return data[i];
+			if(hasInit)
+			{
+				return data[i];
+			}
+			return def;
+		}
+		
+		@Override
+		public void fillByInt(BlockInteger d,int skip){
+
+
+			if(d.hasInit)
+			{
+				if(this.hasInit)
+				{
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(long)d.data[i];
+						}
+					}
+				}else{
+					data=new long[BlockBufferPool.interval];
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(long)d.data[i];
+						}else{
+							data[i]=this.def;
+						}
+					}
+					hasInit=true;
+				}
+			}else if(d.def!=skip){
+				this.allset((long)d.def);
+			}
+		
 		}
 
 		@Override
 		public void set(int i, Long v) {
+			this.maybeinit();
 			data[i]=v;
 		}
 
 		@Override
 		public void allset(Long v) {
-			Arrays.fill(data, v);
+			this.def=v;
+			hasInit=false;
 		}
 		
-		@Override
-		public void copyFrom(BlockInterface<Long> v) {
-			BlockLong old=(BlockLong)v;
-			System.arraycopy(old.data, 0, this.data, 0,old.data.length);
+		private void maybeinit()
+		{
+			if(hasInit)
+			{
+				return ;
+			}
+			if(this.data==null)
+			{
+				data=new long[BlockBufferPool.interval];
+			}
+			
+			QuickArrayFillLong.fill(data, def);	
+			hasInit=true;
 		}
+
+		@Override
+		public void replace(Long a, Long b) {
+
+			if(this.hasInit)
+			{
+				for(int i=0;i<this.data.length;i++)
+				{
+					if(this.data[i]==a)
+					{
+						this.data[i]=b;
+					}
+				}
+			}else if(this.def==a){
+				this.allset(b);
+			}
+					
+		
+		}
+	
 	}
 	
 	
 	public static class BlockDouble implements BlockInterface<Double>
 	{
-		double[] data;
-		public BlockDouble(int size)
-		{
-			data=new double[size];
-		}
+		private boolean hasInit=false;
+		private double def=0;
+		
+		double[] data=null;
 
-		@Override
-		public void copyFrom(BlockInterface<Double> v) {
-			BlockDouble old=(BlockDouble)v;
-			System.arraycopy(old.data, 0, this.data, 0,old.data.length);
-		}
 		
 		@Override
 		public Double get(int i) {
-			return data[i];
+			if(hasInit)
+			{
+				return data[i];
+			}
+			return def;
 		}
 
 		@Override
 		public void set(int i, Double v) {
+			this.maybeinit();
 			data[i]=v;
 		}
 
 		@Override
 		public void allset(Double v) {
-			Arrays.fill(data, v);
+			this.def=v;
+			hasInit=false;
+		}
+		
+		@Override
+		public void fillByInt(BlockInteger d,int skip){
+
+
+			if(d.hasInit)
+			{
+				if(this.hasInit)
+				{
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(double)d.data[i];
+						}
+					}
+				}else{
+					data=new double[BlockBufferPool.interval];
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(double)d.data[i];
+						}else{
+							data[i]=this.def;
+						}
+					}
+					hasInit=true;
+				}
+			}else if(d.def!=skip){
+				this.allset((double)d.def);
+			}
+		
+		}
+		
+		private void maybeinit()
+		{
+			if(hasInit)
+			{
+				return ;
+			}
+			if(this.data==null)
+			{
+				data=new double[BlockBufferPool.interval];
+			}
+			
+			QuickArrayFillDouble.fill(data, def);	
+			hasInit=true;
+		}
+
+		@Override
+		public void replace(Double a, Double b) {
+
+			if(this.hasInit)
+			{
+				for(int i=0;i<this.data.length;i++)
+				{
+					if(this.data[i]==a)
+					{
+						this.data[i]=b;
+					}
+				}
+			}else if(this.def==a){
+				this.allset(b);
+			}
+					
+		
+			
 		}
 	}
 	
 	public static class BlockByte implements BlockInterface<Byte>
 	{
-		public byte[] data;
-		public BlockByte(int size)
-		{
-			data=new byte[size];
-		}
-
-		@Override
-		public void copyFrom(BlockInterface<Byte> v) {
-			BlockByte old=(BlockByte)v;
-			System.arraycopy(old.data, 0, this.data, 0,old.data.length);
-		}
+		private boolean hasInit=false;
+		private byte def=0;
+		
+		public byte[] data=null;
+	
 		
 		@Override
 		public Byte get(int i) {
-			return data[i];
+			if(hasInit)
+			{
+				return data[i];
+			}
+			return def;
 		}
 
 		@Override
 		public void set(int i, Byte v) {
+			this.maybeinit();
 			data[i]=v;
+		}
+		
+		@Override
+		public void fillByInt(BlockInteger d,int skip){
+
+			if(d.hasInit)
+			{
+				if(this.hasInit)
+				{
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(byte)d.data[i];
+						}
+					}
+				}else{
+					data=new byte[BlockBufferPool.interval];
+					for(int i=0;i<d.data.length;i++)
+					{
+						if(d.data[i]!=skip)
+						{
+							data[i]=(byte)d.data[i];
+						}else{
+							data[i]=this.def;
+						}
+					}
+					hasInit=true;
+				}
+			}else if(d.def!=skip){
+				this.allset((byte)d.def);
+			}
+		
+		
 		}
 
 		@Override
 		public void allset(Byte v) {
-			Arrays.fill(data, v);
+			this.def=v;
+			hasInit=false;
+		}
+		
+		private void maybeinit()
+		{
+			if(hasInit)
+			{
+				return ;
+			}
+			if(this.data==null)
+			{
+				data=new byte[BlockBufferPool.interval];
+			}
+			
+			QuickArrayFillByte.fill(data, def);	
+			hasInit=true;
+		}
+
+		@Override
+		public void replace(Byte a, Byte b) {
+
+			if(this.hasInit)
+			{
+				for(int i=0;i<this.data.length;i++)
+				{
+					if(this.data[i]==a)
+					{
+						this.data[i]=b;
+					}
+				}
+			}else if(this.def==a){
+				this.allset(b);
+			}
 		}
 	}
 	
@@ -338,17 +800,37 @@ public class BlockBufferPool<T> {
 		public  K get(int i);
 		public  void set(int i,K v);
 		public  void allset(K v);
-		public  void copyFrom( BlockInterface<K> v);
+		
+		public void fillByInt(BlockInteger d,int skip);
+		public void replace(K a,K b);
+
 
 	}
 	
 	public static class BlockArray<K> {
 		private int size = 0;
-		private BlockInterface<K>[] data;
+		public BlockInterface<K>[] data;
 		public BlockArray(BlockInterface<K>[] data, int size) {
 			this.data = data;
 			this.size = size;
 		}
+		
+		public void fillByInt(BlockArray<Integer> d,int skip)
+		{
+			for(int i=0;i<d.data.length&&i<this.data.length;i++)
+			{
+				this.data[i].fillByInt((BlockInteger)(d.data[i]), skip);
+			}
+		}
+		
+		public void replace(K a,K b)
+		{
+			for(int i=0;i<this.data.length;i++)
+			{
+				this.data[i].replace(a,b);
+			}
+		}
+		
 		public K get(int i) {
 			int block = i >>> intervalBits;
 			int pos = i & intervalMask;

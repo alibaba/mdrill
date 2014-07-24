@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.component.ResponseBuilder.ScheduleInfo;
 
 public final class ShardResponse {
   private ShardRequest req;
@@ -26,8 +27,16 @@ public final class ShardResponse {
   private int rspCode;
   private Throwable exception;
   private SolrResponse rsp;
+  private ScheduleInfo scheduleInfo;
+  public ScheduleInfo getScheduleInfo() {
+	return scheduleInfo;
+}
 
-  @Override
+public void setScheduleInfo(ScheduleInfo scheduleInfo) {
+	this.scheduleInfo = scheduleInfo;
+}
+
+@Override
   public String toString() {
     return "ShardResponse:{shard="+shard+",shardAddress="+shardAddress
             +"\n\trequest=" + req

@@ -5,7 +5,9 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class MdrillDriver  implements Driver{
@@ -20,7 +22,7 @@ public class MdrillDriver  implements Driver{
 	  private static final String URL_PREFIX = "jdbc:mdrill://";
 	  private static final String URL_PREFIX_OLD = "jdbc:higo://";
 	
-	@Override
+	
 	public Connection connect(String url, Properties info) throws SQLException {
 		return new MdrillConnection(url, null);
 	}
@@ -29,7 +31,7 @@ public class MdrillDriver  implements Driver{
 		    return Pattern.matches(URL_PREFIX + ".*", url)||Pattern.matches(URL_PREFIX_OLD + ".*", url);
 	}
 
-	@Override
+	
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info)
 			throws SQLException {
 		 DriverPropertyInfo infoProp = new DriverPropertyInfo("url",url);
@@ -38,19 +40,25 @@ public class MdrillDriver  implements Driver{
 		return dpi;
 	}
 
-	@Override
+	
 	public int getMajorVersion() {
 		return 1;
 	}
 
-	@Override
+	
 	public int getMinorVersion() {
 		return 1;
 	}
 
-	@Override
+	
 	public boolean jdbcCompliant() {
 		return false;
+	}
+
+	
+	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

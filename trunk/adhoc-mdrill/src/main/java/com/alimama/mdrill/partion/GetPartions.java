@@ -15,6 +15,7 @@ public class GetPartions {
 		public String urlShards = "";
 		public String urlMSs = "";
 		public String randomShard = "";
+		public String[] partions = null;
 	}
 
 	public static class TablePartion {
@@ -44,9 +45,10 @@ public class GetPartions {
 	public static Shards getshard(TablePartion pname, String[] partions,
 			ShardsList[] cores, ShardsList[] tmp) throws Exception {
 		String projectName = pname.name;
-
+		
 		Shards rtn = new Shards();
-
+		rtn.partions=partions;
+		
 		Random rdm = new Random();
 		ShardsList[] ms = null;
 		if (tmp != null && tmp.length > 0) {
@@ -62,16 +64,20 @@ public class GetPartions {
 			ms = cores;
 		}
 		if (cores != null && cores.length > 0) {
-			int count = 0;
+			StringBuffer buff=new StringBuffer();
 			for (int i = 0; i < cores.length; i++) {
 				ShardsList c = cores[i];
-				for (String part : partions) {
-					rtn.urlShards += c.randomGet() + "/solr/" + projectName
-							+ "@" + part + ",";
-				}
-				count++;
+				buff.append(c.randomGet() + "/solr/" + projectName
+						+ "@_mdrillshard_,");
+//				for (String part : partions) {
+//					rtn.urlShards += c.randomGet() + "/solr/" + projectName
+//							+ "@" + part + ",";
+//				}
+//				count++;
 			}
+			rtn.urlShards=buff.toString();
 		}
+		
 
 		if (ms != null && ms.length > 0) {
 			int count = 0;

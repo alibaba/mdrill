@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.compare.ColumnKey;
 import org.apache.solr.request.compare.GroupbyRow;
@@ -43,6 +44,7 @@ import com.alimama.mdrill.json.JSONArray;
 import com.alimama.mdrill.json.JSONException;
 import com.alimama.mdrill.json.JSONObject;
 import com.alimama.mdrill.partion.GetPartions;
+import com.alimama.mdrill.ui.service.MdrillRequest;
 import com.alimama.mdrill.ui.service.MdrillService;
 import com.alimama.mdrill.utils.EncodeUtils;
 import com.alimama.mdrill.utils.HadoopBaseUtils;
@@ -332,7 +334,9 @@ public class WebServiceParams {
 	{
 		SolrQuery query = new SolrQuery();
 		query.setParam("showlog", "1");
-		query.setParam("shards", shard.urlShards);
+		query.setParam(ShardParams.SHARDS, shard.urlShards);
+		query.setParam(ShardParams.PARTIONS, shard.partions);
+
 		query.setParam("mlogtime", fmt.format(new Date()));
 		query.setParam(FacetParams.MERGER_MAX_SHARDS, String.valueOf(UniqConfig.getMaxMergerShard()));
 		query.setParam(FacetParams.MERGER_SERVERS, shard.urlMSs);
@@ -1258,52 +1262,49 @@ public static OperateType parseOperateType(int operate)
 		return qr;
 	}
 	
-	public static void setGroupByCrc(QueryResponse qr,QueryResponse qr2) throws JSONException
-	{
-	 StringBuffer buff=new StringBuffer();
-	 NamedList ff = (NamedList) qr.get_mdrillData();
-	 Map<Long,String> crcvalue = (Map<Long,String>) qr2.get_mdrillData();
+	public static void setGroupByCrc(QueryResponse qr, QueryResponse qr2)
+			throws JSONException {
+		StringBuffer buff = new StringBuffer();
+		NamedList ff = (NamedList) qr.get_mdrillData();
 
-			
-			ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
+		ArrayList<Object> facetCounts = (ArrayList<Object>) ff.get("list");
 
-			int fcsize = 0;
-			if(facetCounts != null){
-				fcsize = facetCounts.size();
-			}
-			
-			ArrayList<Object> newlist=new ArrayList<Object>();
-			for(int i=0;i<fcsize;i++){
-				GroupbyRow row = new GroupbyRow((ArrayList<Object>)facetCounts.get(i));
-				row.setKey(new ColumnKey(crcvalue.get(row.getKey().getCrc())));
-				newlist.add(row.toNamedList());
-			}
-			
-			ff.remove("list");
-			ff.add("list",newlist);
+		int fcsize = 0;
+		if (facetCounts != null) {
+			fcsize = facetCounts.size();
+		}
+
+		Map<Long, String> crcvalue = (Map<Long, String>) qr2.get_mdrillData();
+		ArrayList<Object> newlist = new ArrayList<Object>();
+		for (int i = 0; i < fcsize; i++) {
+			GroupbyRow row = new GroupbyRow((ArrayList<Object>) facetCounts.get(i));
+			row.setKey(new ColumnKey(crcvalue.get(row.getKey().getCrc())));
+			newlist.add(row.toNamedList());
+		}
+
+		ff.remove("list");
+		ff.add("list", newlist);
 	}
 	
-	public static String getGroupByCrc(QueryResponse qr) throws JSONException
-		{
-		 StringBuffer buff=new StringBuffer();
-		 NamedList ff = (NamedList) qr.get_mdrillData();
-				
-				ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
+	public static String getGroupByCrc(QueryResponse qr) throws JSONException {
+		StringBuffer buff = new StringBuffer();
+		NamedList ff = (NamedList) qr.get_mdrillData();
 
-				int fcsize = 0;
-				if(facetCounts != null){
-					fcsize = facetCounts.size();
-				}
-				String join="";
-				for(int i=0;i<fcsize;i++){
-					GroupbyRow row = new GroupbyRow((ArrayList<Object>)facetCounts.get(i));
-					buff.append(join);
-					buff.append(row.getKey().getCrc());
-					join=",";
-				}
-				
-				return buff.toString();
+		ArrayList<Object> facetCounts = (ArrayList<Object>) ff.get("list");
+
+		int fcsize = 0;
+		if (facetCounts != null) {
+			fcsize = facetCounts.size();
 		}
+		String join = "";
+		for (int i = 0; i < fcsize; i++) {
+			GroupbyRow row = new GroupbyRow((ArrayList<Object>) facetCounts.get(i));
+			buff.append(join);
+			buff.append(row.getKey().getCrc());
+			join = ",";
+		}
+		return buff.toString();
+	}
 	
 	public static void setDetailCrc(QueryResponse qr,QueryResponse qr2) throws JSONException
 	{
@@ -1367,23 +1368,18 @@ public static OperateType parseOperateType(int operate)
 
 		NamedList ff = (NamedList) qr.get_mdrillData();
 		
-		ArrayList<Object> count=(ArrayList<Object>) ff.get("count");
-		RecordCount p = new RecordCount(count);
-		
-		long totalRecord = p.getValue();
+		long totalRecord = (new RecordCount((ArrayList<Object>) ff.get("count"))).getValue();
 				
-			if(groupValueCacheLast==null)
-			{
-				jsonObj.put("code", "1"); 
-				jsonObj.put("message", "success"); 
-				jsonObj.put("total", totalRecord);
-			}
+		if(groupValueCacheLast==null)
+		{
+			jsonObj.put("code", "1"); 
+			jsonObj.put("message", "success"); 
+			jsonObj.put("total", totalRecord);
+		}
 			
 			JSONObject jsonObj2 = new JSONObject(); 
 			JSONArray jsonArray = new JSONArray();
-//			JSONArray jsonArray_debug = new JSONArray();
 
-			
 			ArrayList<Object> facetCounts=(ArrayList<Object>) ff.get("list");
 
 			int fcsize = 0;
@@ -1414,37 +1410,23 @@ public static OperateType parseOperateType(int operate)
 				for(Entry<String,GroupbyRow> e:groupValueCacheLast.entrySet())
 				{
 			   		JSONObject jo = new JSONObject();
-//			   		JSONObject jo_debug = new JSONObject();
-
-//			   		jo_debug.put("__higo_gruss__", "false");
 					String groupValues = e.getKey();
 					GroupbyRow row = groupValueCache.get(groupValues);
 					if(row==null)
 					{
 						row=e.getValue();
-//						jo_debug.put("__higo_gruss__", "true");
 					}
 					row.setCross(crossFs, distFS);
 
-					//set group by result
 				   	setGroup(jo, groupFields, joins, groupValues);
-				   	//set stat result
 					setStat(jo, showFields, row);
-					
-					//set group by result
-//				   	setGroup(jo_debug, groupFields, joins, groupValues);
-				   	//set stat result
-//					setStat(jo_debug, showFields, row);
 					jsonArray.add(index, jo);
-//					jsonArray_debug.add(index, jo_debug);
 					index++;
 				}
 			}
 			
 			jsonObj2.put("docs", jsonArray);
-			
-//			jsonObj2.put("docs_debug", jsonArray_debug);
-			
+						
 			jsonObj.put("data", jsonObj2);
 			return groupValueCache;
 	}
@@ -1454,7 +1436,7 @@ public static OperateType parseOperateType(int operate)
 		String[] values = EncodeUtils.decode(groupValues.split(UniqConfig.GroupJoinString(),-1));
 	   	
 	   	for(int j =0;j<values.length&&j<groupFields.size();j++){
-	   		if(groupFields.get(j).equals("higoempty_groupby_forjoin_l"))
+	   		if(groupFields.get(j).startsWith("higoempty_groupby_"))
 	   		{
 	   			continue;
 	   		}
@@ -1664,7 +1646,7 @@ public static OperateType parseOperateType(int operate)
 				
 		}
 	
-	public static void setGroupByQuery(SolrQuery query, ArrayList<String> fqList,ArrayList<String> groupFields,int start,int rows,HashSet<String> realDistFieldMap,HashSet<String> realFieldMap,SortParam sortType,HigoJoinParams[] joins,HashMap<String,GroupbyRow> groupValueCache)
+	public static void setGroupByQuery(SolrQuery query, ArrayList<String> fqList,int start,int rows,final MdrillRequest req,HigoJoinParams[] joins,HashMap<String,GroupbyRow> groupValueCache)
 	{
 		query.setParam("start","0");
 		query.setParam("rows", "0");
@@ -1679,17 +1661,17 @@ public static OperateType parseOperateType(int operate)
 		query.setParam("facet.cross.offset", ""+start);
 		query.setParam("facet.cross.limit", ""+rows);
 		
-		if(realFieldMap.size() > 0)
+		if(req.commonStatMap.size() > 0)
 		{
-			query.setParam(FacetParams.FACET_CROSS_FL,realFieldMap.toArray(new String[realFieldMap.size()]));
+			query.setParam(FacetParams.FACET_CROSS_FL,req.commonStatMap.toArray(new String[req.commonStatMap.size()]));
 		}
 		
-		if(realDistFieldMap.size() > 0)
+		if(req.distStatFieldMap.size() > 0)
 		{
-			query.setParam(FacetParams.FACET_CROSSDIST_FL,realDistFieldMap.toArray(new String[realDistFieldMap.size()]));
+			query.setParam(FacetParams.FACET_CROSSDIST_FL,req.distStatFieldMap.toArray(new String[req.distStatFieldMap.size()]));
 		}
 
-		for(String gf : groupFields){
+		for(String gf : req.groupbyFields){
 			query.addFacetField(gf);
 		}
 		
@@ -1715,20 +1697,18 @@ public static OperateType parseOperateType(int operate)
 			{
 				query.add(HigoJoinUtils.getFq(p.tablename),fq);
 			}
-			query.add(HigoJoinUtils.getsortField(p.tablename),p.sort);
-
-			
+			query.add(HigoJoinUtils.getsortField(p.tablename),p.sort);			
 		}
 		
 		
-		if(sortType.sortField!=null && !sortType.sortField.equals("")){
-			query.setParam("facet.cross.sort.desc", sortType.order);
-			query.setParam("facet.cross.sort.fl", sortType.sortField);
-			query.setParam("facet.cross.sort.tp", sortType.sortType);
-			query.setParam("facet.cross.sort.cp", sortType.cmptype);
+		if(req.sortType.sortField!=null && !req.sortType.sortField.equals("")){
+			query.setParam("facet.cross.sort.desc", req.sortType.order);
+			query.setParam("facet.cross.sort.fl", req.sortType.sortField);
+			query.setParam("facet.cross.sort.tp",req.sortType.sortType);
+			query.setParam("facet.cross.sort.cp", req.sortType.cmptype);
 		}else
 		{
-			query.setParam("facet.cross.sort.desc", sortType.order);
+			query.setParam("facet.cross.sort.desc", req.sortType.order);
 			query.setParam("facet.cross.sort.fl", "higoempty_sort_s");
 			query.setParam("facet.cross.sort.tp", "index");
 			query.setParam("facet.cross.sort.cp", "string");
@@ -1738,8 +1718,7 @@ public static OperateType parseOperateType(int operate)
 	
 	
 	
-	public static void setDetailByQuery(SolrQuery query, ArrayList<String> fqList,
-			ArrayList<String> showFields,int start,int rows,SortParam sortType,HigoJoinParams[] joins,boolean isfdt
+	public static void setDetailByQuery(SolrQuery query, ArrayList<String> fqList,MdrillRequest req,HigoJoinParams[] joins
 	)
 	{
 		query.setParam("start","0");
@@ -1753,42 +1732,41 @@ public static OperateType parseOperateType(int operate)
 		query.setParam(FacetParams.FACET_CROSS_DETAIL, "true");
 		query.setParam("facet.cross", "true");
 		query.setParam("facet.cross.join", UniqConfig.GroupJoinString());
-		query.setParam("facet.cross.offset", ""+start);
-		query.setParam("facet.cross.limit", ""+rows);
-		query.setParam("fetchfdt", isfdt);
+		query.setParam("facet.cross.offset", ""+req.start);
+		query.setParam("facet.cross.limit", ""+req.rows);
+		query.setParam("fetchfdt", false);
 		
-		if(!isfdt)
+
+		for(HigoJoinParams p:joins)
 		{
-			for(HigoJoinParams p:joins)
+			query.add(HigoJoinUtils.getTables(), p.tablename);
+			query.add(HigoJoinUtils.getPath(p.tablename),p.hdfsPath);
+			query.add(HigoJoinUtils.getLeftField(p.tablename),p.leftkey);
+			query.add(HigoJoinUtils.getRightField(p.tablename),p.rightkey);
+			for(String fl:p.fl)
 			{
-				query.add(HigoJoinUtils.getTables(), p.tablename);
-				query.add(HigoJoinUtils.getPath(p.tablename),p.hdfsPath);
-				query.add(HigoJoinUtils.getLeftField(p.tablename),p.leftkey);
-				query.add(HigoJoinUtils.getRightField(p.tablename),p.rightkey);
-				for(String fl:p.fl)
-				{
-					query.add(HigoJoinUtils.getFields(p.tablename),fl);
-				}
-				for(String fq:p.fq)
-				{
-					query.add(HigoJoinUtils.getFq(p.tablename),fq);
-				}
-				query.add(HigoJoinUtils.getsortField(p.tablename),p.sort);
-	
-				
+				query.add(HigoJoinUtils.getFields(p.tablename),fl);
 			}
+			for(String fq:p.fq)
+			{
+				query.add(HigoJoinUtils.getFq(p.tablename),fq);
+			}
+			query.add(HigoJoinUtils.getsortField(p.tablename),p.sort);
+
+			
 		}
+	
 		
-		for(String gf : showFields){
+		for(String gf : req.showFields){
 			query.addFacetField(gf);
 		}
 		
-		if(sortType.sortField!=null && !sortType.sortField.equals("")&&!isfdt){
-			query.setParam("facet.cross.sort.desc", sortType.order);
-			query.setParam("facet.cross.sort.fl", sortType.sortField);
-			query.setParam("facet.cross.sort.cp", sortType.cmptype);
+		if(req.sortType.sortField!=null && !req.sortType.sortField.equals("")){
+			query.setParam("facet.cross.sort.desc", req.sortType.order);
+			query.setParam("facet.cross.sort.fl", req.sortType.sortField);
+			query.setParam("facet.cross.sort.cp", req.sortType.cmptype);
 		}else{
-			query.setParam("facet.cross.sort.desc", sortType.order);
+			query.setParam("facet.cross.sort.desc", req.sortType.order);
 			query.setParam("facet.cross.sort.fl", "higoempty_count_s");
 			query.setParam("facet.cross.sort.cp", "tdouble");
 		}

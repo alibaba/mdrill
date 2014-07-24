@@ -77,7 +77,7 @@ public class StormZkClusterState implements StormClusterState {
 						RunnableCallback fn = null;
 						if (root.equals(Cluster.ASSIGNMENTS_ROOT)) {
 							if (size == 1) {
-								//ÉèÖÃnull£¬·µ»Øoldvalue
+								//ï¿½ï¿½ï¿½ï¿½nullï¿½ï¿½ï¿½ï¿½ï¿½ï¿½oldvalue
 								fn = assignments_callback.getAndSet(null);
 							} else {
 								params = toks.get(1);
@@ -100,7 +100,7 @@ public class StormZkClusterState implements StormClusterState {
 						}
 						
 						if (fn != null) {
-							//FIXME ºÎ´¦ÉèÖÃÕâÈý¸ö²ÎÊý£¿£¿
+							//FIXME ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 							//fn.setArgs(params, zkEventTypes, path);
 							fn.run();
 						}
@@ -402,11 +402,27 @@ public class StormZkClusterState implements StormClusterState {
 	}
 	
 	@Override
-	public void higo_base(String tablename, RunnableCallback callback) {
+	public List<Integer> higo_base(String tablename, RunnableCallback callback) {
 		if (callback != null) {
 			higo_base_callback.put(tablename, callback);
 		}
+		
+		
+		String tablePath = Cluster.higo_table(tablename);
+
+		List<String> list = cluster_state.get_children(tablePath, callback != null);
+
+		List<Integer> rtn = new ArrayList<Integer>();
+		if(list!=null)
+		{
+			for (String str : list) {
+				rtn.add(Integer.parseInt(str));
+			}
+		}
+		
+		return rtn;
 	}
+	
 	
 	@Override
 	public List<Integer> higo_ids(String tablename) {
@@ -424,6 +440,8 @@ public class StormZkClusterState implements StormClusterState {
 		}
 		return rtn;
 	}
+	
+	
 	
 	@Override
 	public List<String> higo_tableList() {

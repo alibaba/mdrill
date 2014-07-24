@@ -10,11 +10,11 @@ import java.util.Map.Entry;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.MergeShards;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.component.ResponseBuilder.ScheduleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alimama.mdrill.utils.UniqConfig;
-
 
 /**
  * 海狗的查询调度
@@ -24,23 +24,56 @@ import com.alimama.mdrill.utils.UniqConfig;
 public class MergerSchedule {
 	protected static Logger log = LoggerFactory.getLogger(MergerSchedule.class);
 
-	public static void schedule(SolrParams params, 
+	
+	public static int countSize(HashMap<String, AssginShard> host2AssginShard)
+	{
+		int size=0;
+		for(Entry<String, AssginShard> e:host2AssginShard.entrySet())
+    	{
+			size+=e.getValue().shards.size();
+    	}
+		
+		return size;
+	}
+	public static ScheduleInfo schedule(SolrParams params, 
 			List<String> lst,
-			List<String> mslist, 
-			ResponseBuilder rb) {
+			List<String> mslist, String[] shardpartions) {
+	    ScheduleInfo scheduleInfo=new ScheduleInfo();
+	    scheduleInfo.partions=shardpartions;
+		scheduleInfo.hasSubShards = false;
 
 		boolean isfacet = params.getBool(FacetParams.FACET_CROSS, false);
-
-		int size = lst.size();
 		Integer maxshards = params.getInt(FacetParams.MERGER_MAX_SHARDS,UniqConfig.getMaxMergerShard());
-	    HashMap<String, AssginShard> host2AssginShard=assignByHost(lst, mslist);
+	    HashMap<String, AssginShard> host2AssginShard=MergerSchedule.assignByHost(lst, mslist);
 	    int hostsize=host2AssginShard.size();
+	    
+	    int size=countSize(host2AssginShard);
+	    if(maxshards >= size|| hostsize<=1|| !isfacet)
+	    {
+	    	if(shardpartions!=null&&shardpartions.length>0)
+		    {
+		    	//如果只剩下一个hosts的，需要将partions展开
+		    	for(Entry<String, AssginShard> e:host2AssginShard.entrySet())
+		    	{
+		    		e.getValue().expand(shardpartions);
+		    	}
+		    	scheduleInfo.partions=null;
+				log.info("MergerSchedule fill:"+size+"=="+host2AssginShard.toString());
+		    }
+	    }
+	    
+	    size=countSize(host2AssginShard);
 		if ((maxshards >= size&&hostsize<=1) || !isfacet) {
-			rb.lockType=ResponseBuilder.RequestLockType.shards;
-
-			rb.shards = lst.toArray(new String[lst.size()]);
-			log.info("MergerSchedule shards:"+Arrays.toString(rb.shards));
-			return ;
+			
+			ArrayList<String> shardlist=new ArrayList<String>();
+			for(Entry<String, AssginShard> e:host2AssginShard.entrySet())
+	    	{
+				shardlist.addAll(e.getValue().shards);
+	    	}
+			
+			scheduleInfo.shards=shardlist.toArray(new String[shardlist.size()]);
+			log.info("MergerSchedule shards:"+Arrays.toString(scheduleInfo.shards));
+			return scheduleInfo;
 		} 
 
 
@@ -65,20 +98,18 @@ public class MergerSchedule {
 	    
 	    if(hostsize<=1)
 	    {
-			rb.lockType=ResponseBuilder.RequestLockType.singlehosts;
-	    	scheduleSingleHost(result.get(0), rb, maxshards);
-	    	return ;
+	    	scheduleSingleHost(result.get(0), scheduleInfo, maxshards);
+	    	return scheduleInfo;
 	    }
 	    
 		int shardcnt = result.size();
 		
-		rb.lockType=ResponseBuilder.RequestLockType.multy;
-		rb.shards = new String[shardcnt];
-		rb.subShards = new String[shardcnt];
-		rb.issubshard = true;
+		scheduleInfo.shards = new String[shardcnt];
+		scheduleInfo.subShards = new String[shardcnt];
+		scheduleInfo.hasSubShards = true;
 		for (int i = 0; i < shardcnt; i++) {
 			AssginShard as = result.get(i);
-			rb.shards[i] = as.randomMerger();
+			scheduleInfo.shards[i] = as.randomMerger();
 			StringBuffer subShards = new StringBuffer();
 			String joinchar = "";
 			for (String s : as.shards) {
@@ -86,15 +117,18 @@ public class MergerSchedule {
 				subShards.append(s);
 				joinchar = ",";
 			}
-			rb.subShards[i] = subShards.toString();
-			log.info("MergerSchedule host:"+rb.shards[i] + "=>>"+ rb.subShards[i]);
+			scheduleInfo.subShards[i] = subShards.toString();
+			log.info("MergerSchedule host:"+scheduleInfo.shards[i] + "=>>"+ scheduleInfo.subShards[i]);
 		}
+		
+		return scheduleInfo;
 	    
 	}
 	
 	
 	private static class AssginShard{
 		public List<String> ms=null;
+	
 		public List<String> shards=null;
 		public AssginShard(List<String> ms, List<String> shards) {
 			super();
@@ -102,11 +136,40 @@ public class MergerSchedule {
 			this.shards = shards;
 		}
 		
+		public void expand(String[] partions)
+		{
+			List<String> tmp=new ArrayList<String>(shards.size()*partions.length);
+			
+			for(String s:this.shards)
+			{
+				for(String p:partions)
+				{
+					if(!p.isEmpty())
+					{
+						tmp.add(s.replaceAll("_mdrillshard_", p));
+					}
+				}
+			}
+			this.shards=tmp;
+		}
+		
+		int index=-1;
 		public String randomMerger()
 		{
-			Integer index = (((int) (Math.random() * 100000)) % this.ms.size());
-			return this.ms.get(index);
+			if(this.index<0)
+			{
+				this.index=(int) (Math.random() * 100000);
+			}
+			
+			Integer pos = (this.index++ % this.ms.size());
+			return this.ms.get(pos);
 		}
+		
+		@Override
+		public String toString() {
+			return "AssginShard [ms=" + ms + ", shards=" + shards + "]";
+		}
+
 	}
 	
 	private static HashMap<String,AssginShard> assignByHost(List<String> lst,
@@ -178,43 +241,23 @@ public class MergerSchedule {
 	}
 	
 
-	private static void scheduleSingleHost(AssginShard assign0,ResponseBuilder rb,Integer maxshards)
-	{
+	private static void scheduleSingleHost(AssginShard assign0,
+			ScheduleInfo scheduleInfo, Integer maxshards) {
 		int numshards = (assign0.shards.size() / maxshards) + 1;
 		if (numshards > maxshards) {
 			numshards = maxshards;
 		}
-      	  
-      	HashMap<String,ArrayList<String>> listByShard=MergeShards.getByHostport(assign0.shards);
-        HashMap<String,ArrayList<String>> mslistByShard=MergeShards.getByHostport(assign0.ms);
-    	  String[] ssubshards=MergeShards.get(listByShard, numshards);
-       	  String[] msShards=MergeShards.get(mslistByShard, numshards);
-       	  rb.shards=new String[ssubshards.length];
-       	  rb.subShards=new String[ssubshards.length];
-       	  rb.issubshard=true;
-       	  for(int i=0;i<ssubshards.length;i++)
-       	  {
-             	StringBuffer subShards=new StringBuffer();
-         		String[] cols=ssubshards[i].split(",");
-         		Integer index=(((int)(Math.random()*100000))%msShards.length);
-         		String[] msServer=msShards[index].split(",");
-         		int rindex=(int) (Math.random()*(msServer.length-1))+1;
-         		rb.shards[i]=msServer[rindex];
-         		
-         		String joinchar="";
-         		for(int j=1;j<cols.length;j++)
-         		{
-         			subShards.append(joinchar);
-         			subShards.append(cols[j]);
-         			joinchar=",";
-         		}
-         		rb.subShards[i]=subShards.toString();
-         		log.info("shedule by single:"+rb.shards[i]+"=>>"+rb.subShards[i]);
-       	  }
-       	  
-		  log.info("MergerSchedule scheduleSingleHost:"+rb.shards.length+">>"+numshards);
+		String[] ssubshards = MergeShards.split(assign0.shards, numshards);
+		scheduleInfo.shards = new String[ssubshards.length];
+		scheduleInfo.subShards = new String[ssubshards.length];
+		scheduleInfo.hasSubShards = true;
+		for (int i = 0; i < ssubshards.length; i++) {
+			scheduleInfo.shards[i] = assign0.randomMerger();
+			scheduleInfo.subShards[i] = ssubshards[i];
+			log.info("shedule by single:" + scheduleInfo.shards[i] + "=>>"	+ scheduleInfo.subShards[i]);
+		}
 
-    
+		log.info("MergerSchedule scheduleSingleHost:"+ scheduleInfo.shards.length + ">>" + numshards);
 	}
 	
 }

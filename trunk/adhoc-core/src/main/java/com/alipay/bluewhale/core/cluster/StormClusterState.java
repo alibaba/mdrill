@@ -10,7 +10,7 @@ import com.alipay.bluewhale.core.task.error.TaskError;
 import com.alipay.bluewhale.core.task.heartbeat.TaskHeartbeat;
 
 /**
- * 操作storm在zk上的节点信息
+ * 锟斤拷锟斤拷storm锟斤拷zk锟较的节碉拷锟斤拷息
  */
 public interface StormClusterState {
 	public List<String> assignments(RunnableCallback callback);
@@ -60,5 +60,5 @@ public interface StormClusterState {
 	void higo_remove(String tablename);
 	void higo_remove_task(String tablename, Integer taskId);
 	List<String> higo_tableList();
-	void higo_base(String tablename, RunnableCallback callback);
+	List<Integer> higo_base(String tablename, RunnableCallback callback);
 }

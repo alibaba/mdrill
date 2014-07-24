@@ -179,14 +179,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 		
 		QueryVal qv =new QueryVal();
 		qv.dset=docset;
-		 GrobalCache.fieldValueCache.put(qk, qv);
+		 GrobalCache.fieldValueCache_fq.put(qk, qv);
 	}
 
 	public DocSet filterCacheGet(Query q) {
 		
 		QueryKey qk=new QueryKey(q,this.uuid);
 		
-		QueryVal qv =(QueryVal) GrobalCache.fieldValueCache.get(qk);
+		QueryVal qv =(QueryVal) GrobalCache.fieldValueCache_fq.get(qk);
 		if (qv != null) {
 			return qv.dset;
 		}
@@ -853,7 +853,7 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
         if ((flags & NO_CHECK_QCACHE)==0) {
         	
         	QueryResultKeyCache qk=new QueryResultKeyCache(key,this.uuid);
-        	QueryVal qv =(QueryVal) GrobalCache.fieldValueCache.get(qk);
+        	QueryVal qv =(QueryVal) GrobalCache.fieldValueCache_fq.get(qk);
         	superset=null;
     		if (qv != null) {
     			superset=qv.dlist;
@@ -963,7 +963,7 @@ public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexRe
     	QueryVal qv =new QueryVal();
     	qv.dlist=superset;
     	
-    	GrobalCache.fieldValueCache.put(qk, qv);
+    	GrobalCache.fieldValueCache_fq.put(qk, qv);
     }
   }
 

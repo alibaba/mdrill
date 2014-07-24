@@ -18,6 +18,7 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.ResponseBuilder.ScheduleInfo;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -41,6 +42,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.commons.httpclient.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -71,7 +73,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     for(String c : list){
       SearchComponent comp = core.getSearchComponent( c );
       components.add(comp);
-      log.info("Adding  component:"+comp);
+//      log.info("Adding  component:"+comp);
     }
 
   }
@@ -103,15 +105,15 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 	 	return ;
     }
     
+    
+
     String mergeServers=paramsr.get(FacetParams.MERGER_SERVERS);
- 	if (shards != null) {
- 		List<String> lst = StrUtils.splitSmart(shards, ",", true);
- 		List<String> mslist = lst;
- 		if (mergeServers != null) {
- 			mslist = StrUtils.splitSmart(mergeServers, ",", true);
- 		}
- 		MergerSchedule.schedule(paramsr, lst, mslist, rb);
- 	}
+	List<String> lst = StrUtils.splitSmart(shards, ",", true);
+	List<String> mslist = StrUtils.splitSmart(mergeServers, ",", true);
+
+    String[] partions=paramsr.getParams(ShardParams.PARTIONS);
+    
+    ScheduleInfo scheduleInfo=MergerSchedule.schedule(paramsr, lst, mslist,partions);
     
     
     int depth=req.getParams().getInt("__higo_ms_depth__", 0);
@@ -125,40 +127,30 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 		c.distributedProcess(rb);
     }
 
-    sreq.actualShards = rb.shards;
     sreq.responses = new ArrayList<ShardResponse>();
 
-    for (int i=0;i<sreq.actualShards.length;i++) {
-    	String shard=sreq.actualShards[i];
+    for (int i=0;i<scheduleInfo.shards.length;i++) {
         ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
         params.remove(ShardParams.SHARDS);      // not a top-level request
   		params.remove("indent");
+		params.remove(ShardParams.PARTIONS);
   		params.remove(CommonParams.HEADER_ECHO_PARAMS);
   		params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
-        if(rb.issubshard)
+  		if(scheduleInfo.partions!=null)
         {
-       	  params.set(ShardParams.SHARDS,rb.subShards[i]);
-    	  params.set(FacetParams.IS_SUB_SHARDS, true);
-    	  
-    	  
-    	  if(params.getBool("fetchfdt", false))
-		  {
-        	 int offset=params.getInt(FacetParams.FACET_CROSS_OFFSET,0);
-        	 int limit=params.getInt(FacetParams.FACET_CROSS_LIMIT,0);
-        	 params.remove(FacetParams.FACET_CROSS_OFFSET);
-             params.remove(FacetParams.FACET_CROSS_LIMIT);
-             params.set(FacetParams.FACET_CROSS_OFFSET,  0);
-         	params.set(FacetParams.FACET_CROSS_LIMIT,  offset+limit);
-		  }else{
-			  params.set(FacetParams.FACET_CROSS_OFFSET, 0);
-	    	  int maxlimit=MdrillGroupBy.MAX_CROSS_ROWS;
-	    	  params.set(FacetParams.FACET_CROSS_LIMIT, maxlimit); 
-		  }
-    	  
-    	  
+            params.set(ShardParams.PARTIONS, scheduleInfo.partions);
         }
+        if(scheduleInfo.hasSubShards)
+        {
+       	  params.set(ShardParams.SHARDS,scheduleInfo.subShards[i]);
+        }
+        
+//        params.set(FacetParams.IS_SUB_SHARDS, true);
+		params.set(FacetParams.FACET_CROSS_OFFSET, 0);
+  	  	params.set(FacetParams.FACET_CROSS_LIMIT, MdrillGroupBy.MAX_CROSS_ROWS); 
+  	  
         params.remove(CommonParams.QT);
-        comm.submit(sreq, shard, params,depth);
+        comm.submit( scheduleInfo,sreq, scheduleInfo.shards[i], params,depth);
     }
   
 		while (true) {
@@ -270,11 +262,15 @@ class HttpCommComponent {
          return cli;
 	}
 
-  void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params,final int depth) {
+  void submit(final ScheduleInfo scheduleInfo,final ShardRequest sreq, final String shard, final ModifiableSolrParams params,final int depth) {
+	  
+
 	    final long begintime=System.currentTimeMillis();
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       public ShardResponse call() throws Exception {
+
         ShardResponse srsp = new ShardResponse();
+        srsp.setScheduleInfo(scheduleInfo);
         srsp.setShardRequest(sreq);
         srsp.setShard(shard);
         SimpleSolrResponse ssr = new SimpleSolrResponse();
@@ -298,7 +294,6 @@ class HttpCommComponent {
 	         {
 	        	 timetaken=new LinkedHashMap<String,String>();
 		         ssr.nl.add("mdrill_shard_time", timetaken);
-
 	         }
 	        
 	         long t2=System.currentTimeMillis();
@@ -345,8 +340,9 @@ class HttpCommComponent {
     	}
 
         rsp.getShardRequest().responses.add(rsp);
-        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
-          return rsp;
+        if(rsp.getShardRequest().responses.size()==rsp.getScheduleInfo().shards.length)
+        {
+        	return rsp;
         }
       } catch (InterruptedException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

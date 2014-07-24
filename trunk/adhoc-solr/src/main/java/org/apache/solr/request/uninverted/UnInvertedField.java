@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 public  class UnInvertedField extends UnInvertedFieldBase {
 	public static Logger log = LoggerFactory.getLogger(UnInvertedField.class);
 
-	public static ThreadPoolExecutor SUBMIT_POOL = new ThreadPoolExecutor(Math.max(UniqConfig.getUnivertedFieldThreads() / 2, 1),UniqConfig.getUnivertedFieldThreads(), 100L, TimeUnit.SECONDS,	new LinkedBlockingQueue<Runnable>());
+	public static ThreadPoolExecutor SUBMIT_POOL = new ThreadPoolExecutor(UniqConfig.getUnivertedFieldThreads(),UniqConfig.getUnivertedFieldThreads(), 100L, TimeUnit.SECONDS,	new LinkedBlockingQueue<Runnable>());
 	
   	public static UnInvertedField getUnInvertedField(DocSet baseAdvanceDocs,String field, SolrIndexSearcher searcher) throws IOException {
 	  return getUnInvertedField(baseAdvanceDocs,field, searcher.getReader());
@@ -97,16 +97,19 @@ public  class UnInvertedField extends UnInvertedFieldBase {
 	{
 		final ILruMemSizeKey key = new GrobalCache.StringKey("seg@"+String.valueOf(isreadDouble) + "@" + field + "@"+reader.getStringCacheKey()+"@"+reader.getSegmentName());
 		ExecutorCompletionService<UnivertPool> submit=new ExecutorCompletionService<UnivertPool>(SUBMIT_POOL);
+		final long t0=System.currentTimeMillis();
+
 		Callable<UnivertPool> task = new Callable<UnivertPool>() {
 		      public UnivertPool call() throws Exception {
 				UnivertPool rtnuif=new  UnivertPool();
 				try{
+					long t1=System.currentTimeMillis();
 					Cache<ILruMemSizeKey, ILruMemSizeCache> cache = GrobalCache.fieldValueCache;
 					final Object lockthr=UnInvertedFieldUtils.getLock(key);
 					synchronized (lockthr) {
-						long t1=System.currentTimeMillis();
 						rtnuif.uni =  (UnInvertedField)cache.get(key);
 						BitDocSet clonebitset=cloneBitset(baseAdvanceDocs,reader);
+						long t2=System.currentTimeMillis();
 
 						if (rtnuif.uni == null||rtnuif.uni.isShutDown()) {
 							rtnuif.uni = new UnInvertedField();
@@ -123,13 +126,11 @@ public  class UnInvertedField extends UnInvertedFieldBase {
 							{
 								MakeUnivertedFieldByIndex forjoin=new MakeUnivertedFieldByIndex(rtnuif.uni);
 								forjoin.addDoclist(clonebitset, field, reader);
-							}
-							
-						
+							}	
 						}
-						
-						long diff=System.currentTimeMillis()-t1;
-						log.info("####timetaken####:"+diff+","+String.valueOf(rtnuif.uni));
+						long t3=System.currentTimeMillis();
+
+						log.info("####timetaken####:"+(t3-t1)+"@"+(t2-t1)+"@"+(t1-t0)+","+String.valueOf(rtnuif.uni));
 					}
 				}catch(IOException e){
 					rtnuif.e=e;
@@ -141,6 +142,8 @@ public  class UnInvertedField extends UnInvertedFieldBase {
 		
 		UnInvertedField uif=UnInvertedFieldUtils.takeUnf(submit);
 		uif.refCnt.incrementAndGet();
+		long t4=System.currentTimeMillis();
+		log.info("####timetaken all####:"+(t4-t0)+","+String.valueOf(uif));
 		return uif;
 	}
 	
@@ -149,7 +152,8 @@ public  class UnInvertedField extends UnInvertedFieldBase {
 			SolrIndexReader reader) throws IOException {
 		final SolrIndexSearcher searcher = reader.getSearcher();
 		final ILruMemSizeKey key = new GrobalCache.StringKey(searcher.getPartionKey() + "@@" + field + "@@"	+ LuceneUtils.crcKey(reader));
-		
+		final long t0=System.currentTimeMillis();
+
 		ExecutorCompletionService<UnivertPool> submit=new ExecutorCompletionService<UnivertPool>(SUBMIT_POOL);
 		Callable<UnivertPool> task = new Callable<UnivertPool>() {
 		      public UnivertPool call() throws Exception {
@@ -165,17 +169,18 @@ public  class UnInvertedField extends UnInvertedFieldBase {
 						SolrIndexReader reader=searcher.getReader();
 						BitDocSet clonebitset=cloneBitset(baseAdvanceDocs,reader);
 
-						MakeUnivertedFieldByIndex forjoin=new MakeUnivertedFieldByIndex(rtnuif.uni);
 						if (rtnuif.uni == null||rtnuif.uni.isShutDown()) {
 								rtnuif.uni = new UnInvertedField();
+								MakeUnivertedFieldByIndex forjoin=new MakeUnivertedFieldByIndex(rtnuif.uni);
 								forjoin.makeInit(clonebitset, field, searcher.getSchema(), reader);
 								cache.put(key, rtnuif.uni);
 							}else{
+								MakeUnivertedFieldByIndex forjoin=new MakeUnivertedFieldByIndex(rtnuif.uni);
 								forjoin.addDoclist(clonebitset, field, reader);
 							}
-						
-						long diff=System.currentTimeMillis()-t1;
-						log.info("timetaken by index:"+diff+","+String.valueOf(rtnuif.uni));
+						long t2=System.currentTimeMillis();
+
+						log.info("timetaken by index:"+(t2-t1)+"@"+(t1-t0)+","+String.valueOf(rtnuif.uni));
 						}
 					
 				}catch(IOException e){

@@ -129,12 +129,17 @@ public class DocValuesReader {
 	}
 	
 	
-	public long readTmValue(int tm) throws IOException
+	public long readTmValue(int tm,boolean islongbits) throws IOException
 	{
 
 		if(tm>=this.maxtm)
 		{
-			return (long) RamTermNumValue.TERMNUM_NAN_VALUE;
+			if(islongbits)
+			{
+				return Double.doubleToLongBits(RamTermNumValue.TERMNUM_NAN_VALUE);
+			}else{
+				return (long) RamTermNumValue.TERMNUM_NAN_VALUE;
+			}
 		}
 		
 		long pos=this.tisposVal+1l*tm*8;

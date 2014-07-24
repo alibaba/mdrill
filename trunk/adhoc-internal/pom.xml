@@ -44,7 +44,11 @@
 	       <artifactId>adhoc-realtime</artifactId>
 	        <version>0.18-beta</version>
 	</dependency>
-	
+		<dependency>
+	     <groupId>com.alimama.dw</groupId>
+	       <artifactId>adhoc-web</artifactId>
+	        <version>0.18-beta</version>
+	</dependency>
 
  	<dependency>
             <groupId>com.alibaba.cdo</groupId>

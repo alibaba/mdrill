@@ -27,17 +27,20 @@ public class InHdfs_udf extends UDF {
 				Configuration conf = new Configuration();
 				Path p = new Path(file);
 				FileSystem fs = p.getFileSystem(conf);
-				FSDataInputStream in = fs.open(p);
-				BufferedReader br = new BufferedReader(new InputStreamReader(in));
-				String s1 = null;
-				while ((s1 = br.readLine()) != null) {
-					String line = s1.trim();
-					if (!line.isEmpty()) {
-						set.add(line);
+				if(fs.exists(p))
+				{
+					FSDataInputStream in = fs.open(p);
+					BufferedReader br = new BufferedReader(new InputStreamReader(in));
+					String s1 = null;
+					while ((s1 = br.readLine()) != null) {
+						String line = s1.trim();
+						if (!line.isEmpty()) {
+							set.add(line);
+						}
 					}
+					br.close();
+					in.close();
 				}
-				br.close();
-				in.close();
 				match.put(file, set);
 			} catch (IOException e) {
 			}
