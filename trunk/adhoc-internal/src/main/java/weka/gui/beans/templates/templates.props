@@ -1,0 +1,14 @@
+# List of available template flows
+weka.gui.beans.KnowledgeFlow.templates=weka/gui/beans/templates/cvTemplate.kfml,\
+ weka/gui/beans/templates/learnAndSaveModel.kfml,\
+ weka/gui/beans/templates/ROCcurves.kfml,\
+ weka/gui/beans/templates/incrementalLearning.kfml,\
+ weka/gui/beans/templates/twoClusterers.kfml,\
+ weka/gui/beans/templates/saveCharts.kfml
+
+weka.gui.beans.KnowledgeFlow.templates.desc=Cross validation,\
+ Learn and save a model,\
+ ROC curves for two classifiers,\
+ Learn and evaluate naive Bayes incrementally,\
+ Compare two clusterers,\
+ Save various charts to files
