@@ -130,7 +130,7 @@ public  class UnInvertedField extends UnInvertedFieldBase {
 						}
 						long t3=System.currentTimeMillis();
 
-						log.info("####timetaken####:"+(t3-t1)+"@"+(t2-t1)+"@"+(t1-t0)+","+String.valueOf(rtnuif.uni));
+						log.info("####timetaken####:"+(t3-t2)+"@"+(t2-t1)+"@"+(t1-t0)+","+String.valueOf(rtnuif.uni));
 					}
 				}catch(IOException e){
 					rtnuif.e=e;

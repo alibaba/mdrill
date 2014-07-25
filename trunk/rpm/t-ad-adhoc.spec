@@ -1,5 +1,5 @@
 Name: t-ad-adhoc
-Version:1.0.313
+Version:1.0.318
 Release: %(echo $RELEASE)%{?dist}
 
 Summary:t_ad_adhoc

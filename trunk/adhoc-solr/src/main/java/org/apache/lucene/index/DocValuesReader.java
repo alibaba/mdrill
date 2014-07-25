@@ -191,9 +191,9 @@ public class DocValuesReader {
 			  rtn.quicktisInput= (SmallBufferedInput)quicktisInput.clone();
 			  rtn.quicktisInputTxt=(SmallBufferedInput)quicktisInputTxt.clone();
 			  rtn.quicktisInputVal=(SmallBufferedInput)quicktisInputVal.clone();
-			  rtn.fieldPosTis=new ConcurrentHashMap<Integer, Long>(this.fieldPosTis);
-			  rtn.fieldPosTisTxt=new ConcurrentHashMap<Integer, Long>(this.fieldPosTisTxt);
-			  rtn.fieldPosTisVal=new ConcurrentHashMap<Integer, Long>(this.fieldPosTisVal);
+			  rtn.fieldPosTis=this.fieldPosTis;
+			  rtn.fieldPosTisTxt=this.fieldPosTisTxt;
+			  rtn.fieldPosTisVal=this.fieldPosTisVal;
 			  rtn.isclone=true;
 			  return rtn;
 		  }

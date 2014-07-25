@@ -19,12 +19,15 @@ public class RamDocValueFill {
 			TermIndex ti, DocValuesReader quicktisInput, int fieldNumber,
 			boolean isReadDouble, BitDocSet baseAdvanceDocs)
 			throws IOException, CloneNotSupportedException {
-		long l1=System.currentTimeMillis();
+		long l0=System.currentTimeMillis();
+
+		boolean isreadText=isinit&&(!isReadDouble);
 		DocValuesReader docValues = (DocValuesReader) quicktisInput.clone();
-			docValues.seekTo(fieldNumber, isinit);
+			docValues.seekTo(fieldNumber,isreadText );
 			int doc = -1;
 			int tm = 0;
-	
+			long l1=System.currentTimeMillis();
+
 			if (inv.fieldDataType == FieldDatatype.d_double) {
 				if (baseAdvanceDocs != null) {
 					DocIterator iter = baseAdvanceDocs.iterator();
@@ -97,18 +100,22 @@ public class RamDocValueFill {
 			
 			long l3=System.currentTimeMillis();
 
-			if (isinit) {
+			if (isreadText) {
 				ArrayList<String> lst = docValues.lst;
 				ti.nTerms = docValues.maxtm;
 				ti.sizeOfStrings = docValues.sizeOfStrings;
 				ti.index = new IndexSearch();
 				ti.index.index = lst != null ? lst.toArray(new String[lst.size()]) : new String[0];
-	
+			}else if(isinit){
+				ti.nTerms = docValues.maxtm;
+				ti.sizeOfStrings = 0;
+				ti.index = new IndexSearch();
+				ti.index.index =  new String[0];
 			}
 			long l4=System.currentTimeMillis();
 
 
-			log.info("file timetaken:"+(l4-l3)+","+(l3-l2)+","+(l2-l1));
+			log.info("file timetaken:"+(l4-l3)+","+(l3-l2)+","+(l2-l1)+","+(l1-l0));
 			return docValues.maxtm;
 		
 
