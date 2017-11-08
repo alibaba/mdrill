@@ -93,7 +93,7 @@ public class PaintUtilities {
                 && gp1.getPoint1().equals(gp2.getPoint1())    
                 && gp1.getPoint2().equals(gp2.getPoint2())
                 && gp1.isCyclic() == gp2.isCyclic()
-                && gp1.getTransparency() == gp1.getTransparency(); 
+                && gp1.getTransparency() == gp2.getTransparency(); 
         }
         else {
             result = p1.equals(p2);

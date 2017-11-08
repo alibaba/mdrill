@@ -268,7 +268,7 @@ public class SerialDateChooserPanel extends JPanel implements ActionListener {
      */
     protected Color getButtonColor(final SerialDate targetDate) {
 
-        if (this.date.equals(this.date)) {
+        if (targetDate.equals(this.date)) {
             return this.dateButtonColor;
         }
         else if (targetDate.getMonth() == this.date.getMonth()) {
